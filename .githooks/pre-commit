@@ -1,0 +1,10 @@
+#!/bin/sh
+# Blocks commits whose staged diff adds any pattern listed in .private/blocklist.txt (untracked, never committed).
+BL="$(git rev-parse --show-toplevel)/.private/blocklist.txt"
+[ -f "$BL" ] || { echo "pre-commit: $BL missing, skipping privacy check" >&2; exit 0; }
+hits=$(git diff --cached -U0 --no-color | grep '^+' | grep -v '^+++' | grep -n -i -F -f "$BL")
+if [ -n "$hits" ]; then
+  echo "pre-commit: staged changes contain a blocklisted pattern (see .private/blocklist.txt):" >&2
+  echo "$hits" | cut -c1-120 >&2
+  exit 1
+fi
