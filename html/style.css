@@ -83,7 +83,6 @@ select {
     height: 100%;
 }
 
-
 #map_container {
     flex: 1 1 auto;
     position: relative;
@@ -100,39 +99,6 @@ select {
     width: 100%;
     height: 100%;
 }
-
-.sidebar_button {
-    width: calc( 32px * var(--SCALE));
-    height: calc( 38px * var(--SCALE));
-    border-radius: calc( 2px * var(--SCALE));
-    background-color: rgba(255,255,255,.2);
-
-    cursor: pointer;
-    background-size: calc( 26px * var(--SCALE)) calc( 30px * var(--SCALE));
-    background-repeat: no-repeat;
-    background-position: center;
-
-    border: none;
-}
-
-#toggle_sidebar_button.show_sidebar {
-    transform: scaleX(-1);
-    background-image: url("images/hide_sidebar.png");
-}
-
-#toggle_sidebar_button.hide_sidebar {
-    background-image: url("images/hide_sidebar.png");
-}
-
-#shrink_sidebar_button {
-    background-image: url("images/hide_sidebar.png");
-}
-
-#expand_sidebar_button {
-    transform: scaleX(-1);
-    background-image: url("images/hide_sidebar.png");
-}
-
 
 #zoomLevel {
     position: absolute;
@@ -170,10 +136,6 @@ select {
     opacity: 0.7;
     margin: 4px;
 }
-.withOverflowingBackground::before {
-   z-index: -1;
-   background-image: url(https://www.exratione.com/assets/color_background.png);
-}
 
 #splitter {
     cursor: ew-resize;
@@ -192,26 +154,6 @@ select {
     background-image: url("images/toggle-width.png");
     background-size: cover;
     transform: scaleX(-1);
-}
-
-#splitter-infoblock {
-    cursor: ns-resize;
-    display: inline-block;
-    position: absolute	;
-    top: calc( 0px * var(--SCALE));
-    right: 0;
-    margin-left: auto;
-    width: calc( 24px * var(--SCALE));
-    height: calc( 4px * var(--SCALE));
-    background-size: calc( 24px * var(--SCALE)) calc( 25px * var(--SCALE));
-    background-repeat: no-repeat;
-    background-position: calc( 0px * var(--SCALE));
-    border: none;
-    width: 100%;
-    border-bottom: #234c75;
-    background-color: #65819e;
-    border-bottom-width: calc( 1px * var(--SCALE));
-    border-bottom-style: solid;
 }
 
 /* remove the blue highlighting around the map buttons */
@@ -291,7 +233,6 @@ select {
 #loader {position: absolute; width: 25%; height: 30px; z-index: 9999; top: 50%; left: 37.5%}
 #loader_progress { width:  100%; height: 100%; position: absolute; }
 
-
 .aircraft_table_header {
     background-color: var(--ACCENT);
     color: #FFFFFF;
@@ -325,23 +266,7 @@ select {
 
 .hidden { display: none; }
 
-.infoblock_heading a  { text-decoration: none; color: blue; font-size: var(--FS2); }
-
 .dim    { opacity: 0.3; filter:alpha(opacity=30); /* For IE8 and earlier */ }
-
-.pointer { cursor: pointer; }
-
-.sidebarButton {
-    background-color: #409EDF;
-    padding: calc( 4px * var(--SCALE));
-    color: #FFFFFF;
-    font-weight: normal;
-    font-size: var(--FS2);
-}
-
-.sidebarButton:hover {
-    background-color: #3c6ea3;
-}
 
 .altitudeFilterInput {
     width: calc( 50px * var(--SCALE));
@@ -372,62 +297,6 @@ select.error, textarea.error, input.error {
     color: #FF0000;
 }
 
-.layer-switcher {
-    top: calc( 3px * var(--SCALE)) !important;
-    right: calc( 44px * var(--SCALE)) !important;
-    z-index: 999;
-}
-.layer-switcher button {
-    background-size: calc( 26px * var(--SCALE)) calc( 26px * var(--SCALE));
-    background-repeat: no-repeat;
-    background-position: center;
-    width: calc( 30px * var(--SCALE));
-    height: calc( 30px * var(--SCALE));
-}
-.layer-switcher !.shown {
-    top: calc( 3px * var(--SCALE)) !important;
-    right: calc( 44px * var(--SCALE)) !important;
-    width: calc( 32px * var(--SCALE));
-    height: calc( 32px * var(--SCALE));
-    z-index: 999;
-}
-.layer-switcher.shown .panel {
-    overflow-y: auto;
-    height: 95vh;
-}
-
-/* new css */
-.dateTime
-{
-    font-weight: bold;
-    font-size: calc( 12px * var(--SCALE));
-    line-height: calc( 26px * var(--SCALE));
-    color: #FFFFFF;
-    color: rgb(255, 255, 255);
-    text-align: right;
-    display: inline-block;
-    padding-right: calc( 20px * var(--SCALE));
-    padding-left: calc( 20px * var(--SCALE));
-}
-
-@media screen and (max-width: 1 calc(000px * var(--SCALE))) {
-    .dateTime {
-        display: none;
-    }
-}
-
-.sectionTitle {
-    width: 100%;
-    text-transform: uppercase;
-    text-align: center;
-    color: #e8e8e8;
-    background: #003f4b;
-}
-
-.section-title-content {
-    padding: calc( 3px * var(--SCALE)) calc( 20px * var(--SCALE));
-}
-
 .legend
 {
     font-size: 110%;
@@ -436,7 +305,6 @@ select.error, textarea.error, input.error {
     flex-wrap: wrap;
     padding-top: calc( 10px * var(--SCALE));
 }
-
 
 .settingsText
 {
@@ -466,31 +334,10 @@ select.error, textarea.error, input.error {
     z-index: 9;
 }
 
-.svgButton {
-    background-color: var(--ACCENT);
-    width: calc( 27px * var(--SCALE));
-    height: calc( 27px * var(--SCALE));
-    cursor: pointer;
-    background-position: center;
-    margin: calc( 2px * var(--SCALE));
-    display: inline-block;
-    border-radius: calc( 2px * var(--SCALE));
-}
-
-.fullscreenButton {
-    background-image: url('images/fullscreen.svg');
-    background-size: 90%;
-}
-
 .settingsCog {
     background-image: url('images/cog-white.svg');
     background-size: 120%;
 }
-
-.replayButton {
-    background-image: url('images/replay-white.svg');
-}
-
 
 .button {
     background-color: var(--ACCENT);
@@ -502,25 +349,6 @@ select.error, textarea.error, input.error {
     cursor: pointer;
     text-align: center;
     background-clip: padding-box;
-}
-
-
-.buttonContainer {
-    display: block;
-    margin: calc( 1px * var(--SCALE));
-    text-align: center;
-}
-.buttonSpacer {
-    margin: calc( 9px * var(--SCALE));
-}
-
-.buttonText
-{
-    font-weight: bold;
-    font-size: calc( 15px * var(--SCALE));
-    line-height:  calc( 27px * var(--SCALE));
-    text-align: center;
-    margin: calc( 5px * var(--SCALE));
 }
 
 .activeButton {
@@ -556,30 +384,10 @@ select.error, textarea.error, input.error {
     font-weight: lighter;
 }
 
-.identMedium {
-    font-size: calc( 17px * var(--SCALE));
-    line-height: calc( 22px * var(--SCALE));
-    color: var(--TXTCOLOR1);
-    font-weight: lighter;
-}
-
 .identSmall {
     font-size: calc( 14px * var(--SCALE));
     font-weight: bold;
     color: var(--TXTCOLOR1);
-}
-
-.infoSectionTable {
-    width: 100%;
-    border-collapse: collapse;
-    padding: 0;
-    margin: 0;
-    cursor: default;
-}
-
-table.infoSectionTable tr td {
-    padding: 0;
-    margin: 0;
 }
 
 .rSpacer {
@@ -624,86 +432,7 @@ table.infoSectionTable tr td {
     font-size: var(--FS3);
 }
 
-.infoBlockTitleText {
-    font-weight: bold;
-    color:var(--TXTCOLOR3);
-}
-
-
-
-.legendTitle {
-    line-height: calc( 19px * var(--SCALE));
-    padding-right: calc( 3px * var(--SCALE));
-    padding-left: calc( 3px * var(--SCALE));
-    margin: calc( 2px * var(--SCALE));
-}
-
-#settings_infoblock {
-    position: fixed;
-    top: 1%;
-    left: 1%;
-    overflow: auto;
-    max-height: 90%;
-    box-shadow: calc( 4px * var(--SCALE)) calc( 4px * var(--SCALE)) calc( 10px * var(--SCALE)) #444444;
-    padding: calc( 20px * var(--SCALE));
-    z-index: 9999;
-    display: none;
-    background-color: var(--BGCOLOR1);
-}
-
-.settingsColumn {
-    display: table-cell;
-    width:  calc(199px * var(--SCALE));
-}
-.settingsOptionContainer {
-    display: table;
-    padding-top: calc( 3.5px * var(--SCALE));
-    padding-bottom: calc( 3.5px * var(--SCALE));
-}
-
-.settingsCheckbox {
-    width: calc( 12px * var(--SCALE));
-    height: calc( 12px * var(--SCALE));
-    background-size: calc( 12px * var(--SCALE)) calc( 12px * var(--SCALE));
-    margin-left: calc( 5px * var(--SCALE));
-    margin-right: calc( 5px * var(--SCALE));
-    background-image: url('images/box-empty.png');
-    background-repeat: no-repeat;
-    background-position: center;
-    cursor: pointer;
-}
-
-.settingsCheckboxChecked {
-    background-image: url('images/box-checked.png') !important;
-}
-
-.settingsCloseBox {
-    position: absolute;
-    right: calc( 8px * var(--SCALE));
-    top: calc( 8px * var(--SCALE));
-    background-image: url('images/close-settings.png');
-    background-size: cover;
-    width: calc( 20px * var(--SCALE));
-    height: calc( 20px * var(--SCALE));
-    cursor: pointer;
-}
-
-.infoblockCloseBox {
-    position: absolute;
-    right: calc( 20px * var(--SCALE));
-    top: calc( 8px * var(--SCALE));
-    background-image: url('images/close-settings.png');
-    background-size: cover;
-    width: calc( 20px * var(--SCALE));
-    height: calc( 20px * var(--SCALE));
-    cursor: pointer;
-    z-index: 99;
-}
-
-.settingsText {
-    line-height: calc( 20px * var(--SCALE));
-    display: table-cell;
-}
+/* Skywatch ADS-B: settings dialog, checkbox and close-box styles live in theme.css and ui/settings.css */
 
 #altitude_chart {
     float: right;
@@ -712,85 +441,6 @@ table.infoSectionTable tr td {
     right: calc( 85px * var(--SCALE));
     bottom: calc( 35px * var(--SCALE));
     background-color: transparent !important;
-}
-
-#altitude_chart_button {
-    background-size: cover;
-    background-color: transparent;
-    width: 100%;
-    height: 0;
-    padding: 0;
-    padding-bottom: calc(100% * 56 / 1815);
-}
-
-
-#selected_flightaware_link a {
-    background-color: #67b6c3;
-    color: white;
-    text-decoration: none;
-    padding: calc( 4px * var(--SCALE));
-    line-height: calc( 22px * var(--SCALE));
-    border-radius: calc( 4px * var(--SCALE));
-}
-.bottom-info-container {
-    padding-top: calc( 10px * var(--SCALE));
-    padding-bottom: calc( 10px * var(--SCALE));
-    text-align: center;
-    color: var(--TXTCOLOR1);
-    line-height: calc( 18px * var(--SCALE));
-}
-.bottom-info-container img {
-    vertical-align: middle;
-}
-.bottom-info-container .bottom-info-text {
-    vertical-align: middle;
-    display: inline;
-}
-
-.ui-tabs {
-    background-color: var(--BGCOLOR1);
-}
-.ui-tabs-nav {
-    background-color: var(--BGCOLOR2);
-}
-.ui-tabs-panel {
-    background-color: var(--BGCOLOR1);
-}
-.greyButton {
-    background-color: var(--BGCOLOR2);
-    cursor: pointer;
-    padding: calc( 4px * var(--SCALE));
-    width: 100%;
-    border: none;
-    text-align: left;
-    outline: none;
-    font-size: calc( 15px * var(--SCALE));
-    font-weight: bold;
-    color: var(--TXTCOLOR1);
-}
-.greyButton:after {
-    content: '\02795\FE0E'; /* Unicode character for "plus" sign (+) */
-    float: right;
-    margin-left: calc( 5px * var(--SCALE));
-}
-.greyButton.active:after {
-    content: "\2796\FE0E"; /* Unicode character for "minus" sign (-) */
-}
-
-.ui-tabs-nav li a:focus {
-    outline: none;
-}
-
-.ui-tabs .ui-tabs-panel {
-    padding: 1em 0.5em;
-}
-.ui-tabs .ui-tabs-nav {
-    padding: 2px;
-    margin: 1px;
-    margin-bottom: 1px;
-}
-.ui-tabs .ui-tabs-nav li.ui-tabs-active {
-    padding-bottom: 0px;
 }
 .ui-corner-all, .ui-corner-top, .ui-corner-right, .ui-corner-tr {
     border-radius: 3px;
@@ -802,10 +452,6 @@ table.infoSectionTable tr td {
     padding: 0;
     width: calc( 240px * var(--SCALE));
     cursor: pointer;
-}
-
-.ui-widget-content .ui-selectable .ui-selected {
-    border-color: #cc6600;
 }
 
 .buttonFilter li {
@@ -868,74 +514,7 @@ table.infoSectionTable tr td {
   color:var(--TXTCOLOR2);
 }
 
-.ui-slider {
-    background-color: var(--BGCOLOR2);
-}
-.ui-slider .ui-slider-handle {
-    background-color: rgb(0, 115, 222);
-}
-
-
 input{
   color:var(--TXTCOLOR1);
 }
-#histDatePicker{
-  background: var(--BGCOLOR1);
-}
-
-#replayBar {
-  background: var(--BGCOLOR1);
-  display: none;
-  width: calc(100% - 80px);
-  padding-right: 80px;
-  position: absolute;
-  height: 10px;
-  bottom: 0%;
-  grid-template-columns: 1fr 1.5fr 5fr 2fr;
-  grid-template-rows: 20px 40px 20px 20px;
-  justify-items: center;
-  align-items: center;
-  grid-template-areas:
-    "timezone dateHint timeHint speedHint"
-    "play datepicker hours speedSelect"
-    ". dateHintLocal minutes loading "
-    ". . . .";
-}
-
-#replayLoading {
-  grid-area: loading;
-}
-
-#replayTimeZone{
-  grid-area: timezone;
-}
-#replayPlay{
-  grid-area: play;
-}
-#replayDatepicker{
-  grid-area: datepicker;
-}
-#hourSelect{
-  width: 90%;
-  grid-area: hours;
-}
-#minuteSelect{
-  width: 90%;
-  grid-area: minutes;
-}
-#replaySpeedSelect{
-  grid-area: speedSelect;
-  width: 90%;
-}
-#replayTimeHint{
-   grid-area: timeHint;
-}
-#replayDateHintLocal{
-  grid-area: dateHintLocal;
-}
-#replayDateHint{
-  grid-area: dateHint;
-}
-#replaySpeedHint{
-  grid-area: speedHint;
-}
+/* Skywatch ADS-B: replay/history bar styles live in ui/history.css */

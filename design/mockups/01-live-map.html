@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>tar1090 main view</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+:root{--bg:#000;--glass:rgba(20,22,27,.74);--tile:rgba(255,255,255,.05);--line:rgba(255,255,255,.09);--text:#F5F7FA;--text2:#C3CAD3;--muted:#9BA3AD;--accent:#FFFFFF;--accent-bg:rgba(255,255,255,.14);--ok:#3DDC97;--warn:#F5B94A;--bad:#FF6B6B}
+*{box-sizing:border-box}
+body{margin:0;background:#000}
+.app{position:relative;width:100%;min-height:100vh;background:#000;color:var(--text);font-family:Inter,system-ui,sans-serif;overflow:hidden}
+.mono{font-family:'JetBrains Mono',monospace}
+.glass{background:var(--glass);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);border:1px solid var(--line)}
+.abs{position:absolute}
+.btn{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--text);padding:0;cursor:pointer;font:inherit}
+.ico{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.tile{background:var(--tile);border-radius:20px;padding:14px 16px}
+.lbl{font-size:12px;color:var(--muted)}
+.big{font-size:26px;font-weight:600;letter-spacing:-.01em}
+.unit{font-size:13px;color:var(--muted);font-weight:400;margin-left:3px}
+.chip{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:14px;background:var(--tile);font-size:12px;color:var(--text2)}
+.act{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 0;font-size:12px;color:var(--text2);background:none;border:0;cursor:pointer;font-family:inherit;border-radius:14px}
+.act.on{color:var(--accent);background:var(--accent-bg)}
+.tb{display:flex;align-items:center;gap:5px;height:34px;padding:0 8px;border-radius:12px;background:none;border:0;color:var(--text2);font:inherit;font-size:12px;cursor:pointer}
+.tb.on{background:var(--accent-bg);color:var(--accent)}
+.tb kbd{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);border:1px solid var(--line);border-radius:5px;padding:0 4px}
+.sep{width:1px;height:20px;background:var(--line);margin:0 4px}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+</style>
+</helmet>
+<div class="app" style="height:900px">
+
+<svg aria-hidden="true" class="abs" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" style="inset:0;width:100%;height:100%">
+<defs><path id="pl" d="M12 1.5c.9 0 1.6 1 1.6 2.2v5.6l8.4 4.9v2.2l-8.4-2.4v4.2l2.2 1.7v1.6L12 20.6l-3.8 1v-1.6l2.2-1.7v-4.2L2 16.4v-2.2l8.4-4.9V3.7c0-1.2.7-2.2 1.6-2.2z"/></defs>
+<rect width="1440" height="900" fill="#000"/>
+<g fill="none" stroke="#2A2D33" stroke-width="1.1"><path d="M380 470C470 440 520 380 600 350S740 290 800 190L860 90"/><path d="M420 640C560 600 640 560 760 540S980 520 1100 430"/><path d="M700 100C720 240 760 340 800 460S860 640 900 820"/><path d="M520 300C640 330 760 360 900 340S1120 300 1260 360"/><path d="M600 700C700 690 800 740 940 720S1160 640 1240 700"/></g>
+<g fill="none" stroke="#3A3F47" stroke-width="1.4"><path d="M470 130C560 100 640 150 700 120S800 60 880 80"/><path d="M1000 800C1080 700 1160 660 1260 600S1380 480 1440 470"/></g>
+<g fill="none" stroke="#25282E" stroke-dasharray="3 7"><circle cx="880" cy="470" r="130"/><circle cx="880" cy="470" r="260"/><circle cx="880" cy="470" r="390"/></g>
+<path d="M880 150L1010 190L1120 290L1180 440L1150 580L1050 690L910 740L780 700L690 600L660 470L700 340L780 220Z" fill="none" stroke="#3A3F47" stroke-width="1.4"/>
+<g fill="#6B7280" font-family="Inter,sans-serif" font-size="13"><text x="930" y="440">Cranfield</text><text x="1010" y="590">London</text><text x="1060" y="360">Cambridge</text><text x="740" y="320">Birmingham</text></g>
+<circle cx="880" cy="470" r="4.5" fill="#FFFFFF"/>
+<polyline points="520,700 610,660 700,620 790,560 860,510 905,474" fill="none" stroke="#FFFFFF" stroke-width="2.4"/>
+<polyline points="905,474 1080,372 1210,296" fill="none" stroke="#FFFFFF" stroke-width="1.6" stroke-dasharray="6 6" opacity=".7"/>
+<g>
+<use href="#pl" x="893" y="458" width="26" height="26" fill="#FFFFFF" transform="rotate(56 906 471)"/>
+<use href="#pl" x="1000" y="250" width="22" height="22" fill="#B07BFF" transform="rotate(130 1011 261)"/>
+<use href="#pl" x="740" y="420" width="22" height="22" fill="#F2E44A" transform="rotate(300 751 431)"/>
+<use href="#pl" x="1110" y="520" width="22" height="22" fill="#F5994A" transform="rotate(200 1121 531)"/>
+<use href="#pl" x="660" y="250" width="22" height="22" fill="#4FD1D9" transform="rotate(20 671 261)"/>
+<use href="#pl" x="1190" y="380" width="22" height="22" fill="#5B8CFF" transform="rotate(90 1201 391)"/>
+<use href="#pl" x="800" y="640" width="22" height="22" fill="#6BD96B" transform="rotate(250 811 651)"/>
+<use href="#pl" x="980" y="660" width="22" height="22" fill="#F2E44A" transform="rotate(340 991 671)"/>
+<use href="#pl" x="1260" y="640" width="22" height="22" fill="#B07BFF" transform="rotate(160 1271 651)"/>
+</g>
+<rect x="924" y="458" width="64" height="24" rx="7" fill="#FFFFFF"/><text x="932" y="474" font-family="JetBrains Mono,monospace" font-size="12" font-weight="600" fill="#000">BAW23K</text>
+</svg>
+
+<!-- top bar -->
+<div class="abs" style="left:28px;top:16px;line-height:1.15"><div style="font-size:20px;font-weight:600;letter-spacing:-.01em">Skywatch ADS-B</div><div style="font-size:11px;color:var(--muted);margin-top:3px">Created by Aarav Sahni</div></div>
+<nav aria-label="Views" class="abs glass" style="left:50%;transform:translateX(-50%);top:14px;display:flex;gap:4px;padding:5px;border-radius:24px">
+<button class="tb on" style="height:34px;padding:0 16px;font-size:14px">Live map</button>
+<button class="tb" style="height:34px;padding:0 16px;font-size:14px">Aircraft list</button>
+<button class="tb" style="height:34px;padding:0 16px;font-size:14px">Graphs</button>
+<button class="tb" style="height:34px;padding:0 16px;font-size:14px">Replay</button>
+</nav>
+<label class="abs glass" style="right:84px;top:14px;width:214px;height:44px;border-radius:22px;display:flex;align-items:center;gap:8px;padding:0 14px;font-size:14px;color:var(--text2)">
+<svg aria-hidden="true" class="ico" width="16" height="16" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+<span style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Search aircraft</span>
+<input type="search" placeholder="Search" style="flex:1;min-width:0;background:none;border:0;outline:0;color:var(--text);font:inherit">
+<kbd class="mono" style="font-size:11px;color:var(--muted)">/</kbd></label>
+<button class="abs glass btn" aria-label="Settings" style="right:28px;top:14px"><svg aria-hidden="true" class="ico" width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9 7 7M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg></button>
+
+<!-- selected aircraft panel -->
+<aside aria-label="Selected aircraft" class="abs glass" style="left:28px;top:76px;bottom:24px;width:352px;border-radius:32px;padding:14px;display:flex;flex-direction:column;gap:10px;overflow:hidden">
+<div style="display:flex;align-items:center;gap:12px;padding:2px 4px">
+<div style="flex:1;min-width:0"><div class="mono" style="font-size:19px;font-weight:600">BAW23K</div><div class="lbl">British Airways · <span class="mono">4009A3</span></div></div>
+<button class="btn" aria-label="Close" style="width:40px;height:40px;background:var(--tile);border:0"><svg aria-hidden="true" class="ico" width="16" height="16" viewBox="0 0 24 24"><path d="m15 6-6 6 6 6"/></svg></button></div>
+
+<div style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:10px;scrollbar-width:none">
+<section aria-label="Route" class="tile" style="border-radius:24px;padding:16px">
+<div style="display:flex;align-items:center;justify-content:space-between"><span class="mono big" style="font-size:30px">LHR</span>
+<svg aria-hidden="true" width="90" height="16" viewBox="0 0 90 16"><path d="M2 12C26 4 52 4 72 10" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/><circle cx="3" cy="12" r="2.5" fill="#F5F7FA"/><use href="#pl" x="70" y="2" width="16" height="16" fill="#F5F7FA" transform="rotate(90 78 10)"/></svg>
+<span class="mono big" style="font-size:30px">EDI</span></div>
+<div style="display:flex;justify-content:space-between;margin-top:2px" class="lbl"><span>London Heathrow</span><span>Edinburgh</span></div>
+</section>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+<div class="tile"><div class="lbl">Ground speed</div><div class="mono big" style="margin-top:6px">412<span class="unit">kt</span></div><div class="lbl" style="margin-top:4px">TAS 438 kt</div></div>
+<div class="tile"><div class="lbl">Altitude</div><div class="mono big" style="margin-top:6px">21,400<span class="unit">ft</span></div><div style="margin-top:4px;font-size:12px;color:var(--ok)">▲ 1,800 ft/min</div></div>
+<div class="tile"><div class="lbl">Track</div><div class="mono big" style="margin-top:6px">056°</div><div class="lbl" style="margin-top:4px">NE</div></div>
+<div class="tile"><div class="lbl">Squawk</div><div class="mono big" style="margin-top:6px">4721</div><div class="lbl" style="margin-top:4px">38.2 nm away</div></div></div>
+
+<div style="display:flex;flex-wrap:wrap;gap:6px;padding:0 2px">
+<span class="chip"><span style="width:8px;height:8px;border-radius:50%;background:var(--ok)"></span>ADS-B</span>
+<span class="chip mono">−14.2 dBFS</span><span class="chip mono">31 msg/s</span><span class="chip mono">seen 0.4 s</span></div>
+
+<section aria-label="Aircraft" class="tile" style="border-radius:24px;padding:16px">
+<div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:19px;font-weight:600">Airbus A320-232</span><span class="chip mono" style="height:26px">A320</span></div>
+<div style="height:96px;border-radius:14px;margin:12px 0;background:linear-gradient(160deg,#1c2536,#0c0f16);position:relative;overflow:hidden"><svg aria-hidden="true" width="100%" height="100%" viewBox="0 0 300 96"><use href="#pl" x="110" y="22" width="60" height="60" fill="#2d3a55" transform="rotate(90 140 52)"/></svg><span class="lbl" style="position:absolute;right:10px;bottom:8px;font-size:11px">Photo · planespotters.net</span></div>
+<div style="display:flex;justify-content:space-between"><div><div class="lbl">Registration</div><div class="mono" style="font-size:16px;font-weight:600;margin-top:2px">G-EUYH</div></div><div><div class="lbl">Country</div><div style="font-size:16px;font-weight:600;margin-top:2px">🇬🇧 UK</div></div><div style="text-align:right"><div class="lbl">Messages</div><div class="mono" style="font-size:16px;font-weight:600;margin-top:2px">48,210</div></div></div></section>
+
+<button class="tile" style="display:flex;align-items:center;gap:12px;border:0;color:var(--text);font:inherit;font-size:15px;font-weight:600;cursor:pointer;border-radius:20px"><svg aria-hidden="true" class="ico" width="18" height="18" viewBox="0 0 24 24"><path d="M3 11l18-8-8 18-2-8z"/></svg><span style="flex:1;text-align:left">All aircraft details</span><svg aria-hidden="true" class="ico" width="16" height="16" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>
+
+</div>
+<div class="tile" style="display:flex;gap:2px;padding:6px;border-radius:24px;flex:none">
+<button class="act"><svg aria-hidden="true" class="ico" width="20" height="20" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5M12 8v4l3 2"/></svg>History</button>
+<button class="act on"><svg aria-hidden="true" class="ico" width="20" height="20" viewBox="0 0 24 24"><path d="M12 3l6 17-6-4-6 4z"/></svg>Follow</button>
+<button class="act"><svg aria-hidden="true" class="ico" width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>Isolate</button>
+</div>
+</aside>
+
+<!-- right control stack -->
+<div class="abs glass" style="right:28px;top:84px;width:44px;border-radius:22px;padding:4px;display:flex;flex-direction:column;gap:2px">
+<button class="btn" aria-label="North up" style="width:36px;height:36px;background:none;border:0;font-size:13px;font-weight:600">N</button>
+<button class="btn" aria-label="Home (H)" style="width:36px;height:36px;background:none;border:0"><svg aria-hidden="true" class="ico" width="17" height="17" viewBox="0 0 24 24"><path d="M12 3l7 17-7-4-7 4z"/></svg></button>
+<button class="btn" aria-label="Filters" style="width:36px;height:36px;background:none;border:0"><svg aria-hidden="true" class="ico" width="17" height="17" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg></button>
+<button class="btn" aria-label="Base map and layers" style="width:36px;height:36px;background:none;border:0"><svg aria-hidden="true" class="ico" width="17" height="17" viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5zM3 13l9 5 9-5"/></svg></button>
+<button class="btn" aria-label="Hide sidebar" style="width:36px;height:36px;background:none;border:0"><svg aria-hidden="true" class="ico" width="17" height="17" viewBox="0 0 24 24"><path d="M3 12s4-7 9-7 9 7 9 7-4 7-9 7-9-7-9-7zM4 4l16 16"/></svg></button></div>
+
+<!-- bottom toolbar -->
+<div class="abs glass" style="left:410px;bottom:24px;display:flex;align-items:center;gap:0;padding:5px 6px;border-radius:26px">
+<button class="tb on">Labels <kbd>L</kbd></button><button class="tb">Extended <kbd>O</kbd></button><button class="tb">Track labels <kbd>K</kbd></button><span class="sep"></span>
+<button class="tb">All tracks <kbd>T</kbd></button><button class="tb on">Persist <kbd>P</kbd></button><button class="tb">Multi <kbd>M</kbd></button><span class="sep"></span>
+<button class="tb">Military <kbd>U</kbd></button><button class="tb">Dim <kbd>B</kbd></button><button class="tb">Random <kbd>R</kbd></button></div>
+
+<!-- altitude legend -->
+<div class="abs glass" style="left:410px;bottom:84px;border-radius:18px;padding:10px 14px;width:200px"><div class="lbl" style="font-size:11px;display:flex;justify-content:space-between"><span>Altitude</span><span class="mono">ft</span></div><div style="height:6px;border-radius:3px;margin:7px 0 5px;background:linear-gradient(90deg,#F5994A,#F2E44A,#6BD96B,#4FD1D9,#5B8CFF,#B07BFF)"></div><div class="mono lbl" style="font-size:10px;display:flex;justify-content:space-between"><span>0</span><span>10k</span><span>20k</span><span>30k</span><span>40k+</span></div></div>
+
+<!-- zoom + 2D/3D -->
+<div class="abs" style="right:28px;bottom:44px;display:flex;align-items:flex-end;gap:10px">
+<div class="glass" style="width:44px;border-radius:22px;padding:2px;display:flex;flex-direction:column"><button class="btn" aria-label="Zoom in" style="width:40px;height:40px;background:none;border:0;font-size:20px">+</button><button class="btn" aria-label="Zoom out" style="width:40px;height:40px;background:none;border:0;font-size:20px">−</button></div>
+<div class="glass" style="display:flex;padding:3px;border-radius:22px;font-size:13px;font-weight:600"><span style="padding:9px 14px;border-radius:19px;background:rgba(255,255,255,.14)">2D</span><span style="padding:9px 14px;color:var(--muted)" title="Later phase">3D</span></div></div>
+<div class="abs mono" style="right:28px;bottom:8px;font-size:10px;color:#6B7280">© OpenFreeMap © OpenMapTiles Data from OpenStreetMap</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

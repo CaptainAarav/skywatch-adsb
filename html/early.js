@@ -186,7 +186,8 @@ const lopaStore = new Proxy(loStore, {
     },
     set(loStore, key, value) {
         key = String(window.location.origin) + String(window.location.pathname) + key;
-        return loStore[key] = value;
+        loStore[key] = value;
+        return true;        // the assigned value can be 0, and a falsish return throws in strict mode
     },
 });
 
@@ -284,57 +285,7 @@ function arraybufferRequest() {
     return xhrOverride;
 }
 
-if (usp.has('heatmap') || usp.has('realHeat')) {
-
-    heatmap = {};
-
-    heatmap.max = 32000;
-    heatmap.init = true;
-    heatmap.duration = 24;
-    heatmap.end = (new Date()).getTime();
-
-    let tmp = parseFloat(usp.get('heatDuration'));
-    if (!isNaN(tmp))
-        heatmap.duration = tmp;
-    if (heatmap.duration < 0.5)
-        heatmap.duration = 0.5;
-    tmp = parseFloat(usp.get('heatEnd'));
-    if (!isNaN(tmp))
-        heatmap.end -= tmp * 3600 * 1000;
-    if (usp.has('heatLines'))
-        heatmap.lines = true;
-    if (usp.has('heatfilters'))
-        heatmap.filters = true;
-    tmp = parseFloat(usp.get('heatAlpha'));
-    if (!isNaN(tmp)) {
-        heatmap.alpha = tmp;
-        console.log('heatmap.alpha = ' + tmp);
-    }
-    heatmap.radius = 2.5;
-    if (usp.has('realHeat')) {
-        heatmap.max = 50000;
-        heatmap.real = true;
-        heatmap.radius = 1.5;
-        heatmap.blur = 4;
-        heatmap.weight = 0.25;
-
-        tmp = parseFloat(usp.get('heatBlur'));
-        if (!isNaN(tmp))
-            heatmap.blur = tmp;
-
-        tmp = parseFloat(usp.get('heatWeight'));
-        if (!isNaN(tmp))
-            heatmap.weight = tmp;
-    }
-    tmp = parseFloat(usp.get('heatRadius'));
-    if (!isNaN(tmp))
-        heatmap.radius = tmp;
-    let val;
-    if (val = parseInt(usp.get('heatmap'), 10))
-        heatmap.max = val;
-    if (usp.has('heatManualRedraw'))
-        heatmap.manualRedraw = true;
-}
+// (the ?heatmap / ?realHeat canvas modes were dropped with the OpenLayers renderer)
 {
     let value;
     if ((value = usp.getFloat('pTracksInterval')) != null) {
@@ -629,7 +580,8 @@ if (uuid != null) {
 
 function get_history() {
     if (!loadFinished) {
-        if (!globeIndex && !uuid) {
+        // typeof: this can run before defaults.js / config.js have loaded (the flag is opt-in, so default off)
+        if (!globeIndex && !uuid && typeof enableUpintheair !== 'undefined' && enableUpintheair) {
             let request = jQuery.ajax({ url: 'upintheair.json',
                 cache: true,
                 dataType: 'json' });
@@ -862,23 +814,6 @@ if (!Object.entries) {
   };
 }
 
-let custom_layers = new ol.Collection();
-function add_kml_overlay(url, name, opacity) {
-    custom_layers.push(new ol.layer.Vector({
-        source: new ol.source.Vector({
-            url: url,
-            format: new ol.format.KML(),
-        }),
-        name: name,
-        title: 'custom_' + name,
-        type: 'overlay',
-        opacity: opacity,
-        visible: true,
-        zIndex: 99,
-    }));
-}
-
-
 function webAssemblyFail(e) {
     zstdDecode = null;
     zstd = false;
@@ -938,3 +873,13 @@ let onMobile = (
     }
 }
 )();
+
+
+// Skywatch ADS-B: HTML-escape helper for strings that come from aircraft data, the aircraft DB or network APIs
+function escHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
+}
+// only plain http(s) URLs may become a link target or image source
+function safeUrl(u) {
+    try { const x = new URL(String(u), location.href); return (x.protocol === 'https:' || x.protocol === 'http:') ? x.href : ''; } catch (e) { return ''; }
+}

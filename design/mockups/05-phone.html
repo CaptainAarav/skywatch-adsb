@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>tar1090 phone</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+:root{--glass:rgba(20,22,27,.78);--tile:rgba(255,255,255,.06);--line:rgba(255,255,255,.09);--text:#F5F7FA;--text2:#C3CAD3;--muted:#9BA3AD;--accent:#FFFFFF;--accent-bg:rgba(255,255,255,.14);--ok:#3DDC97}
+*{box-sizing:border-box}
+body{margin:0;background:#000}
+.mono{font-family:'JetBrains Mono',monospace}
+.glass{background:var(--glass);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);border:1px solid var(--line)}
+.abs{position:absolute}
+.btn{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--text);padding:0;font:inherit}
+.ico{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.tile{background:var(--tile);border-radius:16px;padding:10px 12px}
+.lbl{font-size:11px;color:var(--muted)}
+.v{font-size:19px;font-weight:600;margin-top:3px}
+.u{font-size:11px;color:var(--muted);font-weight:400;margin-left:2px}
+.chip{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:14px;background:var(--tile);font-size:12px;color:var(--text2)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+</style>
+</helmet>
+<div style="width:390px;height:844px;position:relative;overflow:hidden;background:#000;color:var(--text);font-family:Inter,system-ui,sans-serif">
+<svg aria-hidden="true" class="abs" viewBox="0 0 390 844" style="inset:0;width:390px;height:844px">
+<defs><path id="pl" d="M12 1.5c.9 0 1.6 1 1.6 2.2v5.6l8.4 4.9v2.2l-8.4-2.4v4.2l2.2 1.7v1.6L12 20.6l-3.8 1v-1.6l2.2-1.7v-4.2L2 16.4v-2.2l8.4-4.9V3.7c0-1.2.7-2.2 1.6-2.2z"/></defs>
+<rect width="390" height="844" fill="#000"/>
+<g fill="none" stroke="#2A2D33"><path d="M0 220C80 200 140 150 220 140S330 90 390 60"/><path d="M0 420C100 400 180 380 260 330S360 300 390 280"/><path d="M120 0C140 120 170 220 200 330S240 480 260 620"/></g>
+<g fill="none" stroke="#25282E" stroke-dasharray="3 7"><circle cx="195" cy="260" r="80"/><circle cx="195" cy="260" r="160"/></g>
+<g fill="#6B7280" font-family="Inter,sans-serif" font-size="12"><text x="210" y="250">Cranfield</text><text x="262" y="330">Luton</text></g>
+<circle cx="195" cy="260" r="4" fill="#FFFFFF"/>
+<polyline points="60,420 110,380 160,330 210,272" fill="none" stroke="#FFFFFF" stroke-width="2.2"/>
+<use href="#pl" x="198" y="250" width="24" height="24" fill="#FFFFFF" transform="rotate(40 210 262)"/>
+<use href="#pl" x="290" y="170" width="20" height="20" fill="#B07BFF" transform="rotate(120 300 180)"/>
+<use href="#pl" x="70" y="200" width="20" height="20" fill="#F2E44A" transform="rotate(300 80 210)"/>
+<use href="#pl" x="300" y="420" width="20" height="20" fill="#6BD96B" transform="rotate(210 310 430)"/>
+<use href="#pl" x="50" y="90" width="20" height="20" fill="#4FD1D9" transform="rotate(20 60 100)"/>
+</svg>
+
+<div class="abs" style="left:16px;right:16px;top:50px;display:flex;gap:10px">
+<label class="glass" style="flex:1;display:flex;align-items:center;gap:8px;height:48px;padding:0 16px;border-radius:24px"><svg aria-hidden="true" class="ico" width="16" height="16" viewBox="0 0 24 24" style="color:#9BA3AD"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Search aircraft</span><input type="search" placeholder="Search 71 aircraft" style="flex:1;min-width:0;background:none;border:0;outline:0;color:var(--text);font:inherit;font-size:15px"></label>
+<button class="glass btn" aria-label="Base map and layers" style="width:48px;height:48px"><svg aria-hidden="true" class="ico" width="19" height="19" viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5zM3 13l9 5 9-5"/></svg></button></div>
+
+<div class="abs glass" style="right:16px;top:114px;width:44px;border-radius:22px;padding:2px;display:flex;flex-direction:column">
+<button class="btn" aria-label="Home" style="width:40px;height:40px;background:none;border:0"><svg aria-hidden="true" class="ico" width="17" height="17" viewBox="0 0 24 24"><path d="M12 3l7 17-7-4-7 4z"/></svg></button>
+<button class="btn" aria-label="Filters" style="width:40px;height:40px;background:none;border:0"><svg aria-hidden="true" class="ico" width="17" height="17" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg></button>
+<button class="btn" aria-label="Settings" style="width:40px;height:40px;background:none;border:0"><svg aria-hidden="true" class="ico" width="17" height="17" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></button></div>
+
+<section aria-label="Selected aircraft" class="abs glass" style="left:8px;right:8px;bottom:8px;border-radius:32px 32px 28px 28px;padding:8px 16px 16px">
+<div style="width:40px;height:5px;border-radius:3px;background:rgba(255,255,255,.25);margin:0 auto 12px"></div>
+<div style="display:flex;align-items:center;gap:12px">
+<div style="flex:1;min-width:0"><div class="mono" style="font-size:18px;font-weight:600">BAW23K</div><div class="lbl" style="font-size:12px">British Airways · A320 · G-EUYH</div></div>
+<span class="chip"><span style="width:8px;height:8px;border-radius:50%;background:var(--ok)"></span>ADS-B</span></div>
+<div style="display:flex;align-items:center;gap:10px;margin:12px 0"><span class="mono" style="font-size:18px;font-weight:600">LHR</span><svg aria-hidden="true" width="100%" height="16" viewBox="0 0 100 16" preserveAspectRatio="none" style="flex:1"><path d="M0 10C30 3 60 3 96 9" fill="none" stroke="#fff" stroke-width="1.6"/></svg><span class="mono" style="font-size:18px;font-weight:600">EDI</span></div>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+<div class="tile"><div class="lbl">Altitude</div><div class="mono v">21,400<span class="u">ft</span></div></div>
+<div class="tile"><div class="lbl">Speed</div><div class="mono v">412<span class="u">kt</span></div></div>
+<div class="tile"><div class="lbl">V/S</div><div class="mono v" style="color:var(--ok)">+1.8<span class="u">k</span></div></div>
+<div class="tile"><div class="lbl">Track</div><div class="mono v">056°</div></div>
+<div class="tile"><div class="lbl">Squawk</div><div class="mono v">4721</div></div>
+<div class="tile"><div class="lbl">Distance</div><div class="mono v">38.2<span class="u">nm</span></div></div></div>
+<div style="display:flex;gap:8px;margin-top:12px">
+<button style="flex:1;height:48px;border-radius:24px;border:0;background:var(--accent);color:#000;font:inherit;font-size:15px;font-weight:600">Follow</button>
+<button style="flex:1;height:48px;border-radius:24px;border:0;background:var(--tile);color:var(--text);font:inherit;font-size:15px;font-weight:600">Show track</button>
+<button class="btn" aria-label="All details" style="width:48px;height:48px;border-radius:24px;background:var(--tile);border:0"><svg aria-hidden="true" class="ico" width="18" height="18" viewBox="0 0 24 24"><path d="m6 15 6-6 6 6"/></svg></button></div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

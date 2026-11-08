@@ -1,0 +1,38 @@
+/* Skywatch ADS-B: airline logo circles (ui/airlines.js). Monogram fallback, image on top when loaded. */
+.alogo {
+    --s: 22px;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: var(--s);
+    height: var(--s);
+    border-radius: 50%;
+    overflow: hidden;
+    vertical-align: middle;
+    background: var(--tile, rgba(255,255,255,.07));
+    border: 1px solid var(--line, rgba(255,255,255,.1));
+    box-sizing: border-box;
+    color: var(--text2, #b0b4bb);
+    font: 600 calc(var(--s) * .29) / 1 var(--font-mono, monospace);
+    letter-spacing: -.03em;
+}
+.alogo img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+.alogo.has .alogoMono { visibility: hidden; }
+.alogo.sm { margin-right: 6px; }
+.alogo.head { margin-right: 10px; }
+.ibTitleRow .alogo { align-self: center; }
+.mlPill .alogo { --s: 18px; margin-right: 6px; vertical-align: -4px; border-color: rgba(0,0,0,.25); }
+
+#highlighted_logo { display: inline-flex; vertical-align: middle; }
+#highlighted_logo .alogo { margin-right: 8px; }
+.ibLogo { display: inline-flex; flex: none; }
+.ibLogo[hidden] { display: none; }

@@ -17,28 +17,12 @@ g.mapOrientation = mapOrientation;
 
 // Define our global variables
 let tabHidden = false;
-let webgl = false;
-let webglFeatures = new ol.source.Vector();
-let webglLayer;
-let OLMap = null;
-let OLProj = null;
-let OLProjExtent = null;
-let PlaneIconFeatures = new ol.source.Vector();
-let trailGroup = new ol.Collection();
 let siteCircleLayer;
-let siteCircleFeatures = new ol.source.Vector();
 let locationDotLayer;
-let locationDotFeatures = new ol.source.Vector();
 let iconLayer;
 let trailLayers;
-let heatFeatures = [];
-let heatFeaturesSpread = 1024;
-let heatLayers = [];
-let realHeatFeatures = new ol.source.Vector();
-let realHeat;
 let iconCache = {};
 let addToIconCache = [];
-let lineStyleCache = {};
 let replayPlanes = {};
 let PlaneFilter   = {};
 let SelectedPlane = null;
@@ -100,11 +84,7 @@ let icaoParam = null;
 let newWidth = lineWidth;
 let SiteOverride = (SiteLat != null && SiteLon != null);
 let onJumpInput = null;
-let labelFill = null;
-let blackFill = null;
-let labelStroke = null;
-let labelStrokeNarrow = null;
-let bgFill = null;
+let selectedLabelFont = null;
 let legSel = -1;
 let geoMag = null;
 let solidT = false;
@@ -172,15 +152,6 @@ let MessageRate = 0;
 
 let layers;
 let layers_group;
-
-const nullStyle = new ol.style.Style({});
-
-let estimateStyle;
-let estimateStyleSlim;
-let badLine;
-let badLineMlat;
-let badDot;
-let badDotMlat;
 
 let showingReplayBar = false;
 
@@ -346,9 +317,6 @@ function processReceiverUpdate(data, init) {
     g.now = now;
 
     if (globeIndex) {
-        if ((showGrid || loStore['globeGrid'] == 'true')
-            && globeIndexNow[data.globeIndex] == null)
-            drawTileBorder(data);
         globeTrackedAircraft = data.global_ac_count_withpos;
         globeIndexNow[data.globeIndex] = data.now;
     }
@@ -450,7 +418,7 @@ function fetchDone(data) {
             if (firstFetch) {
                 firstFetch = false;
                 if (uuid || filterUuid) {
-                    const ext = myExtent(OLMap.getView().calculateExtent(OLMap.getSize()));
+                    const ext = myExtent(mapa.calcExtent());
                     let jump = true;
                     for (let i = 0; i < g.planesOrdered.length; ++i) {
                         const plane = g.planesOrdered[i];
@@ -462,7 +430,7 @@ function fetchDone(data) {
                     if (jump) {
                         followRandomPlane();
                         deselectAllPlanes();
-                        OLMap.getView().setZoom(6);
+                        mapa.setZoom(6);
                     }
                 }
                 checkRefresh();
@@ -547,26 +515,6 @@ function lookupAirlineForCallsign(callsign, registration, category) {
     return operatorsCache[prefix] || null;
 }
 
-function updateSelectedAirline(selected) {
-    if (!airlineLookup) {
-        jQuery('#selected_airline_row').addClass('hidden');
-        jQuery('#selected_airline').updateText('n/a');
-        jQuery('#selected_airline').attr('title', 'Airline lookup disabled');
-        return;
-    }
-    jQuery('#selected_airline_row').removeClass('hidden');
-
-    let operatorData = selected.getAirline();
-    if (operatorData) {
-        let title = operatorData.c ? operatorData.c + (operatorData.r ? ' / ' + '"' + operatorData.r + '"' : '') : (operatorData.r || '');
-        jQuery('#selected_airline').updateText(operatorData.n || 'n/a');
-        jQuery('#selected_airline').attr('title', title || '');
-    } else {
-        jQuery('#selected_airline').updateText('n/a');
-        jQuery('#selected_airline').attr('title', 'No airline match');
-    }
-}
-
 g.afterLoadDone = false;
 g.afterLoad = [];
 function runAfterLoad(func) {
@@ -634,8 +582,7 @@ function fetchData(options) {
         if (
             currentTime - lastFetch <= refreshMs
             || pendingFetches > 0
-            || OLMap.getView().getInteracting()
-            || OLMap.getView().getAnimating()
+            || mapa.isBusy()
         ) {
             return;
         }
@@ -1044,10 +991,6 @@ function earlyInitPage() {
         limitUpdates = 0;
     }
 
-    if (usp.has('nowebgl')) {
-        loStore['webgl'] = "false";
-    }
-
     if (usp.has('showGrid')) {
         showGrid = true;
         loStore['layer_site_pos'] = 'true';
@@ -1147,33 +1090,23 @@ function earlyInitPage() {
         userScale = loStore['userScale'];
     }
 
-    const slideBase = 0.6;
-    jQuery('#iconScaleSlider').slider({
-        value: Math.pow(iconScale, 1 / slideBase),
-        step: 0.02,
-        min: 0.1,
-        max: 3,
-        change: function(event, ui) {
-            iconScale = Math.pow(ui.value, slideBase);
-            checkScale();
-            mapRefresh();
-            loStore['iconScale'] = iconScale;
-        },
+    // Skywatch ADS-B: native range inputs in the settings dialog (ui/settings.js shows the value)
+    const iconRange = document.getElementById('iconScaleRange');
+    const userRange = document.getElementById('userScaleRange');
+    iconRange.value = iconScale;
+    userRange.value = userScale;
+    iconRange.addEventListener('change', function() {
+        iconScale = Number(this.value);
+        checkScale();
+        mapRefresh();
+        loStore['iconScale'] = iconScale;
     });
-
-    jQuery('#userScaleSlider').slider({
-        value: Math.pow(userScale, 1 / slideBase),
-        step: 0.02,
-        min: 0.5,
-        max: 3,
-        change: function(event, ui) {
-            userScale = Math.pow(ui.value, slideBase);
-            checkScale();
-            mapRefresh();
-            loStore['userScale'] = userScale;
-
-            setGlobalScale(userScale);
-        },
+    userRange.addEventListener('change', function() {
+        userScale = Number(this.value);
+        checkScale();
+        mapRefresh();
+        loStore['userScale'] = userScale;
+        setGlobalScale(userScale);
     });
     setGlobalScale(userScale, "init");
 
@@ -1265,6 +1198,13 @@ function earlyInitPage() {
         }, 30000);
     }
 
+    // one-time: labels are on by default now (callsign + airline logo); reset older saved L / O choices
+    try {
+        if (loStore['labelsDefaultV'] !== '1') {
+            delete loStore['enableLabels']; delete loStore['extendedLabels'];
+            loStore['labelsDefaultV'] = '1';
+        }
+    } catch (e) {}
     if (loStore['enableLabels'] == 'true' || usp.has('enableLabels')
         || (loStore['enableLabels'] == undefined && defaultLabels)) {
         toggleLabels();
@@ -1298,37 +1238,14 @@ function earlyInitPage() {
         buttonActive('#P', noVanish);
     }
 
-    jQuery('#tabs').tabs({
-        active: loStore['active_tab'],
-        activate: function (event, ui) {
-            loStore['active_tab'] = jQuery("#tabs").tabs("option", "active");
-        },
-        collapsible: true
-    });
 
     // Set page basics
-    document.title = PageName;
+    document.title = PROJECT_NAME;   // the name is fixed (html/project.js); TAR1090_PAGETITLE / PageName no longer set the title
 
     initializeUnitsSelector();
     TAR.planeMan.init();
 
-    if (loStore['sidebar_width'] != null)
-        jQuery('#sidebar_container').width(loStore['sidebar_width']);
-    else
-        jQuery('#sidebar_container').width('25%');
-
-    if (jQuery('#sidebar_container').width() > jQuery(window).innerWidth() *0.8)
-        jQuery('#sidebar_container').width('30%');
-
-    loStore['sidebar_width'] = jQuery('#sidebar_container').width();
-
-    jQuery('#sidebar_container').on('resize', function() {
-        loStore['sidebar_width'] = jQuery('#sidebar_container').width();
-    });
-
-    // Set up event handlers for buttons
-    jQuery("#expand_sidebar_button").click(expandSidebar);
-    jQuery("#shrink_sidebar_button").click(showMap);
+    // (sidebar width, splitter and expand/shrink buttons: replaced by the floating panels in ui/shell.js)
 
     jQuery("#altimeter_form").submit(onAltimeterChange);
     jQuery("#altimeter_set_standard").click(onAltimeterSetStandard);
@@ -1343,14 +1260,7 @@ function earlyInitPage() {
     jQuery("#source_filter_reset_button").click(onResetSourceFilter);
     jQuery("#flag_filter_reset_button").click(onResetFlagFilter);
 
-    // Initialize other controls
-    jQuery("#search_form").submit(onSearch);
-    jQuery("#search_clear_button").click(onSearchClear);
-    jQuery("#jump_clear_button").click(function() {
-        jQuery("#jump_input").val("");
-        jQuery("#jump_input").blur();
-    });
-    jQuery("#jump_form").submit(onJump);
+    // Search: the unified top-bar search is wired in ui/shell.js (onUnifiedSearch)
 
     jQuery("#show_trace").click(toggleShowTrace);
     jQuery("#trace_back_1d").click(function() {shiftTrace(-1)});
@@ -1388,25 +1298,7 @@ function earlyInitPage() {
     jQuery("#leg_prev").click(function() {legShift(-1)});
     jQuery("#leg_next").click(function() {legShift(1)});
 
-    jQuery('#settingsCog').on('click', function() {
-        jQuery('#settings_infoblock').toggle();
-    });
-
-    if (onMobile) {
-        jQuery('#fullscreenButton').on('click', function() {
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen();
-            } else if (document.exitFullscreen) {
-                document.exitFullscreen();
-            }
-        });
-    } else {
-        jQuery('#fullscreenButton').hide();
-    }
-
-    jQuery('#settings_close').on('click', function() {
-        jQuery('#settings_infoblock').hide();
-    });
+    // Skywatch ADS-B: the settings dialog is opened/closed by ui/settings.js
 
     jQuery('#groundvehicle_filter').on('click', function() {
         filterGroundVehicles(true);
@@ -1453,9 +1345,7 @@ function earlyInitPage() {
         setState: function(state) {
             geomUseEGM = state;
             if (geomUseEGM) {
-jQuery('#selected_altitude_geom1')
-                jQuery('#selected_altitude_geom1_title').updateText('EGM96 altitude');
-                jQuery('#selected_altitude_geom2_title').updateText('Geom. EGM96');
+                jQuery('#selected_altitude_geom2_title').updateText('Geometric (EGM96)');
                 let egm = loadEGM();
                 if (egm) {
                     egm.addEventListener('load', function() {
@@ -1465,8 +1355,7 @@ jQuery('#selected_altitude_geom1')
                     return;
                 }
             } else {
-                jQuery('#selected_altitude_geom1_title').updateText('WGS84 altitude');
-                jQuery('#selected_altitude_geom2_title').updateText('Geom. WGS84');
+                jQuery('#selected_altitude_geom2_title').updateText('Geometric');
             }
             if (loadFinished) {
                 remakeTrails();
@@ -1483,11 +1372,9 @@ jQuery('#selected_altitude_geom1')
         setState: function(state) {
             baroUseQNH = state;
             if (baroUseQNH) {
-                jQuery('#selected_altitude1_title').updateText('Corr. baro-alt');
-                jQuery('#selected_altitude2_title').updateText('Corr. baro.');
+                jQuery('#selected_altitude2_title').updateText('Barometric (QNH)');
                 jQuery('#infoblock_altimeter').removeClass('hidden');
             } else {
-                jQuery('#selected_altitude1_title').updateText('Baro. altitude');
                 jQuery('#selected_altitude2_title').updateText('Barometric');
                 jQuery('#infoblock_altimeter').addClass('hidden');
             }
@@ -1668,7 +1555,7 @@ jQuery('#selected_altitude_geom1')
             if (state)
                 monochromeTracks = null;
             else
-                monochromeTracks = "#000000";
+                monochromeTracks = "#c4c8d0";   // light grey: black would vanish on the black map
 
             remakeTrails();
         }
@@ -1679,49 +1566,14 @@ jQuery('#selected_altitude_geom1')
         display: "Sidebar visible",
         container: null,
         checkbox: null,
-        button: '#toggle_sidebar_button',
         init: (onMobile ? false : true),
         setState: function (state) {
-            if (state) {
-                jQuery("#sidebar_container").show();
-                jQuery("#expand_sidebar_button").show();
-                jQuery("#toggle_sidebar_button").removeClass("show_sidebar");
-                jQuery("#toggle_sidebar_button").addClass("hide_sidebar");
-                if (!g.sidebar_initiated) {
-                    g.sidebar_initiated = true;
-                    // Set up map/sidebar splitter
-                    jQuery("#sidebar_container").resizable({
-                        handles: {
-                            w: '#splitter'
-                        },
-                        minWidth: 150,
-                        maxWidth: (jQuery(window).innerWidth() *0.8),
-                    });
-
-                    jQuery("#splitter").dblclick(function() {
-                        jQuery('#legend').hide();
-                        jQuery('#sidebar_container').width('auto');
-                        updateMapSize();
-                        loStore['sidebar_width'] = jQuery('#sidebar_container').width();
-                        jQuery('#sidebar_container').width(loStore['sidebar_width']);
-                        jQuery('#legend').show();
-                    });
-
-                }
-                if (!hideButtons) {
-                    jQuery('#splitter').show();
-                }
-            } else {
-                if (loadFinished) {
-                    jQuery("#sidebar_container").hide();
-                    jQuery("#expand_sidebar_button").hide();
-                    jQuery("#toggle_sidebar_button").removeClass("hide_sidebar");
-                    jQuery("#toggle_sidebar_button").addClass("show_sidebar");
-                }
-            }
-            if (loadFinished) {
-                updateMapSize();
-            }
+            // Skywatch ADS-B: the aircraft list is a floating panel (ui/shell.js)
+            jQuery("#sidebar_container").toggle(!!state);
+            if (typeof shellSync == 'function')
+                shellSync();
+            if (loadFinished && state)
+                TAR.planeMan.redraw();
         },
     });
 
@@ -1776,6 +1628,10 @@ jQuery('#selected_altitude_geom1')
                 } else {
                     jQuery('#routeRow').hide();
                     jQuery('#routeRowHighlighted').hide();
+                }
+                if (loadFinished) {
+                    TAR.planeMan.redraw(); // route column only exists while lookups are on
+                    typeof updateListChips == 'function' && updateListChips();
                 }
             }
         });
@@ -1840,11 +1696,6 @@ jQuery('#selected_altitude_geom1')
         }
     })
 
-    // Force map to redraw if sidebar container is resized - use a timer to debounce
-    jQuery("#sidebar_container").on("resize", function() {
-        clearTimeout(mapResizeTimeout);
-        mapResizeTimeout = setTimeout(updateMapSize, 20);
-    });
 
     filterGroundVehicles(false);
     filterBlockedMLAT(false);
@@ -1882,41 +1733,56 @@ jQuery('#selected_altitude_geom1')
     }
 }
 
-function initLegend(colors) {
-    let html = '';
-    html += '<div class="legendTitle" style="background-color:' + colors['adsb'] + ';">ADS-B</div>';
-    html += '<div class="legendTitle" style="background-color:' + colors['uat'] + ';">UAT / ADS-R</div>';
-    html += '<div class="legendTitle" style="background-color:' + colors['mlat'] + ';">MLAT</div>';
-    html += '<br>';
-    html += '<div class="legendTitle" style="background-color:' + colors['tisb'] + ';">TIS-B</div>';
-    if (!globeIndex)
-        html += '<div class="legendTitle" style="background-color:' + colors['modeS'] + ';">Mode-S</div>';
-    if (globeIndex)
-        html += '<div class="legendTitle" style="background-color:' + colors['other'] + ';">Other</div>';
+// Source groups share one marker shape + colour everywhere (table rows,
+// legend, source filter chips): ADS-B family, MLAT, TIS-B, everything else.
+function sourceGroup(dataSource) {
+    switch (dataSource) {
+        case 'adsb': case 'uat': case 'adsr':
+            return 'adsb';
+        case 'mlat':
+            return 'mlat';
+        case 'tisb':
+            return 'tisb';
+        default:
+            return 'other';
+    }
+}
+
+const emergencySquawks = new Set(['7500', '7600', '7700']);
+
+function initLegend() {
+    const item = function (group, text, title) {
+        return '<span class="legendItem src-' + group + '" title="' + title + '">' + text + '</span>';
+    };
+    let other = ['Mode-S', jaeroLabel];
     if (aiscatcher_server)
-        html += '<div class="legendTitle" style="background-color:' + colors['ais'] + ';">AIS</div>';
-    html += '<div class="legendTitle" style="background-color:' + colors['adsc'] + `;">${jaeroLabel}</div>`;
+        other.push('AIS');
+    let html = '';
+    html += item('adsb', 'ADS-B', 'ADS-B, UAT, ADS-R');
+    html += item('mlat', 'MLAT', 'Multilateration');
+    html += item('tisb', 'TIS-B', 'Traffic information service broadcast');
+    html += item('other', 'Other', other.join(', ') + ', no position');
 
     document.getElementById('legend').innerHTML = html;
 }
 
-function initSourceFilter(colors) {
-    const createFilter = function (color, text, key) {
-        return '<li class="ui-widget-content" style="background-color:' + color + ';" id="source-filter-' + key + '">' + text + '</li>';
+function initSourceFilter() {
+    const createFilter = function (text, key) {
+        return '<li class="ui-widget-content src-' + sourceGroup(key) + '" id="source-filter-' + key + '">' + text + '</li>';
     };
 
     let html = '';
-    html += createFilter(colors['adsb'], 'ADS-B', sources[0]);
+    html += createFilter('ADS-B', sources[0]);
 
-    html += createFilter(colors['uat'], 'UAT / ADS-R', sources[1][0]);
-    html += createFilter(colors['mlat'], 'MLAT', sources[2]);
-    html += createFilter(colors['tisb'], 'TIS-B', sources[3]);
-    html += createFilter(colors['modeS'], 'Mode-S', sources[4]);
-    html += createFilter(colors['other'], 'Other', sources[5]);
-    html += createFilter(colors['adsc'], jaeroLabel, sources[6]);
+    html += createFilter('UAT / ADS-R', sources[1][0]);
+    html += createFilter('MLAT', sources[2]);
+    html += createFilter('TIS-B', sources[3]);
+    html += createFilter('Mode-S', sources[4]);
+    html += createFilter('Other', sources[5]);
+    html += createFilter(jaeroLabel, sources[6]);
 
     if (aiscatcher_server) {
-        html += createFilter(colors['ais'], 'AIS', sources[7]);
+        html += createFilter('AIS', sources[7]);
     }
 
     document.getElementById('sourceFilter').innerHTML = html;
@@ -1939,16 +1805,15 @@ function initSourceFilter(colors) {
     });
 }
 
-function initFlagFilter(colors) {
-    const createFilter = function (color, text, key) {
-        return '<li class="ui-widget-content" style="background-color:' + color + ';" id="flag-filter-' + key + '">' + text + '</li>';
+function initFlagFilter() {
+    const createFilter = function (text, key) {
+        return '<li class="ui-widget-content" id="flag-filter-' + key + '">' + text + '</li>';
     };
 
     let html = '';
-    html += createFilter(colors['tisb'], 'Military', flagFilterValues[0]);
-    //html += createFilter(colors['mlat'], 'Interesting');
-    html += createFilter(colors['uat'], 'PIA', flagFilterValues[1]);
-    html += createFilter(colors['adsb'], 'LADD', flagFilterValues[2]);
+    html += createFilter('Military', flagFilterValues[0]);
+    html += createFilter('PIA', flagFilterValues[1]);
+    html += createFilter('LADD', flagFilterValues[2]);
 
     document.getElementById('flagFilter').innerHTML = html;
 
@@ -2116,8 +1981,9 @@ function parseHistory() {
         for (let i in g.planesOrdered) {
             let plane = g.planesOrdered[i];
 
-            if (plane.position && SitePosition && !pTracks)
-                plane.sitedist = ol.sphere.getDistance(SitePosition, plane.position);
+            // Skywatch ADS-B privacy: distances from the receiver (with the aircraft positions they reveal where it is) only when the site position is shown
+            if (plane.position && SitePosition && SiteShow && !pTracks)
+                plane.sitedist = mapgeo.getDistance(SitePosition, plane.position);
 
             if (uatNoTISB && plane.uat && plane.type && plane.type.substring(0,4) == "tisb") {
                 plane.last_message_time -= 999;
@@ -2415,10 +2281,6 @@ function startPage() {
         showReplayBar();
     }
 
-    if (heatmap) {
-        drawHeatmap();
-    }
-
     initVisibilityChange();
 
     if (pTracks)
@@ -2462,7 +2324,7 @@ function startPage() {
             const point = utils.geodesic_destination(center, bearing, radius);
 
             if (!geom)
-                geom = new ol.geom.LineString([point]);
+                geom = new mapgeo.LineString([point]);
             else
                 geom.appendCoordinate(point);
         }
@@ -2476,149 +2338,26 @@ function startPage() {
 //
 //
 
-function webglAddLayer() {
-    let success = false;
+// what a click on the map selected: planeHex (an aircraft), trailHex (a trail) or trailTS (a time on a trace)
+function mapClickResult(planeHex, trailHex, trailTS, isDblclick) {
+    const dblclick = isDblclick && !showTrace;
 
-    const icao = 'c0ffee';
-
-    if (icaoFilter != null) {
-        icaoFilter.push(icao);
+    if (showTrace && trailTS) {
+        planeHex = null;
+        gotoTime(trailTS);
+    }
+    if (planeHex) {
+        selectPlaneByHex(planeHex, {noDeselect: dblclick, follow: dblclick});
+    } else if (trailHex) {
+        selectPlaneByHex(trailHex, {noDeselect: true});
     }
 
-    processAircraft({hex: icao, lat: CenterLat, lon: CenterLon, type: 'tisb_other', seen: 0, seen_pos: 0,
-        alt_baro: 25000, });
-    let plane = g.planes[icao];
-
-    if (spritesDataURL) {
-        spriteSrc = spritesDataURL;
+    if (!planeHex && !trailHex && !multiSelect && !showTrace) {
+        if (onlySelected)
+            toggleIsolation();
+        deselect(SelectedPlane);
+        refreshFilter();
     }
-    //console.log(spriteSrc);
-    try {
-        let glStyle = {
-            'icon-src': spriteSrc,
-            'icon-color': [
-                    'color',
-                    [ 'get', 'r' ],
-                    [ 'get', 'g' ],
-                    [ 'get', 'b' ],
-                    1
-            ],
-            'icon-size': [ glIconSize, glIconSize ],
-            'icon-offset': [
-                'array',
-                [ 'get', 'sx' ],
-                [ 'get', 'sy' ]
-            ],
-            'icon-rotation': [ 'get' , 'rotation' ],
-            'icon-rotate-with-view': false,
-            //'icon-scale': [ 'array', ['get', 'scale'], ['get', 'scale'] ],
-            'icon-scale': [ 'abs', ['get', 'scale']],
-        };
-        if (heatmap) {
-            glStyle = {
-                'circle-radius': heatmap.radius * globalScale * 1.25,
-                'circle-displacement': [0, 0],
-                'circle-opacity': heatmap.alpha || webglIconOpacity,
-                'circle-fill-color' : [
-                    'color',
-                    [ 'get', 'r' ],
-                    [ 'get', 'g' ],
-                    [ 'get', 'b' ],
-                    1
-                ]
-            }
-        }
-
-        webglLayer = new ol.layer.WebGLPoints({
-            name: 'webglLayer',
-            type: 'overlay',
-            title: 'Aircraft pos. webGL',
-            source: webglFeatures,
-            declutter: false,
-            zIndex: 200,
-            style: glStyle,
-            renderBuffer: renderBuffer,
-        });
-        if (!webglLayer)
-            return false;
-        if (loStore['webglTested'] != 'true' && !webglLayer.getRenderer()) {
-            return false;
-        }
-
-        layers.push(webglLayer);
-
-        webgl = true;
-
-        // only test webgl once in every browser
-        // after that assume that it's working
-
-        if (loStore['webglTested'] != 'true') {
-            plane.visible = true;
-            plane.updateMarker();
-            OLMap.renderSync();
-        }
-
-        loStore['webglTested'] = 'true';
-        success = true;
-    } catch (error) {
-        try {
-            layers.remove(webglLayer);
-        } catch (error) {
-            console.error(error);
-        }
-        console.error(error);
-        success = false;
-    }
-    delete g.planes[plane.icao];
-    g.planesOrdered.splice(g.planesOrdered.indexOf(plane), 1);
-    plane.destroy();
-
-    if (icaoFilter != null) {
-        icaoFilter.pop(icao);
-    }
-
-    return success;
-}
-
-function webglInit() {
-    let init = true;
-
-    new Toggle({
-        key: "webgl",
-        display: "WebGL",
-        container: "#settingsRight",
-        init: init,
-        setState: function(state) {
-            if (state) {
-                if (webglLayer) {
-                    webgl = true;
-                } else {
-                    webgl = webglAddLayer();
-                }
-
-                if (!webgl) {
-                    console.error('Unable to initialize the webGL Layer! Falling back to non-webGL icons, performance will be reduced significantly!');
-                    webglLayer = null;
-                }
-                if (!webgl)
-                    return false;
-                // returning false means the toggle will flip back as the activation of the webgl layer was unsuccessful.
-            } else {
-                webgl = false;
-                if (loadFinished) {
-                    webglFeatures && webglFeatures.clear();
-                    for (let i in g.planesOrdered) {
-                        const plane = g.planesOrdered[i];
-                        delete plane.glMarker;
-                    }
-                }
-            }
-            if (loadFinished) {
-                refreshFilter();
-                checkPointermove();
-            }
-        },
-    });
 }
 
 function ol_map_init() {
@@ -2630,31 +2369,15 @@ function ol_map_init() {
         console.log(spritesDataURL);
     }
 
-    OLMap = new ol.Map({
-        target: 'map_canvas',
-        layers: layers_group,
-        view: new ol.View({
-            center: ol.proj.fromLonLat([CenterLon, CenterLat]),
-            zoom: g.zoomLvl,
-            multiWorld: true,
-        }),
-        controls: [new ol.control.Zoom({delta: 1, duration: 0, target: 'map_canvas',}),
-            new ol.control.Attribution({collapsed: true}),
-            new ol.control.ScaleLine({units: units_for('distance', DisplayUnits)})
-        ],
-        interactions: new ol.interaction.defaults({altShiftDragRotate:false, pinchRotate:false,}),
-        maxTilesLoading: 4,
-    });
+        mlMapInit();
 
-    console.time('webglInit');
-    webglInit();
-    console.timeEnd('webglInit');
+    
 
     if (showZoomLevel)
         jQuery('#zoomLevel').show();
 
     let foundType = false;
-    ol.control.LayerSwitcher.forEachRecursive(layers_group, function(lyr) {
+    mapa.forEachLayer(function(lyr) {
         if (lyr.get('name') && lyr.get('type') == 'base') {
             if (MapType_tar1090 == lyr.get('name')) {
                 foundType = true;
@@ -2662,10 +2385,12 @@ function ol_map_init() {
         }
     });
     if (!foundType) {
-        MapType_tar1090 = "osm";
+        // unknown or legacy (OpenLayers era) id: never leave the map blank
+        MapType_tar1090 = "CartoDarkMatterVector";
+        try { delete loStore['MapType_tar1090']; } catch (e) {}
     }
 
-    ol.control.LayerSwitcher.forEachRecursive(layers_group, function(lyr) {
+    mapa.forEachLayer(function(lyr) {
         if (!lyr.get('name'))
             return;
 
@@ -2710,7 +2435,7 @@ function ol_map_init() {
     })
 
     if (!foundType) {
-        ol.control.LayerSwitcher.forEachRecursive(layers_group, function(lyr) {
+        mapa.forEachLayer(function(lyr) {
             if (foundType)
                 return;
             if (lyr.get('type') === 'base') {
@@ -2720,140 +2445,31 @@ function ol_map_init() {
         });
     }
 
-    OLProj = OLMap.getView().getProjection();
-    OLProjExtent = OLProj.getExtent();
+    
 
-    OLMap.getView().setRotation(g.mapOrientation); // adjust orientation
+    mapa.setRotation(g.mapOrientation); // adjust orientation
 
-    OLMap.addControl(new ol.control.LayerSwitcher({
-        groupSelectStyle: 'none',
-        activationMode: 'click', // click sucks in the current implementation
-        target: 'map_canvas',
-    }));
+    // Skywatch ADS-B: base maps and overlays are chosen in the settings dialog (ui/settings.js),
+    // which replaces the ol-layerswitcher control.
 
-    // adjust tooltip for layer selector
-    document.querySelector('button[title="Legend"]').title = "Map Layers";
-
-    OLMap.on('movestart', function(event) {
-        if (webgl) {
-            if (TrackedAircraftPositions > webglIconMapMoveOpacityCrowdedThreshold) {
-                webglLayer.setOpacity(webglIconMapMoveOpacityCrowded)
-            } else {
-                webglLayer.setOpacity(webglIconMapMoveOpacity)
-            }
-        }
-    });
-
-    OLMap.on('moveend', function(event) {
-        checkMovement();
-        webgl && webglLayer.setOpacity(webglIconOpacity );
-    });
-
-    OLMap.on(['click', 'dblclick'], function(evt) {
-        let trailHex = null;
-        let trailTS = null;
-        let planeHex = null;
-
-        let source = webgl ? webglFeatures : PlaneIconFeatures;
-        let evtCoords = evt.map.getCoordinateFromPixel(evt.pixel);
-        let feature = source.getClosestFeatureToCoordinate(evtCoords);
-        if (feature) {
-            let fPixel = evt.map.getPixelFromCoordinate(feature.getGeometry().getCoordinates());
-            let a = fPixel[0] - evt.pixel[0];
-            let b = fPixel[1] - evt.pixel[1];
-            let c = globalScale * (onMobile ? 30 : 20);
-            if (a**2 + b**2 < c**2) {
-                planeHex = feature.hex;
-            } else {
-                feature = null;
-            }
-        }
-
-        if (!planeHex || showTrace) {
-            let features = [];
-            let trailFeature = null;
-            if (1) {
-                for (const layer of trailGroup.getArray()) {
-                    if (!layer.getVisible()) {
-                        continue;
-                    }
-                    const source = layer.getSource();
-                    trailFeature = source.getClosestFeatureToCoordinate(evtCoords);
-                    if (trailFeature) {
-                        features.push(trailFeature);
-                    }
-                }
-            } else {
-                // old variant, slower in most cases
-                features = evt.map.getFeaturesAtPixel(
-                    evt.pixel,
-                    {
-                        layerFilter: function(layer) { return (layer.get('isTrail') == true); },
-                        hitTolerance: globalScale * (onMobile ? 30 : 20),
-                    }
-                );
-            }
-            if (features.length > 0) {
-                let hitTolerance = globalScale * (onMobile ? 30 : 20);
-                // just rubber band to the closest trace for showTrace
-                if (showTrace) { hitTolerance = 10000; }
-                let close2 = hitTolerance * hitTolerance;
-                let closest = null;
-                for (let j in features) {
-                    let feature = features[j];
-                    let coords;
-                    if (feature.isLabel)
-                        coords = [feature.getGeometry().getCoordinates()];
-                    else
-                        coords = feature.getGeometry().getCoordinates();
-
-                    for (let k in coords) {
-                        let fPixel = evt.map.getPixelFromCoordinate(coords[k]);
-                        let a = fPixel[0] - evt.pixel[0];
-                        let b = fPixel[1] - evt.pixel[1];
-                        let distance2 = a**2 + b**2;
-                        if (distance2 < close2) {
-                            closest = feature;
-                            close2 = distance2;
-                        }
-                    }
-                }
-                if (closest) {
-                    if (showTrace)
-                        trailTS = closest.timestamp;
-                    else
-                        trailHex = closest.hex;
-                }
-            }
-        }
-
-        const dblclick = (evt.type === 'dblclick') && !showTrace;
-
-        if (showTrace && trailTS) {
-            planeHex = null;
-            gotoTime(trailTS);
-        }
-        //console.log(`planeHex: ${planeHex} trailHex: ${trailHex}`);
-        if (planeHex) {
-            selectPlaneByHex(planeHex, {noDeselect: dblclick, follow: dblclick});
-        } else if (trailHex) {
-            selectPlaneByHex(trailHex, {noDeselect: true});
-        }
-
-        if (!planeHex && !trailHex && !multiSelect && !showTrace) {
-            if (onlySelected)
-                toggleIsolation();
-            deselect(SelectedPlane);
-            refreshFilter();
-        }
-        evt.stopPropagation();
-    });
+    
 
     // show the hover box
     checkPointermove();
 }
 
 function initMapEarly() {
+
+    // One-time v2 migration: older saved base map / Dim choices must not hide the new default.
+    try {
+        if (loStore['uiVersion'] !== 'v4') {
+            delete loStore['MapType_tar1090'];
+            // receiver position and actual range outline are off by default now
+            delete loStore['layer_locationDot']; delete loStore['layer_site_pos']; delete loStore['layer_actualRangeOutline'];
+            loStore['MapDim'] = 'false';
+            loStore['uiVersion'] = 'v4';
+        }
+    } catch (e) {}
 
     // Load stored map settings if present
     if (overrideMapType)
@@ -2866,22 +2482,11 @@ function initMapEarly() {
 
     // Initialize OpenLayers
 
-    layers_group = createBaseLayers();
-    layers = layers_group.getLayers();
+        mlCreateLayers();
 
     //add_kml_overlay('https://developers.google.com/kml/documentation/KML_Samples.kml', 'samples', 0.8);
 
-    siteCircleLayer = new ol.layer.Vector({
-        name: 'siteCircles',
-        type: 'overlay',
-        title: 'Range rings',
-        source: siteCircleFeatures,
-        visible: SiteCircles,
-        zIndex: 100,
-        renderOrder: null,
-        renderBuffer: renderBuffer,
-    });
-    layers.push(siteCircleLayer);
+        siteCircleLayer = mlBuiltinLayer({name: 'siteCircles', type: 'overlay', title: 'Range rings', visible: SiteCircles});
 
     siteCircleLayer.on('change:visible', function(evt) {
         if (evt.target.getVisible()) {
@@ -2891,23 +2496,8 @@ function initMapEarly() {
 }
 
 function showHideButtons() {
-    if (hideButtons) {
-        jQuery('#header_top').hide();
-        jQuery('#header_side').hide();
-        jQuery('#splitter').hide();
-        jQuery('#tabs').hide();
-        jQuery('#filterButton').hide();
-        jQuery('.ol-zoom').hide();
-        jQuery('.layer-switcher').hide();
-    } else {
-        jQuery('#header_top').show();
-        jQuery('#header_side').show();
-        jQuery('#splitter').show();
-        jQuery('#tabs').show();
-        jQuery('#filterButton').show();
-        jQuery('.ol-zoom').show();
-        jQuery('.layer-switcher').show();
-    }
+    // Skywatch ADS-B: Shift+H hides every floating control (ui/shell.css .buttonsHidden)
+    document.body.classList.toggle('buttonsHidden', !!hideButtons);
 }
 
 // Initalizes the map and starts up our timers to call various functions
@@ -2919,8 +2509,7 @@ function initMap() {
     g.zoomLvl = Number(lopaStore['zoomLvl']) || DefaultZoomLvl;
     g.zoomLvlCache = g.zoomLvl;
 
-    // always hide this, it really only shows the number of positions saved
-    jQuery('#dump1090_total_history_td').hide();
+    // (History tile: shown in the redesigned list, mockup 02)
 
     if ((globeIndex && aggregator) || filterUuid) {
         jQuery('#dump1090_message_rate_td').hide();
@@ -2929,17 +2518,8 @@ function initMap() {
         jQuery('#RP').show();
     }
 
-    locationDotLayer = new ol.layer.Vector({
-        name: 'locationDot',
-        type: 'overlay',
-        title: (receiverJson && receiverJson.lat != null) ? 'Site position' : 'Your position',
-        source: locationDotFeatures,
-        visible: SiteShow,
-        zIndex: 100,
-        renderOrder: null,
-        renderBuffer: renderBuffer,
-    });
-    layers.push(locationDotLayer);
+        locationDotLayer = mlBuiltinLayer({name: 'locationDot', type: 'overlay',
+        title: (receiverJson && receiverJson.lat != null) ? 'Site position' : 'Your position', visible: SiteShow});
 
     locationDotLayer.on('change:visible', function(evt) {
         if (evt.target.getVisible()) {
@@ -2954,71 +2534,19 @@ function initMap() {
         actualOutline.refresh = 15000;
         actualOutline.url = multiOutline ? 'data/multiOutline.json' : 'data/outline.json';
 
-        actualOutline.features = new ol.source.Vector();
-        actualOutline.style = new ol.style.Style({
-            fill: null,
-            stroke: new ol.style.Stroke({
-                color: actual_range_outline_color,
-                width: actual_range_outline_width,
-                lineDash: actual_range_outline_dash,
-            }),
-        });
-        actualOutline.layer = new ol.layer.Vector({
-            name: 'actualRangeOutline',
-            type: 'overlay',
-            title: 'actual range outline',
-            source: actualOutline.features,
-            zIndex: 101,
-            renderBuffer: renderBuffer,
-            style: actualOutline.style,
-            visible: actual_range_show,
-        });
-        layers.push(actualOutline.layer);
+                actualOutline.features = new MLSource('outline');
+        actualOutline.layer = mlBuiltinLayer({name: 'actualRangeOutline', type: 'overlay', title: 'actual range outline', visible: actual_range_show});
+    
     }
     if (calcOutlineData) {
-        calcOutlineLayer = new ol.layer.Vector({
-            name: 'calcOutline',
-            type: 'overlay',
-            title: 'terrain-based range outline',
-            source: calcOutlineFeatures,
-            zIndex: 100,
-            renderOrder: null,
-            renderBuffer: renderBuffer,
-        });
-        layers.push(calcOutlineLayer);
+                calcOutlineLayer = mlBuiltinLayer({name: 'calcOutline', type: 'overlay', title: 'terrain-based range outline', visible: true});
+    
         drawUpintheair();
     }
 
 
-    const dummyLayer = new ol.layer.Vector({
-        name: 'dummy',
-        renderOrder: null,
-        source: new ol.source.Vector(),
-    });
-
-    trailGroup.push(dummyLayer);
-
-    trailLayers = new ol.layer.Group({
-        name: 'ac_trail',
-        title: 'Aircraft trails',
-        type: 'overlay',
-        layers: trailGroup,
-        zIndex: 150,
-    });
-
-    layers.push(trailLayers);
-
-    iconLayer = new ol.layer.Vector({
-        name: 'iconLayer',
-        type: 'overlay',
-        title: 'Aircraft positions',
-        source: PlaneIconFeatures,
-        declutter: false,
-        zIndex: 200,
-        renderBuffer: renderBuffer,
-    });
-    layers.push(iconLayer);
-
+        trailLayers = mlBuiltinLayer({name: 'ac_trail', title: 'Aircraft trails', type: 'overlay', visible: true});
+    iconLayer = mlBuiltinLayer({name: 'iconLayer', type: 'overlay', title: 'Aircraft positions', visible: true});
 
     ol_map_init();
 
@@ -3052,73 +2580,19 @@ function initMap() {
             if (loadFinished) {
                 refreshFeatures();
                 remakeTrails();
+                TAR.altitudeChart.render();
             }
         }
     });
 
-    tableColorsLight = tableColors;
-    tableColorsDark = JSON.parse(JSON.stringify(tableColors));
-    let darkVals = Object.values(tableColorsDark);
-    for (let i in ['selected', 'unselected']) {
-        let obj = darkVals[i];
-        let keys = Object.keys(obj)
-        for (let j in keys) {
-            let key = keys[j];
-            let hsl = hexToHSL(obj[key]);
-            hsl[1] *= 0.4;
-            hsl[2] *= 0.3;
-            obj[key] = hslToRgb(hsl);
-        }
-    }
-    new Toggle({
-        key: "darkMode",
-        display: "Dark Mode",
-        container: "#settingsLeft",
-        init: darkModeDefault,
-        setState: function(state) {
-            let root = document.documentElement;
-            jQuery(".layer-switcher .panel").css("background", "var(--BGCOLOR1)");
-            jQuery(".layer-switcher .panel").css("border", "4px solid var(--BGCOLOR1)");
-            if (state) {
-                root.style.setProperty("--BGCOLOR1", '#313131');
-                root.style.setProperty("--BGCOLOR2", '#242424');
-                root.style.setProperty("--TXTCOLOR1","#BFBFBF");
-                root.style.setProperty("--TXTCOLOR2","#D8D8D8");
-                root.style.setProperty("--TXTCOLOR3","#a8a8a8");
-                //invert the "x" images
-                jQuery(".infoblockCloseBox").css('filter','invert(100%)');
-                jQuery(".infoblockCloseBox").css(' -webkit-filter','invert(100%)');
-                jQuery(".settingsCloseBox").css('filter','invert(100%)');
-                jQuery(".settingsCloseBox").css(' -webkit-filter','invert(100%)');
-                tableColors = tableColorsDark;
-            } else {
-                root.style.setProperty("--BGCOLOR1", '#F8F8F8');
-                root.style.setProperty("--BGCOLOR2", '#CCCCCC');
-                root.style.setProperty("--TXTCOLOR1","#003f4b");
-                root.style.setProperty("--TXTCOLOR2","#050505");
-                root.style.setProperty("--TXTCOLOR3","#003f4b");
-                jQuery(".infoblockCloseBox").css('filter','invert(0%)');
-                jQuery(".infoblockCloseBox").css(' -webkit-filter','invert(0%)');
-                jQuery(".settingsCloseBox").css('filter','invert(0%)');
-                jQuery(".settingsCloseBox").css(' -webkit-filter','invert(0%)');
+    // Dark mode was removed (the UI is dark-only); drop the stale preference.
+    delete loStore['darkMode'];
 
-                tableColors = tableColorsLight;
-            }
-            if (loadFinished) {
-                TAR.planeMan.redraw();
-                refreshFilter();
-                initLegend(tableColors.unselected);
-                initSourceFilter(tableColors.unselected);
-                initFlagFilter(tableColors.unselected);
-            }
-        }
-    });
-
-    initLegend(tableColors.unselected);
+    initLegend();
 
     initFilters();
 
-    ol.control.LayerSwitcher.forEachRecursive(layers_group, function(lyr) {
+    mapa.forEachLayer(function(lyr) {
         if (lyr.get('type') != 'base')
             return;
         lyr.dimKey = lyr.on('postrender', dim);
@@ -3132,13 +2606,13 @@ function initMap() {
         setState: function(state) {
             /*
             if (!state) {
-                ol.control.LayerSwitcher.forEachRecursive(layers_group, function(lyr) {
+                mapa.forEachLayer(function(lyr) {
                     if (lyr.get('type') != 'base')
                         return;
                     ol.Observable.unByKey(lyr.dimKey);
                 });
             } else {
-                ol.control.LayerSwitcher.forEachRecursive(layers_group, function(lyr) {
+                mapa.forEachLayer(function(lyr) {
                     if (lyr.get('type') != 'base')
                         return;
                     lyr.dimKey = lyr.on('postrender', dim);
@@ -3146,7 +2620,7 @@ function initMap() {
             }
             */
             if (loadFinished) {
-                OLMap.render();
+                mapa.render();
             }
             buttonActive('#B', state);
         }
@@ -3156,6 +2630,10 @@ function initMap() {
         active();
         if (e.defaultPrevented ) {
             return; // Do nothing if the event was already processed
+        }
+        // Skywatch ADS-B: map hotkeys pause while the settings dialog is open (ui/settings.js)
+        if (document.body.classList.contains('settingsOpen')) {
+            return;
         }
         if (e.target.type == "text") {
             return;
@@ -3187,34 +2665,22 @@ function initMap() {
                 break;
             case "ArrowUp":
             case "w":
-                oldCenter = OLMap.getView().getCenter();
-                extent = OLMap.getView().calculateExtent(OLMap.getSize());
-                newCenter = [oldCenter[0], (oldCenter[1] + extent[3])/2];
-                OLMap.getView().setCenter(newCenter);
+                mapa.panEdge('up');
                 toggleFollow(false);
                 break;
             case "ArrowDown":
             case "s":
-                oldCenter = OLMap.getView().getCenter();
-                extent = OLMap.getView().calculateExtent(OLMap.getSize());
-                newCenter = [oldCenter[0], (oldCenter[1] + extent[1])/2];
-                OLMap.getView().setCenter(newCenter);
+                mapa.panEdge('down');
                 toggleFollow(false);
                 break;
             case "ArrowLeft":
             case "a":
-                oldCenter = OLMap.getView().getCenter();
-                extent = OLMap.getView().calculateExtent(OLMap.getSize());
-                newCenter = [(oldCenter[0] + extent[0])/2, oldCenter[1]];
-                OLMap.getView().setCenter(newCenter);
+                mapa.panEdge('left');
                 toggleFollow(false);
                 break;
             case "ArrowRight":
             case "d":
-                oldCenter = OLMap.getView().getCenter();
-                extent = OLMap.getView().calculateExtent(OLMap.getSize());
-                newCenter = [(oldCenter[0] + extent[2])/2,  oldCenter[1]];
-                OLMap.getView().setCenter(newCenter);
+                mapa.panEdge('right');
                 toggleFollow(false);
                 break;
                 // misc
@@ -3228,10 +2694,7 @@ function initMap() {
                 toggleTableInView();
                 break;
             case "r":
-                if (heatmap)
-                    drawHeatmap();
-                else
-                    followRandomPlane();
+                followRandomPlane();
                 break;
             case "R":
                 fetchData();
@@ -3427,8 +2890,8 @@ function refreshPageTitle() {
         subtitle += MessageRate.toFixed(1) + '/s';
     }
 
-    if (PageName) {
-        document.title = PageName + ' - ' + subtitle;
+    if (PROJECT_NAME) {
+        document.title = PROJECT_NAME + ' - ' + subtitle;
     } else {
         document.title = subtitle;
     }
@@ -3444,8 +2907,11 @@ function displaySil() {
     let new_html="";
     let type = selected.icaoType ? selected.icaoType : 'ZZZZ';
     let hex = selected.icao.toUpperCase();
-    new_html = "<img id='silhouette' width='"+ 151 * globalScale + "' src='aircraft_sil/" + type + ".png' />";
-    setPhotoHtml(new_html);
+    const sil = document.createElement('img');
+    sil.id = 'silhouette';
+    sil.width = Math.round(151 * globalScale);
+    sil.src = 'aircraft_sil/' + type.replace(/[^A-Za-z0-9]/g, '') + '.png';
+    setPhotoNode(sil, 'sil:' + type);
     selected.icao.toUpperCase();
 }
 
@@ -3463,13 +2929,27 @@ function displayPhoto() {
         return;
     }
     let new_html="";
-    let photoToPull = photos[0]["thumbnail"]["src"] || photos[0]["thumbnail"];
+    // Skywatch ADS-B: the larger thumbnail stays sharp in the wider photo slot
+    const thumb = photos[0]["thumbnail_large"] || photos[0]["thumbnail"];
+    let photoToPull = thumb["src"] || thumb;
     let linkToPicture = photos[0]["link"];
     //console.log(linkToPicture);
-    new_html = '<a class=\"link\" href="'+linkToPicture+'" target="_blank" rel="noopener noreferrer"><img id="airplanePhoto" src=' +photoToPull+'></a>';
+    // network-derived URLs: built as DOM, https/http only (a javascript: URL from the API can never become a link)
+    const imgUrl = safeUrl(photoToPull), linkUrl = safeUrl(linkToPicture);
+    if (!imgUrl) { displaySil(); adjustInfoBlock(); return; }
+    const img = document.createElement('img');
+    img.id = 'airplanePhoto';
+    img.src = imgUrl;
+    img.referrerPolicy = 'no-referrer';
+    let node = img;
+    if (linkUrl) {
+        node = document.createElement('a');
+        node.className = 'link'; node.href = linkUrl; node.target = '_blank'; node.rel = 'noopener noreferrer';
+        node.appendChild(img);
+    }
     let copyright = photos[0]["photographer"] || photos[0]["user"];
-    jQuery('#copyrightInfo').html("<span>Image © " + copyright +"</span>");
-    setPhotoHtml(new_html);
+    jQuery('#copyrightInfo').text("© " + copyright + (planespottersAPI ? " · planespotters.net" : ""));
+    setPhotoNode(node, 'photo:' + imgUrl);
     adjustInfoBlock();
 }
 
@@ -3518,13 +2998,20 @@ function refreshPhoto(selected) {
 
     if (planespottersAPI) {
         let req = jQuery.ajax({
-            url: planespottersAPIurl + urlTail,
+            url: planespottersAPIurl.replace(/\/+$/, '') + '/' + urlTail.replace(/^\/+/, ''),
             dataType: 'json',
             plane: selected,
         });
 
         req.done(function(data) {
             this.plane.psAPIresponse = data;
+            if (SelectedPlane == this.plane) {
+                displayPhoto();
+            }
+        });
+        // Skywatch ADS-B: without this the panel kept showing "Loading image..." forever
+        req.fail(function() {
+            this.plane.psAPIresponse = {'photos': []};
             if (SelectedPlane == this.plane) {
                 displayPhoto();
             }
@@ -3552,7 +3039,6 @@ function refreshPhoto(selected) {
 }
 
 let selCall = null;
-let selIcao = null;
 let selReg = null;
 let selAirline = null;
 
@@ -3589,14 +3075,10 @@ function refreshSelected() {
         if (selected.position_time) {
             const date = new Date(selected.position_time * 1000);
             let timestamp = utcTimesHistoric ? (zuluTime(date) + NBSP + 'Z') : (lDateString(date) + ' ' + localTime(date) + NBSP + TIMEZONE);
-            jQuery('#trace_time').updateText('Time:\n' + timestamp);
+            jQuery('#trace_time').updateText(timestamp);
         } else {
-            jQuery('#trace_time').updateText('Time:\n');
+            jQuery('#trace_time').updateText('');
         }
-    }
-
-    if (flightawareLinks) {
-        jQuery('#selected_flightaware_link').html(getFlightAwareModeSLink(selected.icao, selected.flight, "Visit Flight Page"));
     }
 
     if (selected.isNonIcao() && selected.source != 'mlat') {
@@ -3620,332 +3102,17 @@ function refreshSelected() {
             if (flightawareLinks) {
                 jQuery('#selected_registration').html(getFlightAwareIdentLink(selected.registration, selected.registration));
             } else if (registrationLinks && registrationLink(selected)) {
-                jQuery('#selected_registration').html(`<a class="link" target="_blank" href="${registrationLink(selected)}">${selected.registration}</a>`);
+                jQuery('#selected_registration').html(`<a class="link" target="_blank" rel="noreferrer" href="${escHtml(safeUrl(registrationLink(selected)))}">${escHtml(selected.registration)}</a>`);
             } else {
                 jQuery('#selected_registration').updateText(selected.registration);
             }
         } else {
-            jQuery('#selected_registration').updateText("n/a");
+            jQuery('#selected_registration').updateText("");
         }
     }
 
-    updateSelectedAirline(selected);
-
-    let dbFlags = "";
-    if (selected.ladd)
-        dbFlags += ' <a class="link" target="_blank" href="https://www.faa.gov/pilots/ladd/" rel="noreferrer">LADD</a> / ';
-    if (selected.pia)
-        dbFlags += '<a class="link" target="_blank" href="https://www.faa.gov/air_traffic/technology/equipadsb/privacy/" rel="noreferrer">PIA</a> / ';
-    if (selected.military)
-        dbFlags += 'military / ';
-    if (dbFlags.length == 0) {
-        jQuery('#selected_dbFlags').updateText("none");
-    } else {
-        jQuery('#selected_dbFlags').html(dbFlags.slice(0, -3));
-    }
-
-    if (selected.icaoType) {
-        jQuery('#selected_icaotype').updateText(selected.icaoType);
-    } else {
-        jQuery('#selected_icaotype').updateText("n/a");
-    }
-    if (selected.typeDescription)
-        jQuery('#selected_typedesc').updateText(selected.typeDescription);
-    else
-        jQuery('#selected_typedesc').updateText("n/a");
-
-    let typeLine = "";
-    if (selected.year)
-        typeLine += selected.year + " "
-    if (selected.typeLong)
-        typeLine += selected.typeLong;
-    if (!typeLine)
-        typeLine = "n/a"
-
-    jQuery('#selected_typelong').updateText(typeLine);
-
-    if (selected.ownOp)
-        jQuery('#selected_ownop').updateText(selected.ownOp);
-    else
-        jQuery('#selected_ownop').updateText("");
-
-    if (selected.rId && show_rId) {
-        jQuery('#receiver_id').updateText(selected.rId);
-        jQuery('#receiver_id_div').removeClass('hidden');
-    } else {
-        jQuery('#receiver_id_div').addClass('hidden');
-    }
-
-
-    jQuery("#selected_altitude1").updateText(format_altitude_long(adjust_baro_alt(selected.altitude), selected.vert_rate, DisplayUnits));
-    jQuery("#selected_altitude2").updateText(format_altitude_long(adjust_baro_alt(selected.altitude), selected.vert_rate, DisplayUnits));
-
-    jQuery('#selected_onground').updateText(format_onground(selected.altitude));
-
-    if (selected.squawk == null || selected.squawk == '0000') {
-        jQuery('#selected_squawk1').updateText('n/a');
-        jQuery('#selected_squawk2').updateText('n/a');
-    } else if (selected.spi) {
-        jQuery('#selected_squawk1').updateText("IDENT " + selected.squawk);
-        jQuery('#selected_squawk2').updateText("IDENT " + selected.squawk);
-    } else {
-        jQuery('#selected_squawk1').updateText(selected.squawk);
-        jQuery('#selected_squawk2').updateText(selected.squawk);
-    }
-
-    if (useRouteAPI) {
-        if (selected.routeString) {
-            jQuery('#selected_route').updateText(selected.routeString);
-            jQuery('#selected_route').attr('title', selected.routeVerbose);
-        } else {
-            jQuery('#selected_route').updateText('n/a');
-        }
-    }
-
-    let magResult = null;
-
-    if (geoMag && selected.position != null) {
-        let lon = selected.position[0];
-        let lat = selected.position[1];
-        let alt = selected.altitude == "ground" ? 0 : selected.altitude;
-        magResult = geoMag(lat, lon, alt);
-        jQuery('#selected_mag_declination').updateText(format_track_brief(magResult.dec));
-    } else {
-        jQuery('#selected_mag_declination').updateText('n/a');
-    }
-
-    let heading = null;
-    if (selected.true_heading != null && selected.track != null) {
-        heading = selected.true_heading;
-    } else if (magResult && selected.mag_heading != null && selected.track != null) {
-        heading = selected.mag_heading + magResult.dec;
-    }
-    if (heading != null && heading < 0)
-        heading += 360;
-    if (heading != null && heading > 360)
-        heading -= 360;
-
-    jQuery('#selected_mag_heading').updateText(format_track_brief(selected.mag_heading));
-
-    if (selected.wd != null && selected.ws != null) {
-        jQuery('#selected_wd').updateText(format_track_brief(selected.wd, true));
-        jQuery('#selected_ws').updateText(format_speed_long(selected.ws, DisplayUnits));
-    } else if (0 && !globeIndex && magResult && selected.gs != null && selected.tas != null && selected.track != null && selected.mag_heading != null) {
-        // disable calculating wind in the webinterface, it can be VERY inaccurate
-        // use readsb if you want wind speeds :)
-
-        const trk = (Math.PI / 180) * selected.track;
-        const hdg = (Math.PI / 180) * heading;
-        const tas = selected.tas;
-        const gs = selected.gs;
-        const ws = Math.round(Math.sqrt(Math.pow(tas - gs, 2) + 4 * tas * gs * Math.pow(Math.sin((hdg - trk) / 2), 2)));
-        let wd = trk + Math.atan2(tas * Math.sin(hdg - trk), tas * Math.cos(hdg - trk) - gs);
-        if (wd < 0) {
-            wd = wd + 2 * Math.PI;
-        }
-        if (wd > 2 * Math.PI) {
-            wd = wd - 2 * Math.PI;
-        }
-        wd = Math.round((180 / Math.PI) * wd);
-        jQuery('#selected_wd').updateText(format_track_brief(wd, true));
-        jQuery('#selected_ws').updateText(format_speed_long(ws, DisplayUnits));
-    } else {
-        jQuery('#selected_wd').updateText('n/a');
-        jQuery('#selected_ws').updateText('n/a');
-    }
-
-
-    if (!globeIndex && selected.true_heading == null && heading != null)
-        jQuery('#selected_true_heading').updateText(format_track_brief(heading));
-    else
-        jQuery('#selected_true_heading').updateText(format_track_brief(selected.true_heading));
-
-
-    let oat = null;
-    let tat = null;
-
-    if (selected.tat != null && selected.oat != null) {
-        oat = selected.oat;
-        tat = selected.tat;
-    } else if (!globeIndex && selected.mach != null && selected.tas != null && selected.mach > 0.395) {
-        oat = Math.pow((selected.tas / 661.47 / selected.mach), 2) * 288.15 - 273.15;
-        tat = -273.15 + (oat + 273.15) * (1 + 0.2 * selected.mach * selected.mach);
-    }
-
-
-    if (oat != null)
-        jQuery('#selected_temp').updateText(Math.round(tat) + ' / ' + Math.round(oat)  + ' °C');
-    else
-        jQuery('#selected_temp').updateText('n/a');
-
-    jQuery('#selected_speed1').updateText(format_speed_long(selected.gs, DisplayUnits));
-    jQuery('#selected_speed2').updateText(format_speed_long(selected.gs, DisplayUnits));
-    jQuery('#selected_ias').updateText(format_speed_long(selected.ias, DisplayUnits));
-    jQuery('#selected_tas').updateText(format_speed_long(selected.tas, DisplayUnits));
-    jQuery('#selected_vert_rate').updateText(format_vert_rate_long(selected.vert_rate, DisplayUnits));
-    jQuery('#selected_baro_rate').updateText(format_vert_rate_long(selected.baro_rate, DisplayUnits));
-    jQuery('#selected_geom_rate').updateText(format_vert_rate_long(selected.geom_rate, DisplayUnits));
-
-    setSelectedIcao();
-
-    jQuery('#selected_pf_info').updateText((selected.pfRoute ? selected.pfRoute : "") );
-    //+" "+ (selected.pfFlightno ? selected.pfFlightno : "")
-    jQuery('#airframes_post_icao').attr('value',selected.icao);
-    jQuery('#selected_track1').updateText(format_track_brief(selected.track));
-    jQuery('#selected_track2').updateText(format_track_brief(selected.track));
-
-    if (selected.seen != null && selected.seen < 1000000) {
-        jQuery('#selected_seen').updateText(format_duration(selected.seen));
-    } else {
-        jQuery('#selected_seen').updateText('n/a');
-    }
-    if (selected.position_time != null) {
-        jQuery('#selected_pos_epoch').updateText(Math.round(selected.position_time));
-    } else {
-        jQuery('#selected_pos_epoch').updateText('n/a');
-    }
-    if (selected.seen_pos != null && selected.seen_pos < 1000000) {
-        jQuery('#selected_seen_pos').updateText(format_duration(selected.seen_pos));
-    } else {
-        jQuery('#selected_seen_pos').updateText('n/a');
-    }
-
-    jQuery('#selected_country').updateText(selected.country.replace("special use", "special"));
-
-    if (selected.position == null) {
-        jQuery('#selected_position').updateText('n/a');
-    } else {
-
-        if (selected.seen_pos > -1) {
-            jQuery('#selected_position').updateText(format_latlng(selected.position));
-        } else {
-            jQuery('#selected_position').updateText(format_latlng(selected.position));
-        }
-    }
-    let sitedist;
-    if (selected.position && SitePosition) {
-        sitedist = ol.sphere.getDistance(SitePosition, selected.position);
-    }
-    jQuery('#selected_source').updateText(format_data_source(selected.dataSource));
-    jQuery('#selected_category').updateText(selected.category ? selected.category : "n/a");
-    jQuery('#selected_category_label').updateText(get_category_label(selected.category));
-    jQuery('#selected_sitedist1').updateText(format_distance_long(sitedist, DisplayUnits));
-    jQuery('#selected_sitedist2').updateText(format_distance_long(sitedist, DisplayUnits));
-    jQuery('#selected_rssi1').updateText(selected.rssi != null ? selected.rssi.toFixed(1) : "n/a");
-    if (
-        ((selected.messages == undefined && selected.receiverCount) || (globeIndex && binCraft))
-        && !showTrace
-    ) {
-        jQuery('#selected_message_count').prev().updateText('Receivers:');
-        jQuery('#selected_message_count').prop('title', 'Number of receivers receiving this aircraft');
-        if (selected.receiverCount >= 5 && selected.dataSource != 'mlat') {
-            jQuery('#selected_message_count').updateText('> ' + selected.receiverCount);
-        } else {
-            jQuery('#selected_message_count').updateText(selected.receiverCount);
-        }
-    } else {
-        jQuery('#selected_message_count').prev().updateText('Messages:');
-        jQuery('#selected_message_count').prop('title', 'The total number of messages received from this aircraft');
-        jQuery('#selected_message_count').updateText(selected.messages);
-    }
-    jQuery('#selected_message_rate').updateText((selected.messageRate != null) ? (selected.messageRate.toFixed(1)) : "n/a");
-    jQuery('#selected_photo_link').html(getPhotoLink(selected));
-
-    jQuery('#selected_altitude_geom1').updateText(format_altitude_long(adjust_geom_alt(selected.alt_geom, selected.position), selected.geom_rate, DisplayUnits));
-    jQuery('#selected_altitude_geom2').updateText(format_altitude_long(adjust_geom_alt(selected.alt_geom, selected.position), selected.geom_rate, DisplayUnits));
-    jQuery('#selected_ias').updateText(format_speed_long(selected.ias, DisplayUnits));
-    jQuery('#selected_tas').updateText(format_speed_long(selected.tas, DisplayUnits));
-    if (selected.mach == null) {
-        jQuery('#selected_mach').updateText('n/a');
-    } else {
-        jQuery('#selected_mach').updateText(selected.mach.toFixed(3));
-    }
-    if (selected.roll == null) {
-        jQuery('#selected_roll').updateText('n/a');
-    } else {
-        jQuery('#selected_roll').updateText(selected.roll.toFixed(1));
-    }
-    if (selected.track_rate == null) {
-        jQuery('#selected_trackrate').updateText('n/a');
-    } else {
-        jQuery('#selected_trackrate').updateText(selected.track_rate.toFixed(2));
-    }
-    jQuery('#selected_geom_rate').updateText(format_vert_rate_long(selected.geom_rate, DisplayUnits));
-    if (selected.nav_qnh == null) {
-        jQuery('#selected_nav_qnh').updateText("n/a");
-    } else {
-        jQuery('#selected_nav_qnh').updateText(selected.nav_qnh.toFixed(1) + " hPa");
-    }
-    jQuery('#selected_nav_altitude').updateText(format_altitude_long(selected.nav_altitude, 0, DisplayUnits));
-    jQuery('#selected_nav_heading').updateText(format_track_brief(selected.nav_heading));
-    if (selected.nav_modes == null) {
-        jQuery('#selected_nav_modes').updateText("n/a");
-    } else {
-        jQuery('#selected_nav_modes').updateText(selected.nav_modes.join());
-    }
-    if (selected.nic_baro == null) {
-        jQuery('#selected_nic_baro').updateText("n/a");
-    } else {
-        if (selected.nic_baro == 1) {
-            jQuery('#selected_nic_baro').updateText("cross-checked");
-        } else {
-            jQuery('#selected_nic_baro').updateText("not cross-checked");
-        }
-    }
-
-    jQuery('#selected_nac_p').updateText(format_nac_p(selected.nac_p));
-    jQuery('#selected_nac_v').updateText(format_nac_v(selected.nac_v));
-    if (selected.rc == null) {
-        jQuery('#selected_rc').updateText("n/a");
-    } else if (selected.rc == 0) {
-        jQuery('#selected_rc').updateText("unknown");
-    } else {
-        jQuery('#selected_rc').updateText(format_distance_short(selected.rc, DisplayUnits));
-    }
-
-    if (selected.sil == null || selected.sil_type == null) {
-        jQuery('#selected_sil').updateText("n/a");
-    } else {
-        let sampleRate = "";
-        let silDesc = "";
-        if (selected.sil_type == "perhour") {
-            sampleRate = " per flight hour";
-        } else if (selected.sil_type == "persample") {
-            sampleRate = " per sample";
-        }
-
-        switch (selected.sil) {
-            case 0:
-                silDesc = "&gt; 1e-3";
-                break;
-            case 1:
-                silDesc = "≤ 1e-3";
-                break;
-            case 2:
-                silDesc = "≤ 1e-5";
-                break;
-            case 3:
-                silDesc = "≤ 1e-7";
-                break;
-            default:
-                silDesc = "n/a";
-                sampleRate = "";
-                break;
-        }
-        jQuery('#selected_sil').html(silDesc + sampleRate);
-    }
-
-    if (selected.version == null) {
-        jQuery('#selected_version').updateText('none');
-    } else if (selected.version == 0) {
-        jQuery('#selected_version').updateText('v0 (DO-260)');
-    } else if (selected.version == 1) {
-        jQuery('#selected_version').updateText('v1 (DO-260A)');
-    } else if (selected.version == 2) {
-        jQuery('#selected_version').updateText('v2 (DO-260B)');
-    } else {
-        jQuery('#selected_version').updateText('v' + selected.version);
-    }
+    // Skywatch ADS-B: all other fields are rendered by ui/infoblock.js
+    ibRender(selected);
 
     adjustInfoBlock();
 }
@@ -3969,18 +3136,17 @@ function refreshHighlighted() {
 
     let infoBox = jQuery('#highlighted_infoblock');
 
-    let marker = highlighted.marker || highlighted.glMarker;
-    let geom;
     let markerCoordinates;
-    if (!marker || !(geom = marker.getGeometry()) || !(markerCoordinates = geom.getCoordinates()) ) {
+        markerCoordinates = highlighted.markerDrawn ? highlighted.proj : null;
+    if (!markerCoordinates) {
         jQuery('#highlighted_infoblock').hide();
         return;
     }
-    let markerPosition = OLMap.getPixelFromCoordinate(markerCoordinates);
+    let markerPosition = mapa.pixelFromProj(markerCoordinates);
     if (!markerPosition)
         return;
 
-    let mapSize = OLMap.getSize();
+    let mapSize = mapa.getSize();
     let infoBoxLeft = markerPosition[0];
     let infoBoxTop = markerPosition[1];
     if ((infoBoxLeft + 20 + infoBox.width()) < mapSize[0])
@@ -3999,6 +3165,7 @@ function refreshHighlighted() {
     infoBox.css("top", infoBoxTop);
 
     jQuery('#highlighted_callsign').text(highlighted.name);
+    jQuery('#highlighted_logo').html(airlineLogoHTML(airlineFlight(highlighted), 22, 'head'));
 
     if (highlighted.icaoType !== null) {
         jQuery('#highlighted_icaotype').text(highlighted.icaoType);
@@ -4059,7 +3226,6 @@ function releaseMem() {
     }
 
     nextCacheClear = mstime() + 300 * 1000;
-    lineStyleCache = {};
     iconCache = {};
 
     //console.trace();
@@ -4148,11 +3314,16 @@ function refreshFeatures() {
     cols.flight = {
         sort: function () { sortBy('flight', compareAlpha, function(x) { return x.flight }); },
         value: function(plane) {
-            if (flightawareLinks)
-                return getFlightAwareModeSLink(plane.icao, plane.flight, plane.name);
-            return (plane.flight || '');
+            let html = flightawareLinks ? getFlightAwareModeSLink(plane.icao, plane.flight, plane.name)
+                : (plane.flight || '').replace(/[<>&"]/g, '');
+            // Skywatch ADS-B: airline logo (monogram until it loads) in front of the callsign
+            html = airlineLogoHTML(airlineFlight(plane), 18, 'sm') + html;
+            // Skywatch ADS-B: emergency squawk badge next to the callsign
+            if (emergencySquawks.has(String(plane.squawk)))
+                html += ' <span class="sqBadge" title="Emergency squawk">' + plane.squawk + '</span>';
+            return html;
         },
-        html: flightawareLinks,
+        html: true,
         text: 'Callsign' };
     cols.airline = {
         text: 'Airline',
@@ -4165,8 +3336,8 @@ function refreshFeatures() {
             if (!operatorData) {
                 return '';
             }
-            let title = operatorData.c ? operatorData.c + (operatorData.r ? ' / ' + '&quot;' + operatorData.r + '&quot;': '') : (operatorData.r || '');
-            return '<span title="' + title + '">' + (operatorData.n || '') + '</span>';
+            let title = operatorData.c ? operatorData.c + (operatorData.r ? ' / "' + operatorData.r + '"' : '') : (operatorData.r || '');
+            return '<span title="' + escHtml(title) + '">' + escHtml(operatorData.n || '') + '</span>';
         },
         html: true
     };
@@ -4176,7 +3347,7 @@ function refreshFeatures() {
             value: function(plane) {
                 if (!useRouteAPI) return '';
                 if (plane.routeString) {
-                    return '<span title="' + plane.routeVerbose + '">' + plane.routeColumn + '</span>';
+                    return '<span title="' + escHtml(plane.routeVerbose) + '">' + escHtml(plane.routeColumn) + '</span>';
                 } else {
                     return '';
                 }
@@ -4201,16 +3372,16 @@ function refreshFeatures() {
     cols.altitude = {
         text: 'Altitude',
         sort: function () { sortBy('altitude',compareNumeric, function(x) { return (x.altitude == "ground" ? -100000 : x.altitude); }); },
-        value: function(plane) { return format_altitude_brief(adjust_baro_alt(plane.altitude), plane.vert_rate, DisplayUnits); },
+        value: function(plane) { return format_altitude_brief(adjust_baro_alt(plane.altitude), plane.vert_rate, DisplayUnits).replace(/\d{4,}/, (n) => Number(n).toLocaleString('en-US')); },
         align: 'right',
-        header: function () { return 'Alt.' + NBSP + '(' + get_unit_label("altitude", DisplayUnits) + ')';},
+        header: function () { return 'Alt' + NBSP + '<span class="colUnit">' + get_unit_label("altitude", DisplayUnits) + '</span>';},
     };
     cols.speed = {
         text: pTracks ? 'Max. Speed' : 'Speed',
         sort: function () { sortBy('speed', compareNumeric, function(x) { return x.speed; }); },
         value: function(plane) { return format_speed_brief(plane.speed, DisplayUnits); },
         align: 'right',
-        header: function () { return (pTracks ? 'Max. ' : '') + 'Spd.' + NBSP + '(' + get_unit_label("speed", DisplayUnits) + ')';},
+        header: function () { return (pTracks ? 'Max. ' : '') + 'GS' + NBSP + '<span class="colUnit">' + get_unit_label("speed", DisplayUnits) + '</span>';},
     };
     cols.vert_rate = {
         text: 'Vertical Rate',
@@ -4224,7 +3395,7 @@ function refreshFeatures() {
         sort: function () { sortBy('sitedist',compareNumeric, function(x) { return x.sitedist; }); },
         value: function(plane) { return format_distance_brief(plane.sitedist, DisplayUnits); },
         align: 'right',
-        header: function () { return (pTracks ? 'Max. ' : '') + 'Dist.' + NBSP + '(' + get_unit_label("distance", DisplayUnits) + ')';},
+        header: function () { return (pTracks ? 'Max. ' : '') + 'Dist' + NBSP + '<span class="colUnit">' + get_unit_label("distance", DisplayUnits) + '</span>';},
     };
     cols.track = {
         text: 'Track',
@@ -4324,6 +3495,8 @@ function refreshFeatures() {
         activeCols = [];
         for (let i in columns) {
             let col = columns[i];
+            if (!planeMan.columnUsable(col))
+                continue; // Skywatch ADS-B: no empty Route column when routes are off
             if (col.visible || !mapIsVisible) {
                 activeCols.push(col);
             }
@@ -4357,6 +3530,10 @@ function refreshFeatures() {
         if (!initializing) {
             planeMan.refresh();
         }
+    }
+
+    planeMan.columnUsable = function (col) {
+        return col.id != 'route' || useRouteAPI;
     }
 
     planeMan.setColumnVis = function (col, visible) {
@@ -4442,23 +3619,25 @@ function refreshFeatures() {
 
             if (now - plane.refreshTR > 5 || plane.selected != plane.selectCache) {
                 plane.refreshTR = now;
-                let colors = tableColors.unselected;
-                let bgColor = "#F8F8F8"
-
                 plane.selectCache = plane.selected;
+
+                // row state as classes, styled in theme.css
+                let rowClass = 'plane_table_row src-' + sourceGroup(plane.dataSource);
                 if (plane.selected)
-                    colors = tableColors.selected;
-
-                if (plane.dataSource && plane.dataSource in colors)
-                    bgColor = colors[plane.dataSource];
-
-                if (plane.squawk in tableColors.special) {
-                    bgColor = tableColors.special[plane.squawk];
-                    plane.bgColorCache = bgColor;
-                    plane.tr.style = "background-color: " + bgColor + "; color: black;";
-                } else if (plane.bgColorCache != bgColor) {
-                    plane.bgColorCache = bgColor;
-                    plane.tr.style = "background-color: " + bgColor + ";";
+                    rowClass += ' selected';
+                if (emergencySquawks.has(String(plane.squawk)))
+                    rowClass += ' emergency';
+                if (typeof listFilterMatch == 'function' && !listFilterMatch(plane))
+                    rowClass += ' filteredOut';
+                if (plane.trClassCache != rowClass) {
+                    plane.trClassCache = rowClass;
+                    plane.tr.className = rowClass;
+                }
+                // Skywatch ADS-B: 3px altitude colour bar at the row start (ui/list.css)
+                const altColor = (plane.altitude == null) ? 'transparent' : hslToRgb(altitudeColor(plane.alt_rounded));
+                if (plane.trAltCache != altColor) {
+                    plane.trAltCache = altColor;
+                    plane.tr.style.setProperty('--alt', altColor);
                 }
 
                 for (let cell in activeCols) {
@@ -4481,6 +3660,7 @@ function refreshFeatures() {
 
         global.refreshPageTitle();
         jQuery('#dump1090_total_history').updateText(TrackedHistorySize);
+        jQuery('#dump1090_total_history_short').updateText(TrackedHistorySize >= 1000 ? (TrackedHistorySize / 1000).toFixed(1) + 'k' : TrackedHistorySize);
         jQuery('#dump1090_message_rate').updateText(MessageRate === null ? 'n/a' : MessageRate.toFixed(1));
         jQuery('#dump1090_total_ac').updateText(globeIndex ? globeTrackedAircraft : TrackedAircraft);
         jQuery('#dump1090_total_ac_positions').updateText(TrackedAircraftPositions);
@@ -4714,7 +3894,11 @@ function select(plane, options) {
     refreshSelected();
     plane.updateTick('redraw');
 
-    if (options.follow) {
+    // selecting (from the map or the list) eases the camera onto the aircraft's drawn icon, zooms in (never out)
+    // and turns Follow on; callers that set their own zoom or a trace view keep the old behaviour
+    const focus = !options.noFocus && !options.zoom && !showTrace && plane.position && typeof MLR != 'undefined' && MLR.ready;
+    if (focus) MLR.focusOn(plane);
+    if (options.follow || focus) {
         toggleFollow(true);
         if (!options.zoom)
             options.zoom = 'follow';
@@ -4778,10 +3962,10 @@ function selectPlaneByHex(hex, options) {
     }
 
     if (options.zoom == 'follow') {
-        //if (OLMap.getView().getZoom() < 8)
-        //    OLMap.getView().setZoom(8);
+        //if (mapa.getZoom() < 8)
+        //    mapa.setZoom(8);
     } else if (options.zoom) {
-        OLMap.getView().setZoom(options.zoom);
+        mapa.setZoom(options.zoom);
     }
 
     pTracks || TAR.planeMan.refresh();
@@ -4868,11 +4052,12 @@ function toggleFollow(override) {
             FollowSelected = false;
     }
     if (FollowSelected) {
-        //if (override == undefined && OLMap.getView().getZoom() < 8)
-        //    OLMap.getView().setZoom(8);
+        //if (override == undefined && mapa.getZoom() < 8)
+        //    mapa.setZoom(8);
         SelectedPlane.setProjection('follow');
     }
     buttonActive('#F', FollowSelected);
+    if (typeof MLR != 'undefined' && MLR.syncFollowZoom) MLR.syncFollowZoom(FollowSelected);
 }
 
 function resetMap() {
@@ -4890,11 +4075,11 @@ function resetMap() {
         //lopaStore['zoomLvl']   = g.zoomLvl = DefaultZoomLvl;
 
         // Set and refresh
-        //OLMap.getView().setZoom(g.zoomLvl);
+        //mapa.setZoom(g.zoomLvl);
 
         //console.log('resetMap setting center ' + [CenterLat, CenterLon]);
-        OLMap.getView().setCenter(ol.proj.fromLonLat([CenterLon, CenterLat]));
-        OLMap.getView().setRotation(g.mapOrientation);
+        mapa.setCenter([CenterLon, CenterLat]);
+        mapa.setRotation(g.mapOrientation);
 
         //selectPlaneByHex(null,false);
         jQuery("#update_error").css('display','none');
@@ -4902,36 +4087,18 @@ function resetMap() {
 }
 
 function updateMapSize() {
-    if (OLMap)
-        OLMap.updateSize();
+    mapa.updateSize();
 }
-
-function expandSidebar(e) {
-    e.preventDefault();
-    jQuery("#map_container").hide()
-    mapIsVisible = false;
-    jQuery("#toggle_sidebar_control").hide();
-    jQuery("#splitter").hide();
-    jQuery("#shrink_sidebar_button").show();
-    jQuery("#sidebar_container").width("100%");
-    TAR.planeMan.redraw();
-    updateMapSize();
-    adjustInfoBlock();
-}
-
-function showMap() {
-    jQuery('#sidebar_container').width(loStore['sidebar_width']).css('margin-left', '0');
-    jQuery("#map_container").show()
-    mapIsVisible = true;
-    jQuery("#toggle_sidebar_control").show();
-    jQuery("#splitter").show();
-    jQuery("#shrink_sidebar_button").hide();
-    TAR.planeMan.redraw();
-    updateMapSize();
-}
-
 
 let selectedPhotoCache = null;
+
+function setPhotoNode(node, key) {
+    if (selectedPhotoCache == key) return;
+    selectedPhotoCache = key;
+    const box = document.getElementById('selected_photo');
+    box.textContent = '';
+    box.appendChild(node);
+}
 
 function setPhotoHtml(source) {
     if (selectedPhotoCache == source)
@@ -4942,62 +4109,25 @@ function setPhotoHtml(source) {
 }
 
 function adjustInfoBlock() {
-    if (wideInfoBlock ) {
-        infoBlockWidth = baseInfoBlockWidth + 40;
-    } else {
-        infoBlockWidth = baseInfoBlockWidth;
+    // Skywatch ADS-B: position and size come from CSS (ui/shell.css); this only
+    // shows/hides the panel and tells the shell which state the left panel is in.
+    const show = !!(SelectedPlane && toggles['enableInfoblock'].state);
+    // the wide details view needs room; phones always get the compact sheet
+    const roomy = !window.matchMedia('(max-width: 700px)').matches;
+    document.body.classList.toggle('infoOpen', show);
+    const wideNow = show && !!wideInfoBlock && roomy;
+    const prevShow = adjustInfoBlock.lastShow, infoChanged = prevShow !== show || adjustInfoBlock.lastWide !== wideNow;
+    adjustInfoBlock.lastShow = show; adjustInfoBlock.lastWide = wideNow;
+    document.body.classList.toggle('infoWide', wideNow);
+    if (infoChanged && typeof MLR != 'undefined' && MLR.ready) {
+        // panel closed: drop the camera padding (deferred: selecting another aircraft deselects first); widened: re-centre
+        if (!show) setTimeout(() => { if (!SelectedPlane || !toggles['enableInfoblock'].state) MLR.clearFocus(); }, 0);
+        else if (prevShow && !MLR.focusAnim) setTimeout(() => MLR.refocusPadding(), 0);   // widened / narrowed while open
     }
-    jQuery('#selected_infoblock').css("width", infoBlockWidth * globalScale + 'px');
-
-    jQuery('.ol-scale-line, #zoomLevel').css('left', (infoBlockWidth * globalScale + 8) + 'px');
-    jQuery('#replayBar').css('left', (infoBlockWidth * globalScale + 8) + 'px');
-
-    if (SelectedPlane && toggles['enableInfoblock'].state) {
-
-        if (!mapIsVisible)
-            jQuery("#sidebar_container").css('margin-left', '140pt');
-        //jQuery('#sidebar_canvas').css('margin-bottom', jQuery('#selected_infoblock').height() + 'px');
-        //
-        if (mapIsVisible && document.getElementById('map_canvas').clientWidth < parseFloat(jQuery('#selected_infoblock').css('width')) * 3) {
-            jQuery('#selected_infoblock').css('height', '290px');
-            jQuery('#selected_typedesc').parent().parent().hide();
-            jQuery('#credits').css('bottom', '295px');
-            jQuery('#credits').css('left', '5px');
-        } else {
-            jQuery('#selected_infoblock').css('height', '100%');
-            jQuery('#credits').css('bottom', '');
-            jQuery('#credits').css('left', '');
-        }
-
-        jQuery('#selected_infoblock').show();
-    } else {
-        if (!mapIsVisible)
-            jQuery("#sidebar_container").css('margin-left', '0');
-        //jQuery('#sidebar_canvas').css('margin-bottom', 0);
-
-        jQuery('.ol-scale-line, #zoomLevel').css('left', '8px');
-        jQuery('#replayBar').css('left', '0px');
-        jQuery('#credits').css('bottom', '');
-        jQuery('#credits').css('left', '');
-
-        jQuery('#selected_infoblock').hide();
-    }
-
-    let photoWidth = document.getElementById('photo_container').clientWidth;
-    let refWidth = infoBlockWidth * globalScale - 29;
-    if (Math.abs(photoWidth / refWidth - 1) > 0.05)
-        photoWidth = refWidth;
-
-    jQuery('#airplanePhoto').css("width", photoWidth + 'px');
-    jQuery('#selected_photo').css("width", photoWidth + 'px');
-
-    if (showPictures) {
-        if (planespottersAPI || planespottingAPI) {
-            jQuery('#photo_container').css('height', photoWidth * 0.883 + 'px');
-        } else {
-            jQuery('#photo_container').css('height', '40px');
-        }
-    }
+    if (typeof ibLayout == 'function')
+        ibLayout();
+    if (typeof shellSync == 'function')
+        shellSync();
 }
 
 function initializeUnitsSelector() {
@@ -5032,11 +4162,7 @@ function onDisplayUnitsChanged(e) {
     drawSiteCircle();
 
     // Reset map scale line units
-    OLMap.getControls().forEach(function(control) {
-        if (control instanceof ol.control.ScaleLine) {
-            control.setUnits(units_for('distance', DisplayUnits));
-        }
-    });
+    mapa.setScaleUnits(units_for('distance', DisplayUnits));
 
     jQuery(".altitudeUnit").text(get_unit_label("altitude", DisplayUnits));
     jQuery(".speedUnit").text(get_unit_label("speed", DisplayUnits));
@@ -5196,33 +4322,9 @@ function invertMap(evt){
 (function (global, jQuery, TAR) {
     let altitudeChart = TAR.altitudeChart = TAR.altitudeChart || {};
 
-    function createLegendGradientStops() {
-        const mapOffsetToAltitude = [[0.033, 500], [0.066, 1000], [0.126, 2000], [0.19, 4000], [0.253, 6000], [0.316, 8000], [0.38, 10000], [0.59, 20000], [0.79, 30000], [1, 40000]];
-
-        let stops = '';
-        for (let i in mapOffsetToAltitude) {
-            let map = mapOffsetToAltitude[i];
-            const color = altitudeColor(map[1]);
-            stops += '<stop offset="' + map[0] + '" stop-color="hsl(' + color[0] + ',' + color[1] + '%,' + color[2] + '%)" />';
-        }
-        return stops;
-    }
-
-    function createLegendUrl(data) {
-        jQuery(data).find('#linear-gradient').html(createLegendGradientStops());
-
-        const svg = jQuery('svg', data).prop('outerHTML');
-
-        return 'url("data:image/svg+xml;base64,' + global.btoa(svg) + '")';
-    }
-
     function loadLegend() {
-        let baseLegend = (units_for('altitude', DisplayUnits) === 'metric') ? 'images/alt_legend_m.svg' : 'images/alt_legend_ft.svg';
-
-        jQuery.get(baseLegend, function (data) {
-            jQuery('#altitude_chart_button').css("background-image", createLegendUrl(data));
-            jQuery('#altitude_chart').show();
-        });
+        renderAltitudeLegend(document.getElementById('altitude_legend'));
+        jQuery('#altitude_chart').show();
     }
 
     altitudeChart.render = function () {
@@ -5283,7 +4385,7 @@ function toggleTableInView(arg) {
         loStore['tableInView'] = tableInView;
     }
 
-    jQuery('#with_positions').text(tableInView ? "On Screen:" : "With Position:");
+    jQuery('#with_positions').text(tableInView ? "On screen" : "With pos");
 
     buttonActive('#V', tableInView);
 }
@@ -5378,7 +4480,7 @@ function onJump(e) {
     }
     if (coords) {
         console.log("jumping to: " + coords[0] + " " + coords[1]);
-        OLMap.getView().setCenter(ol.proj.fromLonLat([coords[1], coords[0]]));
+        mapa.setCenter([coords[1], coords[0]]);
 
         if (g.zoomLvl >= 7) {
             fetchData({force: true});
@@ -5407,30 +4509,6 @@ function showSearchWarning(message) {
 
     //auto hide after 15 seconds
     setTimeout(() => hideSearchWarning(), 15000);
-}
-
-function onSearch(e) {
-    e.preventDefault();
-    const searchTerm = jQuery("#search_input").val().trim();
-    jQuery("#search_input").val("");
-    jQuery("#search_input").blur();
-    let results = [];
-    if (searchTerm)
-        results = findPlanes(searchTerm, "byIcao", "byCallsign", "byReg", "byType", true);
-    if (results.length > 0 && haveTraces) {
-        toggleIsolation("on");
-        if (results.length < 100) {
-            getTrace(null, null, {list: results});
-        }
-    }
-    return false;
-}
-function onSearchClear(e) {
-    deselectAllPlanes();
-    toggleIsolation("off");
-    toggleMultiSelect("off");
-    jQuery("#search_input").val("");
-    jQuery("#search_input").blur();
 }
 
 function onResetAltitudeFilter(e) {
@@ -5482,7 +4560,7 @@ function getFlightAwareIdentLink(ident, linkText) {
         if (!linkText) {
             linkText = ident;
         }
-        return '<a class="link" target="_blank" href="https://flightaware.com/live/flight/' + ident.trim() + '" rel="noreferrer">' + linkText + '</a>';
+        return '<a class="link" target="_blank" href="https://flightaware.com/live/flight/' + encodeURIComponent(ident.trim()) + '" rel="noreferrer">' + escHtml(linkText) + '</a>';
     }
 
     return "";
@@ -5581,12 +4659,13 @@ Filter.prototype.reset = function(e) {
 Filter.prototype.init = function() {
     // don't F directly with the innerhtml of the body because it will drop event listeners / recreate dom elements
     const row = this.tbody.insertRow();
+    // Skywatch ADS-B: compact row in the filter popover (ui/shell.css .textFilters)
     row.innerHTML =
-        `<td><form id="${this.id}">`
-        + '<div class="infoBlockTitleText">Filter by '+ this.name +':</div>'
-        + `<input id="${this.id}_input" name="${this.id}_name" type="text" class="searchInput" maxlength="1024">`
-        + '<button class="formButton" type="submit">Filter</button>'
-        + `<button class="formButton" id="${this.id}_reset">Reset</button>`
+        `<td><form id="${this.id}" class="textFilter">`
+        + `<label for="${this.id}_input">${this.name.charAt(0).toUpperCase() + this.name.slice(1)}</label>`
+        + `<input id="${this.id}_input" name="${this.id}_name" type="text" class="searchInput" maxlength="1024" spellcheck="false" autocomplete="off">`
+        + `<button type="button" class="btn textFilterReset" id="${this.id}_reset" aria-label="Clear ${this.name} filter">`
+        + '<svg aria-hidden="true" class="ico" width="14" height="14" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>'
         + '</form></td>'
     ;
     this.input = jQuery(this.sid + '_input');
@@ -5596,8 +4675,8 @@ Filter.prototype.init = function() {
 }
 
 function initFilters() {
-    initSourceFilter(tableColors.unselected);
-    initFlagFilter(tableColors.unselected);
+    initSourceFilter();
+    initFlagFilter();
     new Filter({
         key: 'callsign',
         field: 'name',
@@ -5693,11 +4772,11 @@ function getFlightAwareModeSLink(code, ident, linkText) {
             linkText = "FlightAware: " + code.toUpperCase();
         }
 
-        let linkHtml = "<a class=\"link\" target=\"_blank\" href=\"https://flightaware.com/live/modes/" + code ;
+        let linkHtml = "<a class=\"link\" target=\"_blank\" href=\"https://flightaware.com/live/modes/" + encodeURIComponent(code);
         if (ident != null && ident !== "") {
-            linkHtml += "/ident/" + ident.trim();
+            linkHtml += "/ident/" + encodeURIComponent(ident.trim());
         }
-        linkHtml += "/redirect\" rel=\"noreferrer\">" + linkText + "</a>";
+        linkHtml += "/redirect\" rel=\"noreferrer\">" + escHtml(linkText) + "</a>";
         return linkHtml;
     }
 
@@ -5714,14 +4793,14 @@ function getPhotoLink(ac) {
             return "";
         return "<a class=\"link\" target=\"_blank\" href=\"https://flightaware.com/photos/aircraft/" + ac.registration.replace(/[^0-9a-z]/ig,'') + "\" rel=\"noreferrer\">FA Photos</a>";
     } else if (showPictures) {
-        return "<a class=\"link\" target=\"_blank\" href=\"https://www.planespotters.net/hex/" + ac.icao.toUpperCase() + "\" rel=\"noreferrer\">View on g.planespotters</a>";
+        return "<a class=\"link\" target=\"_blank\" href=\"https://www.planespotters.net/hex/" + encodeURIComponent(ac.icao.toUpperCase()) + "\" rel=\"noreferrer\">planespotters.net</a>";
     }
 }
 
 // takes in an elemnt jQuery path and the OL3 layer name and toggles the visibility based on clicking it
 function toggleLayer(element, layer) {
     // set initial checked status
-    ol.control.LayerSwitcher.forEachRecursive(layers_group, function(lyr) {
+    mapa.forEachLayer(function(lyr) {
         if (lyr.get('name') === layer && lyr.getVisible()) {
             jQuery(element).addClass('settingsCheckboxChecked');
         }
@@ -5731,7 +4810,7 @@ function toggleLayer(element, layer) {
         if (jQuery(element).hasClass('settingsCheckboxChecked')) {
             visible = true;
         }
-        ol.control.LayerSwitcher.forEachRecursive(layers_group, function(lyr) {
+        mapa.forEachLayer(function(lyr) {
             if (lyr.get('name') === layer) {
                 if (visible) {
                     lyr.setVisible(false);
@@ -5805,24 +4884,24 @@ function bearingFromLonLat(position1, position2) {
 }
 
 function zoomIn() {
-    const zoom = OLMap.getView().getZoom();
-    OLMap.getView().setZoom((zoom+1).toFixed());
+    const zoom = mapa.getZoom();
+    mapa.setZoom((zoom+1).toFixed());
     if (FollowSelected)
         toggleFollow(true);
 }
 
 function zoomOut() {
-    const zoom = OLMap.getView().getZoom();
-    OLMap.getView().setZoom((zoom-1).toFixed());
+    const zoom = mapa.getZoom();
+    mapa.setZoom((zoom-1).toFixed());
     if (FollowSelected)
         toggleFollow(true);
 }
 
 function changeZoom(init) {
-    if (!OLMap)
+    if (!mapa.ready())
         return;
 
-    g.zoomLvl = OLMap.getView().getZoom();
+    g.zoomLvl = mapa.getZoom();
 
     checkScale();
 
@@ -5876,18 +4955,18 @@ function setGlobalScale(scale, init) {
 }
 
 function checkPointermove() {
-    if ((webgl || g.zoomLvl > 5.5) && enableMouseover && !onMobile) {
-        OLMap.on('pointermove', onPointermove);
+    if (g.zoomLvl > 5.5 && enableMouseover && !onMobile) {
+        mapa.pointerMove(true);
     } else {
-        OLMap.un('pointermove', onPointermove);
+        mapa.pointerMove(false);
         removeHighlight();
     }
 }
 
 
 function changeCenter(init) {
-    const rawCenter = OLMap.getView().getCenter();
-    const center = ol.proj.toLonLat(rawCenter);
+    const rawCenter = mapa.getCenterProj();
+    const center = mapgeo.toLonLat(rawCenter);
 
     const centerChanged = (Math.abs(center[1] - CenterLat) > 0.000001 || Math.abs(center[0] - CenterLon) > 0.000001);
 
@@ -5902,14 +4981,14 @@ function changeCenter(init) {
         updateAddressBar();
     }
 
-    if (rawCenter[0] < OLProjExtent[0] || rawCenter[0] > OLProjExtent[2]) {
-        OLMap.getView().setCenter(ol.proj.fromLonLat(center));
+    if (rawCenter[0] < -mapgeo.HALF || rawCenter[0] > mapgeo.HALF) {
+        mapa.setCenter(center);
         refresh();
     }
     if (CenterLat < -85)
-        OLMap.getView().setCenter(ol.proj.fromLonLat([center[0], -85]));
+        mapa.setCenter([center[0], -85]);
     if (CenterLat > 85)
-        OLMap.getView().setCenter(ol.proj.fromLonLat([center[0], 85]));
+        mapa.setCenter([center[0], 85]);
 }
 
 let lastMovement = 0;
@@ -5918,7 +4997,7 @@ let checkMoveCenter = [0, 0];
 let checkMoveDone = 0;
 
 function checkMovement() {
-    if (!OLMap)
+    if (!mapa.ready())
         return;
 
     if (!g.firstFetchDone) {
@@ -5932,8 +5011,8 @@ function checkMovement() {
         routeDoLookup();
     }
 
-    const zoom = OLMap.getView().getZoom();
-    const center = ol.proj.toLonLat(OLMap.getView().getCenter());
+    const zoom = mapa.getZoom();
+    const center = mapa.getCenter();
     const ts = new Date().getTime();
 
     if (
@@ -5958,11 +5037,6 @@ function checkMovement() {
 
     const elapsed = Math.abs(ts - lastMovement);
 
-    if (!checkMoveDone && heatmap && elapsed > 300) {
-        if (!heatmap.manualRedraw)
-            drawHeatmap();
-        checkMoveDone = 1;
-    }
     if (elapsed > 500 || (!onMobile && elapsed > 45)) {
         checkRefresh();
     }
@@ -5971,11 +5045,11 @@ function checkMovement() {
 }
 
 function getZoom() {
-    return OLMap.getView().getZoom();
+    return mapa.getZoom();
 }
 
 function getCenter() {
-    return ol.proj.toLonLat(OLMap.getView().getCenter());
+    return mapa.getCenter();
 }
 
 let lastRefresh = 0;
@@ -6037,7 +5111,6 @@ function refreshFilter() {
 
     refresh(true);
 
-    drawHeatmap();
     if (toggles.shareFilters && toggles.shareFilters.state) {
         updateAddressBar();
     }
@@ -6070,7 +5143,7 @@ function mapRefresh(redraw) {
             const plane = g.planesOrdered[i];
             delete plane.glMarker;
             // disable mobile limitations when using webGL
-            if (plane.selected || (plane.inView && plane.visible && (!onMobile || webgl || (nMapPlanes < 150 && (!plane.onGround || g.zoomLvl > 10))))) {
+            if (plane.selected || (plane.inView && plane.visible && (!onMobile || (nMapPlanes < 150 && (!plane.onGround || g.zoomLvl > 10))))) {
                 addToMap.push(plane);
                 nMapPlanes++;
             } else {
@@ -6096,63 +5169,27 @@ function mapRefresh(redraw) {
 
     addToMap.sort(function(x, y) { return x.zIndex - y.zIndex; });
     //console.log('maprefresh(): ' + addToMap.length);
-    if (webgl) {
-        webglFeatures.clear();
-    }
-
     for (let i in addToMap) {
         addToMap[i].updateFeatures(redraw);
     }
 }
 
-function onPointermove(evt) {
-    //clearTimeout(pointerMoveTimeout);
-    //pointerMoveTimeout = setTimeout(highlight(evt), 100);
-    highlight(evt);
-}
-
-function highlight(evt) {
-    let evtCoords = evt.map.getCoordinateFromPixel(evt.pixel);
-    let source = webgl ? webglFeatures : PlaneIconFeatures;
-    let feature = source.getClosestFeatureToCoordinate(evtCoords);
-    if (feature) {
-        let fPixel = evt.map.getPixelFromCoordinate(feature.getGeometry().getCoordinates());
-        let a = fPixel[0] - evt.pixel[0];
-        let b = fPixel[1] - evt.pixel[1];
-        let c = globalScale * 20;
-        if (a**2 + b**2 > c**2) {
-            feature = null;
-        }
-    }
-    if (!feature) {
+// hover: the plane under the pointer (or null)
+function highlightPlane(plane) {
+    if (!plane) {
+        const had = HighlightedPlane;
         HighlightedPlane = null;
         refreshHighlighted();
+        if (had) MLR.touch('planes');          // the hovered label goes back to normal collision
         return;
     }
-    const hex = feature.hex;
-
-    const values = feature.values_;
-    const mmsi = values ? values.mmsi : null;
-    if (hex) {
-        //console.log(hex);
-    }
-    if (mmsi) {
-        //console.log(mmsi);
-    }
-
-    if (HighlightedPlane && hex == HighlightedPlane.icao)
+    if (HighlightedPlane && plane.icao == HighlightedPlane.icao)
         return;
-
-    //clearTimeout(pointerMoveTimeout);
-
-    if (hex) {
-        HighlightedPlane = g.planes[hex];
-    } else {
-        HighlightedPlane = null;
-    }
-    //pointerMoveTimeout = setTimeout(refreshHighlighted(), 300);
+    HighlightedPlane = g.planes[plane.icao] || null;
     refreshHighlighted();
+    MLR.touch('planes');
 }
+
 let urlIcaos = [];
 function parseURLIcaos() {
     if (usp.has('icao')) {
@@ -6209,7 +5246,7 @@ function processURLParams(){
         try {
             const lat = parseFloat(usp.get("lat"));
             const lon = parseFloat(usp.get("lon"));
-            OLMap.getView().setCenter(ol.proj.fromLonLat([lon, lat]));
+            mapa.setCenter([lon, lat]);
             follow = false;
             traceOpts.noFollow = new Date().getTime() / 1000;
         }
@@ -6256,7 +5293,7 @@ function processURLParams(){
     }
 
     if (zoom) {
-        OLMap.getView().setZoom(zoom);
+        mapa.setZoom(zoom);
     }
 
     if (usp.has('mil') || defaultMilitaryOnly)
@@ -6300,11 +5337,11 @@ function processURLParams(){
     }
 
     if (usp.has('centerReceiver')) {
-        OLMap.getView().setCenter(ol.proj.fromLonLat([SiteLon, SiteLat]));
+        mapa.setCenter([SiteLon, SiteLat]);
     }
     if (usp.has('lockDotCentered')) {
         lockDotCentered = true;
-        OLMap.getView().setCenter(ol.proj.fromLonLat([SiteLon, SiteLat]));
+        mapa.setCenter([SiteLon, SiteLat]);
     }
 }
 
@@ -6414,25 +5451,25 @@ function trailReaper() {
 
 function setIndexDistance(index, center, coords) {
     if (index >= 1000) {
-        globeIndexDist[index] = ol.sphere.getDistance(center, coords);
+        globeIndexDist[index] = mapgeo.getDistance(center, coords);
         return;
     }
     let tile = globeIndexSpecialTiles[index];
-    let min = ol.sphere.getDistance(center, [tile[1], tile[0]]);
-    min = Math.min(min, ol.sphere.getDistance(center, [tile[1], tile[2]]));
-    min = Math.min(min, ol.sphere.getDistance(center, [tile[3], tile[0]]));
-    min = Math.min(min, ol.sphere.getDistance(center, [tile[3], tile[2]]));
+    let min = mapgeo.getDistance(center, [tile[1], tile[0]]);
+    min = Math.min(min, mapgeo.getDistance(center, [tile[1], tile[2]]));
+    min = Math.min(min, mapgeo.getDistance(center, [tile[3], tile[0]]));
+    min = Math.min(min, mapgeo.getDistance(center, [tile[3], tile[2]]));
     globeIndexDist[index] = min;
 }
 
 function globeIndexes() {
-    const center = ol.proj.toLonLat(OLMap.getView().getCenter());
+    const center = mapa.getCenter();
     if (mapIsVisible || lastGlobeExtent == null) {
         lastGlobeExtent = getViewOversize(1.02);
     }
     let extent = lastGlobeExtent.extent;
-    const bottomLeft = ol.proj.toLonLat([extent[0], extent[1]]);
-    const topRight = ol.proj.toLonLat([extent[2], extent[3]]);
+    const bottomLeft = mapgeo.toLonLat([extent[0], extent[1]]);
+    const topRight = mapgeo.toLonLat([extent[2], extent[3]]);
     let x1 = bottomLeft[0];
     let y1 = bottomLeft[1];
     let x2 = topRight[0];
@@ -6522,8 +5559,8 @@ function globe_index(lat, lon) {
 }
 
 function myExtent(extent) {
-    let bottomLeft = ol.proj.toLonLat([extent[0], extent[1]]);
-    let topRight = ol.proj.toLonLat([extent[2], extent[3]]);
+    let bottomLeft = mapgeo.toLonLat([extent[0], extent[1]]);
+    let topRight = mapgeo.toLonLat([extent[2], extent[3]]);
     return {
         extent: extent,
         minLon: bottomLeft[0],
@@ -6547,7 +5584,7 @@ function inView(pos, ex) {
     //console.log((currExtent[2]-currExtent[0])/40075016);
     //console.log([bottomLeft[0], topRight[0]]);
     //console.log([bottomLeft[1], topRight[1]]);
-    //const proj = ol.proj.fromLonLat(pos);
+    //const proj = mapgeo.fromLonLat(pos);
     if (lat < ex.minLat || lat > ex.maxLat)
         return false;
 
@@ -6749,7 +5786,7 @@ function refreshInt() {
         }
     }
 
-    if (!reApi && binCraft && globeIndex && onlyMilitary && OLMap.getView().getZoom() < 5.5) {
+    if (!reApi && binCraft && globeIndex && onlyMilitary && mapa.getZoom() < 5.5) {
         refresh = 5000;
     }
 
@@ -6819,8 +5856,11 @@ function toggleShowTrace() {
         }
     }
 
-    jQuery('#history_collapse').toggle();
+    // Skywatch ADS-B: the history bar floats over the map (ui/history.js)
+    document.getElementById('historyBar').hidden = !showTrace;
+    document.body.classList.toggle('traceOpen', showTrace);
     jQuery('#show_trace').toggleClass('active');
+    jQuery('#history_action').attr('aria-pressed', String(showTrace)).toggleClass('on', showTrace);
 }
 
 function legShift(offset, plane) {
@@ -6959,7 +5999,7 @@ function shiftTrace(offset) {
     jQuery("#histDatePicker").datepicker('setDate', traceDateString);
 
     for (let i in SelPlanes) {
-        selectPlaneByHex(SelPlanes[i].icao, {noDeselect: true, zoom: g.zoomLvl});
+        selectPlaneByHex(SelPlanes[i].icao, {noDeselect: true, zoom: g.zoomLvl, noFocus: true});
     }
 
     updateAddressBar();
@@ -6969,54 +6009,7 @@ function shiftTrace(offset) {
 function setLineWidth() {
     newWidth = lineWidth * Math.pow(2, globalScale) / 2 * globalScale
 
-    estimateStyle = new ol.style.Style({
-        stroke: new ol.style.Stroke({
-            color: '#808080',
-            width: 1.2 * newWidth,
-        })
-    });
-    estimateStyleSlim = new ol.style.Style({
-        stroke: new ol.style.Stroke({
-            color: '#808080',
-            width: 0.4 * newWidth,
-        })
-    });
-
-    badLine =  new ol.style.Style({
-        stroke: new ol.style.Stroke({
-            color: '#FF0000',
-            width: 2 * newWidth,
-        })
-    });
-    badLineMlat =  new ol.style.Style({
-        stroke: new ol.style.Stroke({
-            color: '#FFA500',
-            width: 2 * newWidth,
-        })
-    });
-
-    badDot = new ol.style.Style({
-        image: new ol.style.Circle({
-            radius: 3.5 * newWidth,
-            fill: new ol.style.Fill({
-                color: '#FF0000',
-            })
-        }),
-    });
-    badDotMlat = new ol.style.Style({
-        image: new ol.style.Circle({
-            radius: 3.5 * newWidth,
-            fill: new ol.style.Fill({
-                color: '#FFA500',
-            })
-        }),
-    });
-
-    labelFill = new ol.style.Fill({color: 'white' });
-    blackFill = new ol.style.Fill({color: 'black' });
-    labelStroke = new ol.style.Stroke({color: 'rgba(0,0,0,0.7', width: 4 * globalScale});
-    labelStrokeNarrow = new ol.style.Stroke({color: 'rgba(0,0,0,0.7', width: 2.5 * globalScale});
-    bgFill = new ol.style.Stroke({color: 'rgba(0,0,0,0.25'});
+    selectedLabelFont = 'bold ' + (12 * globalScale) + 'px "JetBrains Mono", ui-monospace, monospace';
 }
 let lastCallLocationChange = 0;
 function onLocationChange(position) {
@@ -7034,7 +6027,7 @@ function onLocationChange(position) {
     createLocationDot();
 
     if (moveMap || lockDotCentered) {
-        OLMap.getView().setCenter(ol.proj.fromLonLat([SiteLon, SiteLat]));
+        mapa.setCenter([SiteLon, SiteLat]);
     }
     console.log('Changed Site Location to: '+ SiteLat +', ' + SiteLon);
     //followRandomPlane();
@@ -7103,7 +6096,7 @@ function geoFindMe() {
         SiteLat = DefaultCenterLat = position.coords.latitude;
         SiteLon = DefaultCenterLon = position.coords.longitude;
         if (loStore['geoFindMeFirstVisit'] != 'no' && !(usp.has("lat") && usp.has("lon"))) {
-            OLMap.getView().setCenter(ol.proj.fromLonLat([SiteLon, SiteLat]));
+            mapa.setCenter([SiteLon, SiteLat]);
             loStore['geoFindMeFirstVisit'] = 'no';
         }
 
@@ -7174,6 +6167,7 @@ function initSitePos() {
     } else {
         TAR.planeMan.setColumnVis('sitedist', false);
     }
+    if (!SiteShow) TAR.planeMan.setColumnVis('sitedist', false);   // privacy: no distance column while the receiver location is hidden
 
     if (initSitePosFirstRun) {
         initSitePosFirstRun = false;
@@ -7224,68 +6218,13 @@ function remakeTrails() {
 }
 
 function createLocationDot() {
-    locationDotFeatures.clear();
-    let markerStyle = new ol.style.Style({
-        image: new ol.style.Circle({
-            radius: 7,
-            snapToPixel: false,
-            fill: new ol.style.Fill({color: 'black'}),
-            stroke: new ol.style.Stroke({
-                color: 'white', width: 2
-            })
-        })
-    });
-
-    let feature = new ol.Feature(new ol.geom.Point(ol.proj.fromLonLat(SitePosition)));
-    feature.setStyle(markerStyle);
-    locationDotFeatures.addFeature(feature);
+     MLR.setLocation(SitePosition); return;
 }
 function drawSiteCircle() {
     //console.trace();
-    siteCircleFeatures.clear();
-
-    if (!SitePosition)
-        return;
-
-    let circleColor = '#000000';
-
-    for (let i = 0; i < SiteCirclesDistances.length; i++) {
-        circleColor = i < SiteCirclesColors.length ? SiteCirclesColors[i] : circleColor;
-
-        let conversionFactor = 1000.0;
-        const distUnits = units_for('distance', DisplayUnits);
-        if (distUnits === "nautical") {
-            conversionFactor = 1852.0;
-        } else if (distUnits === "imperial") {
-            conversionFactor = 1609.0;
-        }
-
-        let distance = SiteCirclesDistances[i] * conversionFactor;
-        let circle = TAR.utils.make_geodesic_circle(SitePosition, distance, 180);
-        circle.transform('EPSG:4326', 'EPSG:3857');
-        let feature = new ol.Feature(circle);
-
-        let circleStyle = new ol.style.Style({
-            fill: null,
-            stroke: new ol.style.Stroke({
-                color: circleColor,
-                lineDash: SiteCirclesLineDash,
-                width: globalScale,
-            }),
-            text: new ol.style.Text({
-                font: ((10 * globalScale) + 'px Helvetica Neue, Helvetica, Tahoma, Verdana, sans-serif'),
-                fill: new ol.style.Fill({ color: '#000' }),
-                offsetY: -8,
-                text: format_distance_long(distance, DisplayUnits, 0),
-            })
-        });
-
-        feature.setStyle(circleStyle);
-        siteCircleFeatures.addFeature(feature);
-    }
+     MLR.drawSiteCircles(); return;
 }
 
-let calcOutlineFeatures = new ol.source.Vector();
 let calcOutlineLayer;
 function drawUpintheair() {
     // Add terrain-limit rings. To enable this:
@@ -7304,38 +6243,7 @@ function drawUpintheair() {
     //
     if (!calcOutlineData)
         return;
-
-    let data = calcOutlineData;
-    for (let i = 0; i < data.rings.length; ++i) {
-        let geom = null;
-        let points = data.rings[i].points;
-        let altitude = (3.28084 * data.rings[i].alt).toFixed(0);
-        let color = range_outline_color;
-        if (range_outline_colored_by_altitude) {
-            let colorArr = altitudeColor(altitude);
-            color = 'hsla(' + colorArr[0].toFixed(0) + ',' + colorArr[1].toFixed(0) + '%,' + colorArr[2].toFixed(0) + '%,' + range_outline_alpha + ')';
-        }
-        let outlineStyle = new ol.style.Style({
-            fill: null,
-            stroke: new ol.style.Stroke({
-                color: color,
-                width: range_outline_width,
-                lineDash: range_outline_dash,
-            })
-        });
-        if (points.length > 0) {
-            geom = new ol.geom.LineString([[ points[0][1], points[0][0] ]]);
-            for (let j = 0; j < points.length; ++j) {
-                geom.appendCoordinate([ points[j][1], points[j][0] ]);
-            }
-            geom.appendCoordinate([ points[0][1], points[0][0] ]);
-            geom.transform('EPSG:4326', 'EPSG:3857');
-
-            let feature = new ol.Feature(geom);
-            feature.setStyle(outlineStyle);
-            calcOutlineFeatures.addFeature(feature);
-        }
-    }
+     MLR.setCalcOutline(calcOutlineData); return;
 }
 
 function drawOutlineJson() {
@@ -7362,10 +6270,10 @@ function drawOutlineJson() {
                 const k = j % points[p].length;
                 const lat = points[p][k][0];
                 const lon = points[p][k][1];
-                const proj = ol.proj.fromLonLat([lon, lat]);
+                const proj = mapgeo.fromLonLat([lon, lat]);
                 if (!geom || (lastLon && Math.abs(lon - lastLon) > 270)) {
-                    geom = new ol.geom.LineString([proj]);
-                    actualOutline.features.addFeature(new ol.Feature(geom));
+                    geom = new mapgeo.LineString([proj]);
+                    actualOutline.features.addFeature(new mapgeo.Feature(geom));
                 } else {
                     geom.appendCoordinate(proj);
                 }
@@ -7412,12 +6320,14 @@ function gotoTime(timestamp) {
 function checkFollow() {
     if (!FollowSelected)
         return false;
+    if (typeof MLR != 'undefined' && MLR.focusAnim)
+        return true;                     // the select ease is moving the camera, that is not the user dragging
     if (!SelectedPlane || !SelectedPlane.position) {
         toggleFollow(false);
         return false;
     }
-    const center = OLMap.getView().getCenter();
-    let proj = SelectedPlane.proj;
+    const center = mapa.getCenterProj();
+    let proj = (typeof MLR != 'undefined' && MLR.followProj && MLR.smoothActive()) ? MLR.followProj : SelectedPlane.proj;
 
     if (!proj) {
         return false;
@@ -7592,35 +6502,6 @@ function getTrace(newPlane, hex, options) {
     return newPlane;
 }
 
-function initHeatmap() {
-    heatmap.init = false;
-    if (heatFeatures.length == 0) {
-        for (let i = 0; i < heatFeaturesSpread; i++) {
-            heatFeatures.push(new ol.source.Vector());
-            heatLayers.push(new ol.layer.Vector({
-                name: ('heatLayer' + i),
-                isTrail: true,
-                source: heatFeatures[i],
-                declutter: (heatmap.declutter ? true : false),
-                zIndex: 150,
-                renderOrder: null,
-                renderBuffer: 5,
-            }));
-            trailGroup.push(heatLayers[i]);
-        }
-    }
-    realHeat = new ol.layer.Heatmap({
-        source: realHeatFeatures,
-        name: realHeat,
-        isTrail: true,
-        zIndex: 150,
-        weight: x => heatmap.weight,
-        radius: heatmap.radius,
-        blur: heatmap.blur,
-    });
-    trailGroup.push(realHeat);
-}
-
 function setSize(set) {
     let count = 0;
     for (const i in set.values())
@@ -7628,261 +6509,15 @@ function setSize(set) {
     return count;
 }
 
-function drawHeatmap() {
-    if (!heatmap)
-        return;
-    if (heatmap.init) {
-        initHeatmap();
-    }
-
-    console.time("drawHeat");
-
-    let ext = myExtent(OLMap.getView().calculateExtent(OLMap.getSize()));
-    let maxLat = ext.maxLat * 1000000;
-    let minLat = ext.minLat * 1000000;
-
-    webglFeatures.clear();
-    for (let i = 0; i < heatFeaturesSpread; i++)
-        heatFeatures[i].clear();
-    realHeatFeatures.clear();
-
-    let pointCount = 0;
-    let features = [];
-    if (lineStyleCache["scale"] != globalScale) {
-        lineStyleCache = {};
-        lineStyleCache["scale"] = globalScale;
-    }
-    let done = new Set();
-    let iterations = 0;
-    let maxIter = 1000 * 1000;
-
-
-    let tempPoints = [];
-    for (let k = 0; k < heatChunks.length; k++) {
-        if (heatPoints[k] != null) {
-            true; // do nothing
-        } else if (heatChunks[k] != null) {
-            if (heatChunks[k].byteLength % 16 != 0) {
-                console.log("Invalid heatmap file (byteLength): " + k);
-                continue;
-            }
-            let points = heatPoints[k] = new Int32Array(heatChunks[k]);
-            let found = 0;
-            for (let i = 0; i < points.length; i += 4) {
-                if (points[i] == 0xe7f7c9d) {
-                    found = 1;
-                    break;
-                }
-            }
-            if (!found) {
-                heatPoints[k] = heatChunks[k] = null;
-                console.log("Invalid heatmap file (magic number): " + k);
-            }
-        } else {
-            continue;
-        }
-        tempPoints.push(heatPoints[k]);
-    }
-
-    //console.log('tempPoints.length: ' + tempPoints.length);
-    let myPoints = [];
-    if (tempPoints.length <= 2) {
-        myPoints = tempPoints;
-    } else {
-        let len = tempPoints.length;
-        let arr1 = tempPoints.splice(0, Math.round(tempPoints.length / 3));
-        let arr2 = tempPoints.splice(0, Math.round(tempPoints.length / 2));
-        let arr3 = tempPoints;
-        myPoints.push(arr2.splice(0, 1));
-        myPoints.push(arr3.splice(0, 1));
-        myPoints.push(arr1.splice(0, 1));
-        len -= 3;
-        for (let i = 0; i < Math.ceil(len / 3); i++) {
-            myPoints.push(arr2.splice(0, 1));
-            myPoints.push(arr3.splice(0, 1));
-            myPoints.push(arr1.splice(0, 1));
-        }
-    }
-    myPoints = myPoints.flat();
-
-    //console.log('myPoints.length: ' + myPoints.length);
-
-    let indexes = [];
-    for (let k = 0; k < myPoints.length; k++) {
-        let points = myPoints[k];
-        let index = [];
-        let i = 0;
-        if (!points)
-            continue;
-        while(points[i] != 0xe7f7c9d && i < points.length) {
-            index.push(points[i]);
-            //console.log(points[i]);
-            i += 4;
-        }
-        if (!heatmap.lines)
-            index.sort((a, b) => (Math.random() - 0.5));
-        indexes.push(index);
-    }
-
-    let offsets = Array(myPoints.length).fill(0);
-
-    while (pointCount < heatmap.max && done.size < myPoints.length && iterations++ < maxIter) {
-        for (let k = 0; k < myPoints.length && pointCount < heatmap.max; k++) {
-
-            if (offsets[k] > indexes[k].length) {
-                continue;
-            }
-            if (offsets[k] == indexes[k].length) {
-                done.add(k);
-                offsets[k]++;
-                continue;
-            }
-
-            let points = myPoints[k];
-            let pointsU = new Uint32Array(points.buffer);
-
-            let i = 4 * indexes[k][offsets[k]];
-
-            if (points[i] == 0xe7f7c9d)
-                i += 4;
-
-            if (i < 0) {
-                console.log('wat ' + i);
-                break;
-            }
-            for (; i < points.length; i += 4) {
-                if (points[i] == 0xe7f7c9d)
-                    break;
-                let lat = points[i+1];
-                if (lat > maxLat || lat < minLat)
-                    continue;
-
-                lat /= 1000000;
-                let lon = points[i + 2] / 1000000;
-                let pos = [lon, lat];
-
-                if (!inView(pos, ext))
-                    continue;
-
-                let alt = points[i + 3] & 65535;
-                if (alt & 32768)
-                    alt |= -65536;
-                if (alt == -123)
-                    alt = 'ground';
-                else if (alt == -124)
-                    alt = null;
-                else
-                    alt *= 25;
-
-                let gs = points[i + 3] >> 16;
-                if (gs == -1)
-                    gs = null;
-                else
-                    gs /= 10;
-
-                if (PlaneFilter.enabled && altFiltered(alt))
-                    continue;
-
-                if (heatmap.filters) {
-                    let type = (pointsU[i] >> 27) & 0x1F;
-                    let dataSource;
-                    switch (type) {
-                        case  0: dataSource = 'adsb';     break;
-                        case  1: dataSource = 'modeS';    break;
-                        case  2: dataSource = 'adsr';     break;
-                        case  3: dataSource = 'tisb';     break;
-                        case  4: dataSource = 'adsc';     break;
-                        case  5: dataSource = 'mlat';     break;
-                        case  6: dataSource = 'other';    break;
-                        case  7: dataSource = 'modeS';    break;
-                        case  8: dataSource = 'adsb';     break;
-                        case  9: dataSource = 'adsr';     break;
-                        case 10: dataSource = 'tisb';     break;
-                        case 11: dataSource = 'tisb';     break;
-                        default: dataSource = 'unknown';
-                    }
-                    let hex = (pointsU[i] & 0xFFFFFF).toString(16).padStart(6, '0');
-                    hex = (pointsU[i] & 0x1000000) ? ('~' + hex) : hex;
-                    let plane = g.planes[hex] || new PlaneObject(hex);
-                    plane.dataSource = dataSource;
-                    if (plane.isFiltered()) {
-                        continue;
-                    }
-                }
-
-                pointCount++;
-                //console.log(pos);
-
-                alt = calcAltitudeRounded(alt);
-                let projHere = ol.proj.fromLonLat(pos);
-                let style = lineStyleCache[alt];
-                let hsl = altitudeColor(alt);
-                hsl[1] = hsl[1] * 0.85;
-                hsl[2] = hsl[2] * 0.8;
-                if (!style) {
-                    let col;
-                    if (heatmap.alpha == null)
-                        col = hslToRgb(hsl);
-                    else
-                        col = hslToRgb(hsl, heatmap.alpha);
-
-                    style = new ol.style.Style({
-                        image: new ol.style.Circle({
-                            radius: heatmap.radius * globalScale,
-                            fill: new ol.style.Fill({
-                                color: col,
-                            }),
-                        }),
-                        zIndex: i,
-                    });
-                    lineStyleCache[alt] = style;
-                }
-                let feat = new ol.Feature(new ol.geom.Point(projHere));
-                if (webgl) {
-                    let rgb = hslToRgb(hsl, 'array');
-                    feat.set('r', rgb[0]);
-                    feat.set('g', rgb[1]);
-                    feat.set('b', rgb[2]);
-                } else {
-                    feat.setStyle(style);
-                }
-                features.push(feat);
-                //console.log(alt);
-            }
-            offsets[k] += 1;
-        }
-    }
-    if (iterations >= maxIter)
-        console.log("drawHeatmap: MAX_ITERATIONS!");
-    //console.log(setSize(done));
-    console.log("files: " + myPoints.length + ", points drawn: " + pointCount);
-    if (heatmap.real) {
-        realHeatFeatures.addFeatures(features);
-    } else {
-
-        if (webgl) {
-            webglFeatures.addFeatures(features);
-        } else {
-            for (let i = 0; i < heatFeaturesSpread; i++) {
-
-                heatFeatures[i].addFeatures(features.splice(0, pointCount / heatFeaturesSpread + 1));
-                //console.log(features.length);
-            }
-        }
-    }
-    console.timeEnd("drawHeat");
-    jQuery("#loader").hide();
-}
-
 function currentExtent(factor) {
-    let size = OLMap.getSize();
+    let size = mapa.getSize();
     if (factor != null)
         size = [size[0] * factor, size[1] * factor];
-    return myExtent(OLMap.getView().calculateExtent(size));
+    return myExtent(mapa.calcExtent(size));
 }
 
 function replayDefaults(ts) {
-    jQuery("#replayPlay").html("Pause");
+    setReplayPlaying(true);
     let playing = true;
     let speed = 30;
     if (usp.has("replaySpeed")) {
@@ -8061,15 +6696,7 @@ function initReplay(chunk, data) {
 }
 
 function setReplayTimeHint(date) {
-    if (true || utcTimesHistoric) {
-        jQuery("#replayDateHintLocal").html(TIMEZONE + " Date: " + lDateString(date));
-        jQuery("#replayDateHint").html("" + zDateString(date));
-        jQuery("#replayTimeHint").html("UTC:" + NBSP + zuluTime(date) + ' / ' + TIMEZONE + ":" + NBSP + localTime(date));
-    } else {
-        jQuery("#replayDateHintLocal").html("");
-        jQuery("#replayDateHint").html("Date: " + lDateString(date));
-        jQuery("#replayTimeHint").html("Time: " + localTime(date) + NBSP + TIMEZONE);
-    }
+    histUpdateReplay(date); // ui/history.js
 }
 function replayOnSliderMove() {
     clearTimeout(refreshId);
@@ -8116,18 +6743,6 @@ function replaySetTimeHint(arg) {
     timeString = zuluTime(replay.ts) + NBSP + 'Z';
 
     setReplayTimeHint(replay.ts);
-
-    if (replay.datepickerDate != dateString) {
-        replay.datepickerDate = dateString;
-        jQuery("#replayDatepicker").datepicker('setDate', dateString);
-    }
-
-
-    let hours = replay.ts.getUTCHours();
-    jQuery('#hourSelect').slider("option", "value", hours);
-
-    let minutes = replay.ts.getUTCMinutes();
-    jQuery('#minuteSelect').slider("option", "value", minutes);
     replayJumpEnabled = true;
 }
 
@@ -8345,38 +6960,6 @@ function active() {
     lastActive = new Date().getTime();
 }
 
-function drawTileBorder(data) {
-    let southWest = ol.proj.fromLonLat([data.west, data.south]);
-    let south180p = ol.proj.fromLonLat([180, data.south]);
-    let south180m = ol.proj.fromLonLat([-180, data.south]);
-    let southEast = ol.proj.fromLonLat([data.east, data.south]);
-    let northEast = ol.proj.fromLonLat([data.east, data.north]);
-    let north180p = ol.proj.fromLonLat([180, data.north]);
-    let north180m = ol.proj.fromLonLat([-180, data.north]);
-    let northWest = ol.proj.fromLonLat([data.west, data.north]);
-    const estimateStyle = new ol.style.Style({
-        stroke: new ol.style.Stroke({
-            color: '#303030',
-            width: 1.5,
-        })
-    });
-    if (data.west < data.east) {
-        let tile = new ol.geom.LineString([southWest, southEast, northEast, northWest, southWest]);
-        let tileFeature = new ol.Feature(tile);
-        tileFeature.setStyle(estimateStyle);
-        siteCircleFeatures.addFeature(tileFeature);
-    } else {
-        let west = new ol.geom.LineString([south180p, southWest, northWest, north180p]);
-        let east = new ol.geom.LineString([south180m, southEast, northEast, north180m]);
-        let westF = new ol.Feature(west);
-        let eastF = new ol.Feature(east);
-        westF.setStyle(estimateStyle);
-        eastF.setStyle(estimateStyle);
-        siteCircleFeatures.addFeature(westF);
-        siteCircleFeatures.addFeature(eastF);
-    }
-}
-
 function updateMessageRate(data) {
     if (data.messageRate && data.messageRate > 0) {
         MessageRate = data.messageRate;
@@ -8439,11 +7022,11 @@ function playReplay(state){
             return;
         }
         replay.playing = true;
-        jQuery("#replayPlay").html("Pause");
+        setReplayPlaying(true);
         replayStep();
     } else {
         replay.playing = false;
-        jQuery("#replayPlay").html("Play");
+        setReplayPlaying(false);
         clearTimeout(refreshId);
     }
 };
@@ -8455,82 +7038,16 @@ function showReplayBar(){
         jQuery("#replayBar").hide();
         clearTimeout(refreshId);
         replay = null;
-        jQuery('#map_canvas').height('100%');
-        jQuery('#sidebar_canvas').height('100%');
         jQuery("#selected_showTrace_hide").show();
         fetchData({force: true});
     } else {
-        jQuery("#replayBar").show();
-        jQuery("#replayBar").css('display', 'grid');
-        jQuery('#replayBar').height('100px');
-        jQuery('#map_canvas').height('calc(100% - 100px)');
-        jQuery('#sidebar_canvas').height('calc(100% - 110px)');
+        // Skywatch ADS-B: the bar floats over the map (ui/history.js, ui/history.css)
+        jQuery("#replayBar").css('display', 'flex');
         if (!replay) {
             replay = replayDefaults(new Date());
         }
-        //ts.setUTCMinutes((parseInt((ts.getUTCMinutes() + 7.5)/15) * 15) % 60);
-        let datepickerOptions = {
-            maxDate: '+1d',
-            dateFormat: "yy-mm-dd",
-            autoSize: true,
-            onSelect: function(dateText) {
-                replay.dateText = dateText;
-                replayJump();
-            },
-        };
-        if (onMobile) {
-            datepickerOptions.onClose = function(dateText, inst){
-                jQuery("replayDatepicker").attr("disabled", false);
-            };
-            datepickerOptions.beforeShow = function(input, inst){
-                jQuery("replayDatepicker").attr("disabled", true);
-            };
-        } else {
-            //
-        }
-
-        jQuery("#replayDatepicker").datepicker(datepickerOptions);
-
-        jQuery('#hourSelect').slider({
-            step: 1,
-            min: 0,
-            max: 23,
-            slide: function(event, ui) {
-                replay.hours = ui.value;
-                replayOnSliderMove();
-            },
-            change: function() {
-                replayJump();
-            }
-        });
-        jQuery('#minuteSelect').slider({
-            step: 1,
-            min: 0,
-            max: 59,
-            slide: function(event, ui) {
-                replay.minutes = ui.value;
-                replayOnSliderMove();
-            },
-            change: function() {
-                replayJump();
-            }
-        });
-        const slideBase = 3.0;
-        jQuery('#replaySpeedSelect').slider({
-            value: Math.pow(replay.speed, 1 / slideBase),
-            step: 0.07,
-            min: Math.pow(1, 1 / slideBase),
-            max: Math.pow(1000, 1 / slideBase),
-            slide: function(event, ui) {
-                replay.speed = Math.pow(ui.value, slideBase).toFixed(1);
-                jQuery('#replaySpeedHint').text('Speed: ' + replay.speed + 'x');
-            },
-            change: function(event, ui) {
-                replayStep();
-            },
-        });
-        jQuery('#replaySpeedHint').text('Speed: ' + replay.speed + 'x');
-
+        histInitReplay();
+        setReplayPlaying(replay.playing);
         jQuery("#selected_showTrace_hide").hide();
 
         loadReplay(replay.ts);
@@ -8728,7 +7245,7 @@ function autoSelectClosest() {
         if (autoselectCoords && autoselectCoords.length == 2) {
             refLoc = [ autoselectCoords[1], autoselectCoords[0] ];
         }
-        const dist = ol.sphere.getDistance(refLoc, plane.position);
+        const dist = mapgeo.getDistance(refLoc, plane.position);
         if (dist == null || isNaN(dist))
             continue;
         if (closestDistance == null || dist < closestDistance) {
@@ -9144,35 +7661,11 @@ function printTrace() {
 
 function copyShareLink() {
     navigator.clipboard.writeText(shareLink);
-
-    copyLinkTime = new Date().getTime();
-    copiedIcao = SelectedPlane.icao;
-    setSelectedIcao();
+    copyLinkTime = Date.now();
+    if (SelectedPlane) ibRender(SelectedPlane);
 }
 
 let copyLinkTime = 0;
-let copiedIcao = null;
-
-function setSelectedIcao() {
-    const selected = SelectedPlane;
-    if (selected.icao == selIcao && copiedIcao == null) {
-        return;
-    }
-    selIcao = selected.icao;
-    let hex_html = "<span style='font-family: monospace;' class=identSmall>Hex:" + NBSP + selected.icao.toUpperCase() + "</span>";
-    if (globeIndex || shareBaseUrl) {
-        if (copiedIcao && (copiedIcao != selected.icao || new Date().getTime() - copyLinkTime > 2000)) {
-            copiedIcao = null;
-        }
-        let copy_link_text = (copiedIcao != null) ? "Copied" : ("Copy" + NBSP + "Link");
-        let icao_link = "<span  class=identSmall><a class='link identSmall' target=\"_blank\" href=\"" + shareLink +
-            "\" onclick=\"copyShareLink(); return false;\">" + copy_link_text + "</a></span>";
-        hex_html = hex_html + NBSP + NBSP + NBSP + icao_link;
-    }
-    jQuery('#selected_icao').html(hex_html);
-
-    jQuery('a.identSmall').prop('href',shareLink);
-}
 
 function mapTypeSettings() {
     if (MapType_tar1090.startsWith('maptiler_sat') || MapType_tar1090.startsWith('maptiler_hybrid')) {
@@ -9198,17 +7691,17 @@ function mapTypeSettings() {
 
 function getViewOversize(factor) {
     factor || (factor = 1);
-    let mapSize = OLMap.getSize();
+    let mapSize = mapa.getSize();
     let size = [mapSize[0] * factor, mapSize[1] * factor];
-    return myExtent(OLMap.getView().calculateExtent(size));
+    return myExtent(mapa.calcExtent(size));
 }
 
 function getRenderExtent(extra) {
     extra || (extra = 0);
-    const mapSize = OLMap.getSize();
+    const mapSize = mapa.getSize();
     const over = renderBuffer + extra;
     const size = [mapSize[0] + over, mapSize[1] + over];
-    return myExtent(OLMap.getView().calculateExtent(size));
+    return myExtent(mapa.calcExtent(size));
 }
 
 function requestBoxString() {

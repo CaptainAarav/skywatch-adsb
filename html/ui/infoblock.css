@@ -1,0 +1,496 @@
+/*
+ * Skywatch ADS-B: selected aircraft panel.
+ * Compact card: design/mockups/01-live-map.html; wide details: 03-aircraft-details-history.html.
+ * Markup in index.html (#selected_infoblock), values from ui/infoblock.js.
+ */
+
+#selected_infoblock { color: var(--text); font-size: 13px; }
+#selected_infoblock .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+#selected_infoblock .lbl { font-size: 12px; color: var(--muted); }
+#selected_infoblock .chip { height: 28px; padding: 0 10px; border-radius: 14px; font-size: 12px; color: var(--text2); background: var(--tile); border: 0; text-decoration: none; }
+#selected_infoblock a.chip:hover, #selected_infoblock button.chip:hover { color: var(--text); background: rgba(255,255,255,.1); }
+#selected_infoblock .chip.mono { font-family: var(--font-mono); }
+
+/* compact / wide switches */
+body.infoWide #selected_infoblock .compactOnly { display: none !important; }
+body:not(.infoWide) #selected_infoblock .wideOnly { display: none !important; }
+
+/* ---------- header ---------- */
+.ibHead {
+    position: relative;
+    flex: none;
+    display: flex;
+    gap: 16px;
+    align-items: stretch;
+}
+.ibHeadMain {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 2px 4px;
+}
+.ibTitleRow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+.ibCallsign {
+    font-size: 19px;
+    font-weight: 600;
+    line-height: 1.25;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.ibHexW { font-size: 12px; color: var(--muted); }
+.ibDbFlags { display: inline-flex; gap: 4px; }
+.ibDbFlags:empty { display: none; }
+#selected_infoblock .ibFlagChip { height: 22px; padding: 0 8px; font-size: 11px; font-weight: 600; letter-spacing: .02em; }
+#selected_infoblock .ibFlagChip.warn { color: var(--warn); background: rgba(245,185,74,.12); }
+.ibHeadBtns { margin-left: auto; display: flex; gap: 6px; flex: none; }
+#selected_infoblock .ibBtn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--tile);
+    border: 0;
+    color: var(--text);
+}
+#selected_infoblock .ibBtn:hover { background: rgba(255,255,255,.1); }
+.ibSub {
+    font-size: 12px;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.ibSub .mono { font-family: var(--font-mono); }
+/* compact: the back button sits beside both header lines (mockup 01) */
+body:not(.infoWide) .ibHeadMain { padding-right: 56px; }
+body:not(.infoWide) .ibHeadBtns { position: absolute; right: 0; top: 50%; transform: translateY(-50%); }
+body:not(.infoWide) .ibHead { min-height: 44px; }
+
+/* wide header (mockup 03) */
+body.infoWide #selected_infoblock { padding: 16px; gap: 12px; }
+body.infoWide .ibHeadMain { justify-content: flex-start; gap: 6px; padding: 0; }
+body.infoWide .ibCallsign { font-size: 26px; line-height: 38px; }
+body.infoWide #selected_infoblock .ibBtn { width: 38px; height: 38px; }
+.ibLine1 { font-size: 14px; color: var(--text); }
+.ibLine1 .lbl { font-size: 14px !important; }
+.ibLine2 { font-size: 13px; color: var(--muted); }
+.ibHeadChips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; padding-top: 4px; }
+#ib_photo_wide {
+    flex: none;
+    width: 210px;
+    height: 128px;
+    border-radius: 20px;
+}
+#ib_photo_wide:not(:has(img, p)) { display: none; }
+.ibFlag {
+    width: 18px;
+    height: 12px;
+    margin-right: 5px;
+    vertical-align: -1px;
+    border-radius: 2px;
+    object-fit: cover;
+}
+
+/* ---------- scroll area ---------- */
+.ibScroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    scrollbar-width: none;
+}
+.ibScroll::-webkit-scrollbar { display: none; }
+body.infoWide .ibScroll { display: block; }
+
+.ibNote {
+    flex: none;
+    padding: 12px 14px;
+    border-radius: 16px;
+    background: var(--tile);
+    color: var(--text2);
+    font-size: 12px;
+    line-height: 1.5;
+}
+.ibNote.hidden { display: none; }
+.ibNote b { color: var(--text); font-weight: 600; }
+.ibNote a { color: var(--text); }
+
+/* route card */
+.ibRoute {
+    flex: none;
+    padding: 16px;
+    border-radius: 24px;
+    background: var(--tile);
+}
+.ibRouteCodes { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ibRouteCodes .mono { font-size: 30px; font-weight: 600; letter-spacing: -.01em; line-height: 1.2; }
+.ibRouteArc { display: none; }
+.ibRouteNames { display: flex; justify-content: space-between; gap: 10px; margin-top: 2px; }
+.ibRouteNames span:last-child { text-align: right; }
+#ib_route_via { color: var(--text2); }
+.ibRouteWarn { margin-top: 8px; font-size: 11px; color: var(--warn); }
+
+/* 2x2 tiles */
+.ibTiles {
+    flex: none;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+.ibTile {
+    min-width: 0;
+    padding: 14px 16px;
+    border-radius: 20px;
+    background: var(--tile);
+}
+.ibBig {
+    margin-top: 6px;
+    font-size: 26px;
+    font-weight: 600;
+    letter-spacing: -.01em;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.ibBig .unit {
+    margin-left: 3px;
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--muted);
+}
+.ibTileSub { margin-top: 4px; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ibTileSub.climb { color: var(--ok); }
+.ibTileSub.descend { color: var(--warn); }
+.ibTile.emergency { background: rgba(255,107,107,.14); box-shadow: inset 0 0 0 1px rgba(255,107,107,.5); }
+.ibTile.emergency .ibBig { color: var(--bad); }
+
+/* chips */
+.ibChips {
+    flex: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 0 2px;
+}
+.ibChips:empty { display: none; }
+.ibSrc::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    box-sizing: border-box;
+    border: 1.5px solid var(--src-other);
+    border-radius: 1px;
+}
+.ibSrc.src-adsb::before { border: 0; border-radius: 50%; background: var(--ok); }
+.ibSrc.src-mlat::before { border: 0; background: var(--src-mlat); }
+.ibSrc.src-tisb::before { border: 0; border-radius: 0; background: var(--src-tisb); clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+
+/* aircraft card */
+.ibCard {
+    flex: none;
+    padding: 16px;
+    border-radius: 24px;
+    background: var(--tile);
+}
+.ibCardHead { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.ibTypeName { font-size: 19px; font-weight: 600; line-height: 1.25; min-width: 0; }
+.ibTypeChips { display: flex; gap: 4px; flex: none; }
+#selected_infoblock .ibTypeChips .chip { height: 26px; }
+#selected_infoblock .ibTypeChips .chip[hidden] { display: none; }
+#ib_typedesc { color: var(--muted); }
+
+.ibPhotoSlot { position: relative; }
+#ib_photo_compact { margin-top: 12px; }
+#ib_photo_compact:not(:has(img, p)) { display: none; }
+.ibCardHead:has(.ibTypeName[hidden]):has(#ib_icaotype[hidden]):has(#ib_typedesc[hidden]) { display: none; }
+.ibCardHead:has(.ibTypeName[hidden]) + #ib_photo_compact { margin-top: 0; }
+.ibFacts { margin-top: 12px; }
+.ibPhoto {
+    position: relative;
+    height: 96px;
+    border-radius: 14px;
+    overflow: hidden;
+    background: linear-gradient(160deg, #1c2536, #0c0f16);
+}
+#ib_photo_wide .ibPhoto { height: 128px; border-radius: 20px; }
+#selected_photo, #selected_photo a { display: block; width: 100%; height: 100%; }
+#selected_photo img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 0;
+}
+#selected_photo p {
+    margin: 0;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    color: var(--muted);
+}
+#copyrightInfo {
+    position: absolute;
+    right: 10px;
+    bottom: 8px;
+    max-width: calc(100% - 20px);
+    font-size: 11px;
+    color: #fff;
+    text-shadow: 0 0 6px #000, 0 0 2px #000;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
+}
+#ib_photo_wide #copyrightInfo { left: 12px; right: auto; }
+#copyrightInfo:empty { display: none; }
+
+.ibFacts { display: flex; justify-content: space-between; gap: 10px; }
+.ibFacts > div { min-width: 0; }
+.ibFacts > .hidden { display: none; }
+.ibFactEnd { text-align: right; margin-left: auto; }
+.ibFact {
+    margin-top: 2px;
+    font-size: 16px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.ibFact a { color: inherit; text-decoration: none; }
+.ibFact a:hover { text-decoration: underline; }
+.ibLinks { margin-top: 10px; font-size: 12px; }
+
+.ibDetailsBtn {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border: 0;
+    border-radius: 20px;
+    background: var(--tile);
+    color: var(--text);
+    font: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.ibDetailsBtn span { flex: 1; text-align: left; }
+.ibDetailsBtn:hover { background: rgba(255,255,255,.08); }
+
+/* ---------- wide cards ---------- */
+.ibGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    align-content: start;
+}
+.ibCard2 {
+    min-width: 0;
+    padding: 14px 16px;
+    border-radius: 20px;
+    background: var(--tile);
+}
+.ibCard2 h3 { margin: 0 0 4px; font-size: 13px; font-weight: 600; color: var(--text); }
+.kv {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 5px 0;
+    font-size: 13px;
+}
+.kv .k { color: var(--muted); white-space: nowrap; }
+.kv .v {
+    font-family: var(--font-mono);
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+.kv .v a { color: var(--text); }
+
+.ibExport { flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+#selected_infoblock .ibExport button.chip { cursor: pointer; font-family: inherit; }
+
+@media (max-width: 700px) {
+    #selected_infoblock .ibTiles { gap: 8px; }
+}
+/* ---------- phone bottom sheet (mockup 05) ---------- */
+@media (max-width: 700px) {
+    #selected_infoblock { gap: 0; }
+    body.sheetFull #selected_infoblock {
+        top: calc(env(safe-area-inset-top, 0px) + 12px);
+        max-height: none;
+    }
+    #selected_infoblock .sheetHandle.phoneOnly {
+        display: block !important;
+        flex: none;
+        width: 64px;
+        height: 22px;
+        margin: -6px auto 4px;
+        padding: 0;
+        border: 0;
+        background: none;
+        cursor: grab;
+        touch-action: none;
+        position: relative;
+    }
+    .sheetHandle::before {
+        content: "";
+        position: absolute;
+        left: 12px;
+        right: 12px;
+        top: 8px;
+        height: 5px;
+        border-radius: 3px;
+        background: rgba(255,255,255,.25);
+    }
+    .sheetHandle:focus-visible { outline: 2px solid var(--accent); border-radius: 8px; }
+
+    /* header: callsign, airline · type · reg, source chip */
+    #selected_infoblock .ibHead { min-height: 0; }
+    #selected_infoblock .ibHeadMain { padding: 0 96px 0 0; }
+    #selected_infoblock .ibCallsign { font-size: 18px; }
+    #selected_infoblock #ib_sub { display: none !important; }
+    #selected_infoblock #ib_sub_phone.phoneOnly { display: block !important; }
+    #selected_infoblock .ibHeadBtns { gap: 0; }
+    #selected_infoblock #infoblock_close { display: none; }
+    #selected_infoblock .ibHeadSrc:empty { display: none !important; }
+
+    #selected_infoblock .ibScroll { gap: 8px; padding-top: 12px; }
+
+    /* route: one line (codes and an arc) */
+    #selected_infoblock .ibRoute { padding: 0; background: none; border-radius: 0; margin: 0 0 4px; }
+    #selected_infoblock .ibRouteCodes .mono { font-size: 18px; }
+    #selected_infoblock .ibRouteCodes { gap: 10px; }
+    #selected_infoblock .ibRouteCodes svg { display: none; }
+    #selected_infoblock .ibRouteCodes svg.ibRouteArc { display: block; flex: 1; min-width: 0; height: 16px; }
+    #selected_infoblock .ibRouteNames, #selected_infoblock .ibRouteWarn { display: none; }
+
+    /* six tiles */
+    #selected_infoblock .ibTiles6.phoneOnly {
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        flex: none;
+    }
+    .ibT6 { min-width: 0; padding: 10px 12px; border-radius: 16px; background: rgba(255,255,255,.06); }
+    .ibT6 .lbl { font-size: 11px !important; }
+    .ibT6 .v { margin-top: 3px; font-size: 19px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ibT6 .u { margin-left: 2px; font-size: 11px; font-weight: 400; color: var(--muted); }
+    .ibT6 .v.climb { color: var(--ok); }
+    .ibT6 .v.descend { color: var(--warn); }
+
+    /* desktop-only parts */
+    #selected_infoblock .ibTiles,
+    #selected_infoblock .ibDetailsBtn,
+    #selected_infoblock #infoActions,
+    #selected_infoblock .ibExport { display: none !important; }
+
+    /* peek: only the essentials */
+    body:not(.sheetFull) #selected_infoblock .ibChips,
+    body:not(.sheetFull) #selected_infoblock #ib_aircraft,
+    body:not(.sheetFull) #selected_infoblock .ibNote { display: none !important; }
+
+    /* full: everything, details in one column */
+    body.sheetFull #selected_infoblock .ibGrid.wideOnly { display: grid !important; grid-template-columns: 1fr; }
+    body.sheetFull #selected_infoblock .ibScroll { display: flex; }
+
+    /* actions */
+    #selected_infoblock .ibPhoneActions.phoneOnly { display: flex !important; flex: none; gap: 8px; margin-top: 12px; }
+    .ibPBtn {
+        flex: 1;
+        height: 48px;
+        border: 0;
+        border-radius: 24px;
+        background: rgba(255,255,255,.06);
+        color: var(--text);
+        font: inherit;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+    .ibPBtn.ibPrimary { background: var(--accent); color: #000; }
+    .ibPBtn.ibPrimary.on { background: var(--accent-bg); color: var(--accent); box-shadow: inset 0 0 0 1.5px var(--accent); }
+    #selected_infoblock .ibPExpand {
+        flex: none;
+        width: 48px;
+        height: 48px;
+        border-radius: 24px;
+        border: 0;
+        background: rgba(255,255,255,.06);
+        color: var(--text);
+    }
+    body.sheetFull .ibPExpand svg { transform: rotate(180deg); }
+}
+@media (max-width: 700px) {
+    /* the expanded sheet covers the top controls */
+    body.sheetFull #searchWrap,
+    body.sheetFull #layers_button,
+    body.sheetFull #controlStack { display: none !important; }
+    body.sheetFull #selected_infoblock { z-index: 40; }
+}
+
+
+/* ---------- audit fixes against the mockups (desktop) ---------- */
+@media (min-width: 701px) {
+    /* the panel fits its content: Follow / Isolate sit right under the cards, long content scrolls */
+    #selected_infoblock { bottom: auto !important; max-height: calc(100% - 100px); }
+    .ibScroll { flex: 0 1 auto; }
+    body.infoWide .ibScroll { flex: 0 1 auto; }
+
+    /* status chips on tidy rows: two per row instead of an orphan on the last line */
+    #selected_infoblock .ibChips { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 0; }
+    #selected_infoblock .ibChips .chip { justify-content: center; min-width: 0; white-space: nowrap; }
+
+    /* the country is never cut off with an ellipsis: the facts wrap instead */
+    #selected_infoblock .ibFacts { flex-wrap: wrap; gap: 10px 14px; }
+    #selected_infoblock .ibFact { font-size: 15px; }
+    #selected_infoblock #ib_country { white-space: normal; overflow: visible; text-overflow: clip; }
+    #selected_infoblock #ib_messages, #selected_infoblock #selected_registration { overflow: visible; text-overflow: clip; }
+}
+
+/* ---------- panel polish (8px grid, real tiles) ---------- */
+#selected_infoblock { padding: 16px; gap: 8px; }
+.ibScroll { gap: 8px; }
+.ibHead { margin-bottom: 0; }
+body:not(.infoWide) .ibHead { min-height: 48px; }
+body:not(.infoWide) .ibCallsign { font-size: 18px; font-weight: 600; }
+#selected_infoblock .ibLogo .alogo { --s: 36px; }
+#selected_infoblock .ibBtn { border-radius: 50%; background: var(--tile); }
+.ibRoute { padding: 16px; border-radius: 24px; background: var(--tile); border: 1px solid var(--line); }
+.ibRouteCodes .mono { font-size: 28px; }
+.ibRouteMid { position: relative; flex: 1; height: 24px; min-width: 24px; }
+.ibRouteArc { position: absolute; inset: 0; width: 100%; height: 100%; }
+.ibRoutePlane { position: absolute; left: 50%; top: -4px; margin-left: -11px; transform: rotate(90deg); }
+.ibRouteCodes { gap: 6px; }
+.ibTiles { gap: 8px; }
+.ibTile { border-radius: 20px; background: var(--tile); border: 1px solid var(--line); padding: 12px 16px; min-height: 84px; box-sizing: border-box; }
+.ibTile[hidden] { display: none; }
+.ibTile.emergency { border-color: var(--bad); }
+.ibChips { justify-content: flex-start; padding: 0; gap: 8px; }
+.ibCard { border-radius: 24px; background: var(--tile); border: 1px solid var(--line); padding: 16px; }
+.ibFacts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+.ibFacts > div[hidden] { display: none; }
+.ibFactEnd { text-align: left; margin-left: 0; }
+.ibFacts > div:last-child { text-align: right; }
+#copyrightInfo { right: 8px; bottom: 8px; padding: 2px 8px; border-radius: 10px; background: rgba(0,0,0,.55); text-shadow: none; font-size: 10px; max-width: calc(100% - 16px); }
+.ibDetailsBtn { border: 1px solid var(--line); }
+.actionBar { gap: 4px; padding: 6px; border-radius: 24px; background: var(--tile); border: 1px solid var(--line); }
+.act { border-radius: 18px; padding: 10px 0; background: rgba(255,255,255,.04); }
+.act:hover { background: rgba(255,255,255,.10); }
+.act:active { background: rgba(255,255,255,.16); }
+.act.on, .act.activeButton { background: #fff; color: #000; }

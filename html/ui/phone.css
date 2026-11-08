@@ -1,0 +1,105 @@
+/*
+ * Skywatch ADS-B: phone layout (design/mockups/05-phone.html).
+ * Full-screen map, floating search + layers button, small control stack,
+ * left panels become bottom sheets. Targets are at least 44px.
+ */
+.phoneOnly { display: none !important; }
+
+@media (max-width: 700px) {
+    .phoneOnly { display: inline-flex !important; }
+
+    #wordmark, #viewPill, #north_up:not(.on), #hide_panels_button,
+    #altitude_chart, .ol-zoom { display: none !important; }
+
+    #searchWrap {
+        left: 16px;
+        right: 74px;
+        top: calc(env(safe-area-inset-top, 0px) + 12px);
+        width: auto;
+    }
+    #search_form { height: 48px; border-radius: 24px; padding: 0 16px; }
+    #search_input { font-size: 16px; }      /* 16px stops iOS zooming on focus */
+    #search_form kbd { display: none; }
+    #search_warning { top: 56px; left: 0; right: 0; width: auto; }
+
+    #layers_button {
+        position: absolute;
+        right: 16px;
+        top: calc(env(safe-area-inset-top, 0px) + 12px);
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        z-index: 30;
+    }
+
+    #controlStack {
+        right: 16px;
+        top: calc(env(safe-area-inset-top, 0px) + 76px);
+        padding: 2px;
+    }
+    #controlStack .btn { width: 40px; height: 40px; }
+    #settingsCog { position: static; width: 40px; height: 40px; border: 0; }
+
+    /* toolbar: one scrollable strip along the bottom */
+    #toolbar {
+        left: 8px;
+        right: 8px;
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
+        max-width: none;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        scrollbar-width: none;
+        border-radius: 24px;
+        padding: 5px;
+    }
+    #toolbar::-webkit-scrollbar { display: none; }
+    #toolbar .tb { height: 38px; padding: 0 12px; font-size: 13px; }
+    #toolbar .tb kbd { display: none; }
+    body.infoOpen #toolbar { display: none; }
+
+    /* 2D / 3D / Globe: compact pill above the toolbar, bottom-left */
+    #dimSwitch {
+        left: 12px; right: auto;
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 62px);
+        font-size: 12px;
+    }
+    #dimSwitch button { padding: 0 12px; height: 38px; line-height: 38px; min-width: 44px; }
+    body.infoOpen #dimSwitch { display: none; }
+
+    .ol-attribution.ol-control {
+        right: 12px !important;
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 62px) !important;
+        max-width: calc(100% - 24px);
+    }
+    body.infoOpen .ol-attribution.ol-control { display: none; }
+
+    /* left panels become bottom sheets */
+    #sidebar_container { left: 8px !important; }
+    #sidebar_container,
+    #selected_infoblock {
+        left: 8px;
+        right: 8px;
+        top: auto;
+        width: auto !important;
+        max-height: 62%;
+        border-radius: 32px 32px 28px 28px;
+    }
+    #sidebar_container {
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 66px);
+        height: 62% !important;
+    }
+    #selected_infoblock {
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
+        padding: 8px 16px 16px;
+    }
+
+    #filterPopover {
+        left: 8px;
+        right: 8px;
+        top: auto;
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
+        width: auto;
+        max-height: 70%;
+        z-index: 45;
+    }
+}

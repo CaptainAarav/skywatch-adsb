@@ -43,14 +43,18 @@ let autoselectCoords = null;
 let showGrid = false;
 
 
-let SiteShow    = true;           // true to show a center marker
+let SiteShow    = false;          // true to show a center marker
 let SiteName    = "My Radar Site"; // tooltip of the marker
 
 // Update GPS location (keep map centered on GPS location)
 let updateLocation = false;
 
+// Skywatch ADS-B: only look for upintheair.json (see the heywhatsthat instructions in script.js) when enabled.
+// Off by default: most receivers don't have the file, and the failed request is logged by the browser.
+let enableUpintheair = false;
+
 // Color controls for the heywhatsthat upintheair range outline
-let range_outline_color = '#0000DD';
+let range_outline_color = 'rgba(255,255,255,0.35)';
 let range_outline_alpha = 1.0;
 let range_outline_width = 1.7;
 let range_outline_colored_by_altitude = false;
@@ -58,20 +62,20 @@ let range_outline_colored_by_altitude = false;
 let range_outline_dash = null; // null - solid line, [5, 5] - dashed line with 5 pixel lines and spaces in between
 
 // Style controls for the actual range outline (dynamic, by default 24h retention, see readsb options)
-let actual_range_outline_color = '#00596b';
+let actual_range_outline_color = 'rgba(255,255,255,0.30)';
 let actual_range_outline_width = 1.7;
 // NOTE: dashed lines cause slowdown when zooming in, not recommended
 let actual_range_outline_dash = null; // null - solid line, [5, 5] - dashed line with 5 pixel lines and spaces in between
 //
-let actual_range_show = true;
+let actual_range_show = false;
 
 // which map is displayed to new visitors
-let MapType_tar1090 = "osm";
+let MapType_tar1090 = "CartoDarkMatterVector";
 let defaultOverlays = [];
 let dwdLayers = 'dwd:RADOLAN-RY';
 
 // Default map dim state
-let MapDim = true;
+let MapDim = false;
 let mapDimPercentage = 0.45;
 let mapContrastPercentage = 0;
 
@@ -115,6 +119,8 @@ let OutlineADSBColor = '#000000';
 
 // Outline width for aircraft icons
 let outlineWidth = 0.90;
+// Skywatch ADS-B: saturation multiplier for the altitude colours of aircraft icons (1 = original)
+let markerSaturation = 0.78;
 
 // constant html color for markers / tracks
 let monochromeMarkers = null;
@@ -221,12 +227,12 @@ let SiteCircles = true; // true to show circles (only shown if the center marker
 // In miles, nautical miles, or km (depending settings value 'DisplayUnits')
 let SiteCirclesDistances = new Array(100, 150, 200);
 // When more circles defined than cirle colors last color will be used or black by default
-let SiteCirclesColors = ['#000000', '#000000', '#000000'];
+let SiteCirclesColors = ['rgba(255,255,255,0.24)', 'rgba(255,255,255,0.24)', 'rgba(255,255,255,0.24)'];
 // Show circles using dashed line (CAUTION, can be slow, especially when zooming in a lot)
-let SiteCirclesLineDash = null; // null - solid line, [5, 5] - dashed line with 5 pixel lines and spaces in between
+let SiteCirclesLineDash = [2, 6]; // null - solid line, [5, 5] - dashed line with 5 pixel lines and spaces in between
 
 // Controls page title, righthand pane when nothing is selected
-let PageName = "tar1090";
+let PageName = (typeof PROJECT_NAME != "undefined") ? PROJECT_NAME : "Skywatch ADS-B";
 
 // Show country flags by ICAO addresses?
 let ShowFlags = true;
@@ -286,7 +292,7 @@ let showZoomLevel = false;
 // O has no visible effect unless labels (L) are on.
 let defaultMilitaryOnly = false;    // U: only show military aircraft
 let defaultAllTracks = false;       // T: show all tracks
-let defaultLabels = false;          // L: aircraft labels
+let defaultLabels = true;           // L: aircraft labels
 let defaultExtendedLabels = 0;      // O: label extension, 0 - 3
 let defaultTrackLabels = false;     // K: track labels
 
@@ -344,13 +350,13 @@ let squareMania = false;
 // Columns that have a // in front of them are shown.
 let HideCols = [
 	"#icao",
-//	"#country",
+	"#country",
 //	"#flight",
 //	"#route",
 	"#registration",
 	"#airline",
 //	"#type",
-//	"#squawk",
+	"#squawk",
 //	"#altitude",
 //	"#speed",
 	"#vert_rate",
@@ -358,7 +364,7 @@ let HideCols = [
 	"#track",
 	"#msgs",
 	"#seen",
-//	"#rssi",
+	"#rssi",
 	"#lat",
 	"#lon",
 	"#data_source",
@@ -370,6 +376,17 @@ let HideCols = [
 
 // show aircraft pictures
 let showPictures = true;
+
+// Skywatch ADS-B: airline logos (ui/airlines.js). Loaded by IATA code from a keyless public host; the
+// logos belong to their owners and loading them shares the visitor's IP with that host.
+// {key} in the URL is replaced by airlineLogoKey, which is empty by default (never commit a key).
+let airlineLogos = true;
+
+// Skywatch ADS-B: airport detail (apron, taxiways, runways) is loaded from OpenFreeMap vector tiles whatever the base map is.
+// Set to false to never contact tiles.openfreemap.org for it.
+let airportDetail = true;
+let airlineLogoUrl = 'https://pics.avs.io/al_square/{size}/{size}/{iata}.png';
+let airlineLogoKey = '';
 // get pictures from planespotters.net
 let planespottersAPI = true;
 let planespottersAPIurl = "https://api.planespotters.net/pub/photos/";
@@ -426,8 +443,6 @@ let jaeroLabel = "ADS-C"; // relabel the ADS-C data if used for other purposes (
 let seenTimeout = 58; // in seconds
 let seenTimeoutMlat = 58; // in seconds
 
-let darkModeDefault = true; // turn on dark mode by default (change in browser possible)
-
 let tableInView = false; // only show aircraft in current view (V button)
 
 let audio_url = ["", "", "", "", "", ""]; // show html5 audio player for these URLs
@@ -447,39 +462,10 @@ let icaoBlacklist = null;
 // legacy variables
 let OutlineMlatColor = null;
 
-let tableColorsDark;
-let tableColorsLight;
-let tableColors = {
-    unselected: {
-        adsb:      "#d8f4ff",
-        mlat:      "#FDF7DD",
-        uat:       "#C4FFDC",
-        adsr:      "#C4FFDC",
-        adsc:      "#9efa9e",
-        modeS:     "#d8d8ff",
-        tisb:      "#ffd8e6",
-        unknown:   "#dcdcdc",
-        other:   "#dcdcdc",
-        ais:     "#dcdcdc",
-    },
-    selected: {
-        adsb:      "#88DDFF",
-        mlat:      "#F1DD83",
-        uat:       "#66FFA6",
-        adsr:      "#66FFA6",
-        adsc:      "#75f075",
-        modeS:     "#BEBEFF",
-        tisb:      "#FFC1D8",
-        unknown:   "#bcbcbc",
-        other:   "#bcbcbc",
-        ais:   "#bcbcbc",
-    },
-    special: {
-        7500:      "#ff0000",
-        7600:      "#ff0000",
-        7700:      "#ff0000",
-    }
-};
+// Table rows, legend and source chips are styled by classes in theme.css
+// (selected / src-* / emergency). Kept only so old config.js files that
+// assign tableColors still load.
+let tableColors = { unselected: {}, selected: {}, special: {} };
 
 let disableGeoLocation = false;
 

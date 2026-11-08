@@ -1,0 +1,218 @@
+/*
+ * Skywatch ADS-B: instrument panel (new-designs/INSTRUMENT-SPEC.md, mockups 07-09).
+ * Cards, mini tiles, pills, compass, tape, bars. Values come from ui/instruments.js.
+ */
+
+#selected_infoblock {
+    --card: rgba(255, 255, 255, .06);
+    --card-line: rgba(255, 255, 255, .08);
+    --mini: rgba(255, 255, 255, .05);
+    --cold: #4FD1D9;
+    --desc: #F5B94A;
+}
+#selected_infoblock .v { font-family: var(--font-mono); font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
+#selected_infoblock .unit { font-size: 12px; color: var(--muted); font-weight: 400; margin-left: 3px; font-family: var(--font-ui, Inter, system-ui, sans-serif); }
+#selected_infoblock .ibSmall { font-size: 11px; }
+#selected_infoblock [hidden] { display: none !important; }
+
+/* cards: same look everywhere (route, instruments, aircraft, details button, wide cards) */
+#selected_infoblock .ibRoute,
+#selected_infoblock .ibCard,
+#selected_infoblock .ibCard2,
+#selected_infoblock .ibDetailsBtn {
+    background: var(--card);
+    border: 1px solid var(--card-line);
+    border-radius: 24px;
+}
+#selected_infoblock .ibCard, #selected_infoblock .ibCard2 { padding: 16px; }
+#selected_infoblock .ibRoute { padding: 16px 18px; }
+#selected_infoblock .ibDetailsBtn { height: 56px; padding: 0 18px; }
+#selected_infoblock .ibDetailsBtn:hover { background: rgba(255,255,255,.09); }
+.ibCardTop { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.ibCard2 h3 { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .2px; }
+.ibTiny { font-size: 10px; color: var(--muted); }
+
+/* ---- Altitude + Speed row ---- */
+.ibRow2 { flex: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.ibRow2 > .ibCard { padding: 14px; min-width: 0; }
+.ibRow2 > .ibCard[hidden] { display: none; }
+.ibRow2:has(> [hidden]:first-child):has(> :not([hidden])), .ibRow2:has(> :last-child[hidden]) { grid-template-columns: 1fr; }
+.ibBigV { font-size: 24px; font-weight: 600; margin-top: 2px; line-height: 1.2; white-space: nowrap; }
+.ibTapeSlot { margin-top: 6px; line-height: 0; }
+.ibTapeSlot svg { max-width: 100%; height: auto; }
+.ibVs { font-size: 13px; margin-top: 4px; font-weight: 600; }
+.ibVs.climb { color: var(--ok); }
+.ibVs.descend { color: var(--desc); }
+.ibVs.level { color: var(--muted); font-weight: 500; }
+.ibBars { display: flex; flex-direction: column; gap: 9px; margin-top: 14px; }
+.ibBar { display: flex; align-items: center; gap: 8px; }
+.ibBar > .lbl { width: 24px; font-size: 11px; }
+.ibBarTrack { flex: 1; height: 8px; border-radius: 4px; background: rgba(255,255,255,.1); overflow: hidden; }
+.ibBarTall { height: 8px; }
+.ibBarFill { height: 100%; border-radius: 4px; background: #fff; width: 0; transition: width .3s ease; }
+.ibBar[data-bar="ias"] .ibBarFill { background: rgba(255,255,255,.5); }
+.ibBar[data-bar="tas"] .ibBarFill { background: rgba(255,255,255,.7); }
+.ibBarV { width: 30px; text-align: right; font-size: 11px; }
+.ibPills { display: flex; flex-wrap: wrap; gap: 4px; }
+#ib_spd_pills { margin-top: 14px; gap: 6px; }
+#selected_infoblock .ibChipS { height: 24px; padding: 0 9px; font-size: 11px; }
+#selected_infoblock .ibChipS.ibWindChip { color: var(--cold); }
+.ibSparkWrap { margin-top: auto; padding-top: 12px; }
+.ibSparkSlot { margin-top: 4px; line-height: 0; }
+.ibSparkSlot svg { width: 100%; }
+.ibSpeedCard { display: flex; flex-direction: column; }
+
+/* ---- Direction & wind ---- */
+.ibDirCard { padding: 16px 16px 14px; }
+.ibCompassSlot { display: flex; justify-content: center; margin-top: 4px; line-height: 0; }
+.ibCompassSlot svg { max-width: 100%; height: auto; }
+.ibMinis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 6px; }
+.ibMinis:not(:has(.ibMini:not([hidden]))) { display: none; }
+.ibMini { background: var(--mini); border-radius: 16px; padding: 10px 12px; min-width: 0; }
+.ibMini .lbl { font-size: 11px; }
+.ibMini .v { font-size: 18px; margin-top: 2px; white-space: nowrap; }
+.ibMini.cold .v { color: var(--cold); }
+.ibLegendChips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.ibLegendChips .chip { gap: 6px; }
+
+/* ---- Track / Squawk / Distance ---- */
+.ibTiles3 { flex: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.ibTiles3[data-n="2"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.ibTiles3[data-n="1"] { grid-template-columns: 1fr; }
+.ibTile3 { background: var(--card); border: 1px solid var(--card-line); border-radius: 20px; padding: 12px; min-width: 0; }
+.ibTile3[hidden] { display: none; }
+.ibTile3 .lbl { font-size: 11px; }
+.ibTile3 .v { font-size: 20px; margin-top: 3px; white-space: nowrap; }
+.ibTile3 .ibSmall { margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ibTile3.emergency, .ibT6.emergency { border-color: var(--bad); background: rgba(255,107,107,.12); box-shadow: inset 0 0 0 1px var(--bad); }
+.ibTile3.emergency .v, .ibT6.emergency .v { color: var(--bad); }
+
+/* ---- chip row (left-aligned pills, wrapping) ---- */
+#selected_infoblock .ibChips { display: flex; flex-wrap: wrap; justify-content: flex-start; align-items: center; gap: 6px; }
+#selected_infoblock .ibChips .chip { justify-content: flex-start; }
+#selected_infoblock .ibChips .chip, #selected_infoblock .ibLegendChips .chip { display: inline-flex; align-items: center; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.1); }
+.ibPhase { border-color: rgba(255,255,255,.3) !important; color: #fff !important; }
+
+/* ---- Autopilot strip ---- */
+.ibAPvals { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
+.ibAPvals > div[hidden] { display: none; }
+.ibAPvals .v { font-size: 16px; margin-top: 2px; }
+.ibTargetBar { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+.ibTargetBar .ibBarTrack { height: 6px; border-radius: 3px; }
+.ibTargetBar .ibBarFill { border-radius: 3px; }
+.ibTargetBar .mono { font-size: 11px; color: var(--muted); white-space: nowrap; }
+.pill { height: 24px; padding: 0 10px; border-radius: 12px; font: 600 11px var(--font-mono); display: inline-flex; align-items: center; box-sizing: border-box; }
+.pill.on { background: #fff; color: #000; }
+.pill.off { background: rgba(255,255,255,.06); color: #8A9099; border: 1px solid rgba(255,255,255,.08); }
+.ibPillsWrap { gap: 6px; }
+
+/* ---- aircraft card: second facts row, wrapped operator ---- */
+.ibFacts2 { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--card-line); }
+.ibFacts { display: grid; grid-template-columns: 1fr 1fr 1.3fr; gap: 10px; }
+.ibFacts > div { min-width: 0; }
+.ibFactEnd { text-align: left; margin-left: 0; }
+#selected_infoblock .ibFact { font-size: 14px; font-weight: 600; white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.25; margin-top: 3px; }
+#selected_infoblock .ibFact.mono { font-size: 15px; white-space: nowrap; }
+#ib_operator { white-space: normal; overflow-wrap: anywhere; }
+.ibFacts .lbl { font-size: 11px; }
+#selected_infoblock .ibTypeName { font-size: 17px; letter-spacing: .2px; }
+
+.ibLimited { text-align: center; padding: 18px 12px; border-radius: 20px; background: var(--mini); }
+
+/* ---- action bar: Replay / Follow / Isolate ---- */
+#infoActions.actionBar { background: #26272c; border: 1px solid rgba(255,255,255,.12); border-radius: 24px; padding: 6px; display: flex; gap: 6px; }
+#infoActions .act { flex: 1; }
+
+/* ---- wide grid (mockup 08) ---- */
+#ib_wide { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-content: start; }
+#ib_wide .ibSpan2 { grid-column: span 2; }
+#ib_wide .ibCard2 { padding: 18px 20px; }
+#ib_wide .ibLimited { grid-column: span 2; }
+.ibGap { margin-top: 14px; }
+.ibGap0 { margin-bottom: 10px; }
+.ibGap2 { margin: 18px 0 8px; }
+.ibBig2 { font-size: 26px; margin-top: 2px; }
+.ibMid2 { font-size: 18px; margin-top: 2px; }
+.ibSm2 { font-size: 14px; margin-top: 2px; }
+.ibAttRow { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
+.ibAttSlot { line-height: 0; flex: none; }
+.ibAttSlot svg { width: 210px; max-width: 100%; height: auto; }
+.ibAttText { flex: 1; min-width: 0; }
+#ib_roll[data-dir]::after { content: attr(data-dir); font: 400 12px var(--font-ui, Inter, system-ui, sans-serif); color: var(--muted); margin-left: 4px; }
+.ibTurnSlot { margin-top: 8px; line-height: 0; }
+.ibMinis3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 16px; }
+.ibMinis3 .ibMini .v { font-size: 24px; margin-top: 3px; }
+.ibMinis3 .ibMid2 { font-size: 22px; }
+.ibAPBarW { margin-top: 20px; }
+.ibAPBarTop { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); }
+.ibAPBarW .ibBarTrack { margin-top: 6px; }
+.ibProfSlot { margin-top: 6px; line-height: 0; }
+.ibRxRow { display: flex; align-items: center; gap: 18px; margin-top: 8px; }
+.ibRxSlot { line-height: 0; flex: none; }
+.ibRxText { flex: 1; min-width: 0; }
+.ibRssiV { display: flex; align-items: baseline; gap: 8px; }
+.ibRssiV .ibBig2 { font-size: 28px; }
+#ib_sig_rssi_blk .ibBarTrack { margin-top: 8px; }
+.ibRssiScale { display: flex; justify-content: space-between; margin-top: 4px; font-size: 9px; color: var(--muted); }
+.ibSparks2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+.ibSparks2 > div[hidden] { display: none; }
+.ibMinis4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
+.ibMinis4 .ibMini { padding: 8px 10px; }
+.ibMinis4 .ibMini .lbl { font-size: 10px; }
+.ibAccRows { display: flex; flex-direction: column; gap: 16px; margin-top: 18px; }
+.ibAccRow { display: flex; align-items: center; gap: 12px; }
+.ibAccL { width: 64px; }
+.ibSegs { flex: 1; display: flex; gap: 3px; }
+.ibSegs .seg { flex: 1; height: 8px; border-radius: 2px; background: rgba(255,255,255,.1); }
+.ibSegs .seg.l { background: #fff; }
+.ibAccV { width: 124px; font-size: 12px; text-align: right; }
+.ibTmpRow { display: flex; align-items: flex-start; gap: 20px; margin-top: 14px; }
+.ibThermos { display: flex; gap: 18px; }
+.ibThermo { text-align: center; }
+.ibThermo svg { display: block; margin: 0 auto; }
+.ibTmpText { flex: 1; min-width: 0; }
+.ibWindC { color: var(--cold); }
+.ibMinis2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+.ibNoteTxt { margin-top: 10px; line-height: 1.4; }
+.ibIdGrid { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 28px; margin-top: 10px; }
+.ibKvCol .kv { padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,.07); }
+.ibKvCol .kv:last-child, .ibKvCol .kv:has(~ .kv[hidden]):not(:has(~ .kv:not([hidden]))) { border-bottom: 0; }
+.ibEmergBox { border: 2px solid var(--bad); border-radius: 20px; padding: 12px 14px; background: rgba(255,107,107,.1); }
+.ibEmergBox .v { color: var(--bad); font-size: 26px; }
+.ibEmergTxt { font-size: 13px; font-weight: 600; color: #FFB3B3; margin-top: 2px; }
+.ibIdBtns { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.btn2 { height: 40px; padding: 0 16px; border-radius: 20px; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.1); color: var(--text); font: 600 13px var(--font-ui, Inter, system-ui, sans-serif); display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+.btn2:hover { background: rgba(255,255,255,.12); }
+.ibAllGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; margin-top: 4px; }
+#selected_infoblock .ibDot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); display: inline-block; }
+
+/* emergency: the same --bad outline in the panel as in the list row and the map label */
+#selected_infoblock.emergency { border-color: var(--bad) !important; box-shadow: 0 0 0 1px var(--bad), var(--shadow, 0 8px 32px rgba(0,0,0,.5)); }
+
+@media (prefers-reduced-motion: reduce) {
+    #selected_infoblock .ibBarFill, #selected_infoblock * { transition: none !important; }
+}
+
+/* ---- phone sheet (mockup 09) ---- */
+.ibPhoneInst, .ibTiles3.phoneOnly { display: none; }
+@media (max-width: 700px) {
+    .ibPhoneInst.phoneOnly { display: flex !important; gap: 12px; align-items: center; flex: none; }
+    .ibCompassPhone { flex: none; margin: 0; }
+    .ibPhoneTiles { flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+    .ibPhoneTiles .ibT6 { background: rgba(255,255,255,.07); border-radius: 16px; padding: 9px 12px; }
+    .ibPhoneTiles .ibT6 .v { font-size: 18px; margin-top: 2px; white-space: nowrap; }
+    .ibPhoneTiles .ibT6 .lbl { font-size: 11px; }
+    .ibWindTile .v { color: var(--cold); }
+    .ibTiles3.phoneOnly { display: grid !important; gap: 8px; }
+    .ibTiles3.phoneOnly .ibT6 { background: rgba(255,255,255,.07); border-radius: 16px; padding: 9px 12px; min-width: 0; }
+    .ibTiles3.phoneOnly .ibT6 .v { font-size: 18px; margin-top: 2px; white-space: nowrap; }
+    .ibTiles3.phoneOnly .ibT6 .lbl { font-size: 11px; }
+    #selected_infoblock .ibRow2, #selected_infoblock .ibDirCard, #selected_infoblock #ib_tiles3, #selected_infoblock #ib_ap_card, #selected_infoblock #ib_limited_c { display: none !important; }
+    body:not(.sheetFull) #selected_infoblock #ib_p_chips:not([hidden]) { display: flex !important; }
+    body.sheetFull #selected_infoblock .ibPhoneInst, body.sheetFull #selected_infoblock .ibTiles3.phoneOnly { display: none !important; }
+    #ib_wide { grid-template-columns: 1fr; gap: 12px; }
+    #ib_wide .ibSpan2, #ib_wide .ibLimited { grid-column: auto; }
+    .ibAttRow, .ibRxRow, .ibTmpRow { flex-wrap: wrap; }
+    .ibIdGrid, .ibAllGrid { grid-template-columns: 1fr; gap: 14px; }
+    .ibAccV { width: 100px; }
+}

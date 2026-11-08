@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>tar1090 settings</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+:root{--bg:#000;--glass:rgba(20,22,27,.74);--tile:rgba(255,255,255,.05);--line:rgba(255,255,255,.09);--text:#F5F7FA;--text2:#C3CAD3;--muted:#9BA3AD;--accent:#FFFFFF;--accent-bg:rgba(255,255,255,.14);--ok:#3DDC97;--warn:#F5B94A;--bad:#FF6B6B}
+*{box-sizing:border-box}
+body{margin:0;background:#000}
+.app{position:relative;width:100%;min-height:100vh;background:#000;color:var(--text);font-family:Inter,system-ui,sans-serif;overflow:hidden}
+.mono{font-family:'JetBrains Mono',monospace}
+.glass{background:var(--glass);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);border:1px solid var(--line)}
+.abs{position:absolute}
+.btn{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--text);padding:0;cursor:pointer;font:inherit}
+.ico{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.tile{background:var(--tile);border-radius:20px;padding:14px 16px}
+.lbl{font-size:12px;color:var(--muted)}
+.big{font-size:26px;font-weight:600;letter-spacing:-.01em}
+.unit{font-size:13px;color:var(--muted);font-weight:400;margin-left:3px}
+.chip{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:14px;background:var(--tile);font-size:12px;color:var(--text2)}
+.act{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 0;font-size:12px;color:var(--text2);background:none;border:0;cursor:pointer;font-family:inherit;border-radius:14px}
+.act.on{color:var(--accent);background:var(--accent-bg)}
+.tb{display:flex;align-items:center;gap:5px;height:34px;padding:0 8px;border-radius:12px;background:none;border:0;color:var(--text2);font:inherit;font-size:12px;cursor:pointer}
+.tb.on{background:var(--accent-bg);color:var(--accent)}
+.tb kbd{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);border:1px solid var(--line);border-radius:5px;padding:0 4px}
+.sep{width:1px;height:20px;background:var(--line);margin:0 4px}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+</style>
+</helmet>
+<div class="app" style="height:900px"><div class="abs" style="inset:0;background:rgba(0,0,0,.55);z-index:1"></div>
+
+<svg aria-hidden="true" class="abs" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" style="inset:0;width:100%;height:100%">
+<defs><path id="pl" d="M12 1.5c.9 0 1.6 1 1.6 2.2v5.6l8.4 4.9v2.2l-8.4-2.4v4.2l2.2 1.7v1.6L12 20.6l-3.8 1v-1.6l2.2-1.7v-4.2L2 16.4v-2.2l8.4-4.9V3.7c0-1.2.7-2.2 1.6-2.2z"/></defs>
+<rect width="1440" height="900" fill="#000"/>
+<g fill="none" stroke="#2A2D33" stroke-width="1.1"><path d="M380 470C470 440 520 380 600 350S740 290 800 190L860 90"/><path d="M420 640C560 600 640 560 760 540S980 520 1100 430"/><path d="M700 100C720 240 760 340 800 460S860 640 900 820"/><path d="M520 300C640 330 760 360 900 340S1120 300 1260 360"/><path d="M600 700C700 690 800 740 940 720S1160 640 1240 700"/></g>
+<g fill="none" stroke="#3A3F47" stroke-width="1.4"><path d="M470 130C560 100 640 150 700 120S800 60 880 80"/><path d="M1000 800C1080 700 1160 660 1260 600S1380 480 1440 470"/></g>
+<g fill="none" stroke="#25282E" stroke-dasharray="3 7"><circle cx="880" cy="470" r="130"/><circle cx="880" cy="470" r="260"/><circle cx="880" cy="470" r="390"/></g>
+<path d="M880 150L1010 190L1120 290L1180 440L1150 580L1050 690L910 740L780 700L690 600L660 470L700 340L780 220Z" fill="none" stroke="#3A3F47" stroke-width="1.4"/>
+<g fill="#6B7280" font-family="Inter,sans-serif" font-size="13"><text x="930" y="440">Cranfield</text><text x="1010" y="590">London</text><text x="1060" y="360">Cambridge</text><text x="740" y="320">Birmingham</text></g>
+<circle cx="880" cy="470" r="4.5" fill="#FFFFFF"/>
+<g>
+<use href="#pl" x="893" y="458" width="26" height="26" fill="#FFFFFF" transform="rotate(56 906 471)"/>
+<use href="#pl" x="1000" y="250" width="22" height="22" fill="#B07BFF" transform="rotate(130 1011 261)"/>
+<use href="#pl" x="740" y="420" width="22" height="22" fill="#F2E44A" transform="rotate(300 751 431)"/>
+<use href="#pl" x="1110" y="520" width="22" height="22" fill="#F5994A" transform="rotate(200 1121 531)"/>
+<use href="#pl" x="660" y="250" width="22" height="22" fill="#4FD1D9" transform="rotate(20 671 261)"/>
+<use href="#pl" x="1190" y="380" width="22" height="22" fill="#5B8CFF" transform="rotate(90 1201 391)"/>
+<use href="#pl" x="800" y="640" width="22" height="22" fill="#6BD96B" transform="rotate(250 811 651)"/>
+<use href="#pl" x="980" y="660" width="22" height="22" fill="#F2E44A" transform="rotate(340 991 671)"/>
+<use href="#pl" x="1260" y="640" width="22" height="22" fill="#B07BFF" transform="rotate(160 1271 651)"/>
+</g>
+</svg>
+
+<!-- top bar -->
+<div class="abs" style="left:28px;top:16px;line-height:1.15"><div style="font-size:20px;font-weight:600;letter-spacing:-.01em">Skywatch ADS-B</div><div style="font-size:11px;color:var(--muted);margin-top:3px">Created by Aarav Sahni</div></div>
+<nav aria-label="Views" class="abs glass" style="left:50%;transform:translateX(-50%);top:14px;display:flex;gap:4px;padding:5px;border-radius:24px">
+<button class="tb on" style="height:34px;padding:0 16px;font-size:14px">Live map</button>
+<button class="tb" style="height:34px;padding:0 16px;font-size:14px">Aircraft list</button>
+<button class="tb" style="height:34px;padding:0 16px;font-size:14px">Graphs</button>
+<button class="tb" style="height:34px;padding:0 16px;font-size:14px">Replay</button>
+</nav>
+<label class="abs glass" style="right:84px;top:14px;width:214px;height:44px;border-radius:22px;display:flex;align-items:center;gap:8px;padding:0 14px;font-size:14px;color:var(--text2)">
+<svg aria-hidden="true" class="ico" width="16" height="16" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+<span style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Search aircraft</span>
+<input type="search" placeholder="Search" style="flex:1;min-width:0;background:none;border:0;outline:0;color:var(--text);font:inherit">
+<kbd class="mono" style="font-size:11px;color:var(--muted)">/</kbd></label>
+<button class="abs glass btn" aria-label="Settings" style="right:28px;top:14px"><svg aria-hidden="true" class="ico" width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9 7 7M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg></button>
+
+<section role="dialog" aria-label="Settings" class="abs glass" style="z-index:2;left:50%;top:50%;transform:translate(-50%,-50%);width:1040px;height:720px;border-radius:36px;display:flex;overflow:hidden;background:rgba(18,20,25,.9)">
+<nav aria-label="Settings sections" style="width:230px;padding:24px 16px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:2px;flex:none"><div style="font-size:20px;font-weight:600;padding:0 14px 16px">Settings</div><button style="display:block;width:100%;text-align:left;border:0;font:inherit;font-size:14px;padding:11px 14px;border-radius:14px;cursor:pointer;color:#FFFFFF;background:rgba(255,255,255,.14)">Map &amp; layers</button><button style="display:block;width:100%;text-align:left;border:0;font:inherit;font-size:14px;padding:11px 14px;border-radius:14px;cursor:pointer;color:#C3CAD3;background:none">Aircraft &amp; labels</button><button style="display:block;width:100%;text-align:left;border:0;font:inherit;font-size:14px;padding:11px 14px;border-radius:14px;cursor:pointer;color:#C3CAD3;background:none">Table &amp; sidebar</button><button style="display:block;width:100%;text-align:left;border:0;font:inherit;font-size:14px;padding:11px 14px;border-radius:14px;cursor:pointer;color:#C3CAD3;background:none">Units &amp; altitude</button><button style="display:block;width:100%;text-align:left;border:0;font:inherit;font-size:14px;padding:11px 14px;border-radius:14px;cursor:pointer;color:#C3CAD3;background:none">Photos &amp; routes</button><button style="display:block;width:100%;text-align:left;border:0;font:inherit;font-size:14px;padding:11px 14px;border-radius:14px;cursor:pointer;color:#C3CAD3;background:none">Advanced</button><button style="margin-top:auto;border:0;background:none;color:#FF6B6B;font:inherit;font-size:13px;text-align:left;padding:10px 14px;cursor:pointer">Reset all settings</button></nav>
+<div style="flex:1;min-width:0;padding:24px 28px;overflow:hidden;display:flex;flex-direction:column;gap:18px">
+<div style="display:flex;align-items:center"><span style="font-size:20px;font-weight:600">Map &amp; layers</span><button class="btn" aria-label="Close settings" style="margin-left:auto;width:38px;height:38px;background:var(--tile);border:0"><svg aria-hidden="true" class="ico" width="16" height="16" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+<div><div class="lbl" style="margin-bottom:10px">Base map</div><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px"><button style="background:none;border:0;color:#F5F7FA;font:inherit;text-align:left;cursor:pointer;padding:0"><div style="height:72px;border-radius:16px;background:linear-gradient(135deg,#000,#0d0d0d);box-shadow:0 0 0 2px #FFFFFF;"></div><div style="font-size:13px;font-weight:600;margin-top:7px">OpenFreeMap Dark</div><div class="lbl" style="font-size:11px">Default</div></button><button style="background:none;border:0;color:#F5F7FA;font:inherit;text-align:left;cursor:pointer;padding:0"><div style="height:72px;border-radius:16px;background:linear-gradient(135deg,#e9ecef,#cfd6dc);box-shadow:0 0 0 1px rgba(255,255,255,.09);"></div><div style="font-size:13px;font-weight:600;margin-top:7px">Positron</div><div class="lbl" style="font-size:11px">Light</div></button><button style="background:none;border:0;color:#F5F7FA;font:inherit;text-align:left;cursor:pointer;padding:0"><div style="height:72px;border-radius:16px;background:linear-gradient(135deg,#2a3c4e,#455a6e);box-shadow:0 0 0 1px rgba(255,255,255,.09);"></div><div style="font-size:13px;font-weight:600;margin-top:7px">Fiord</div><div class="lbl" style="font-size:11px">Muted blue</div></button><button style="background:none;border:0;color:#F5F7FA;font:inherit;text-align:left;cursor:pointer;padding:0"><div style="height:72px;border-radius:16px;background:linear-gradient(135deg,#d9e8c8,#bcd4e8);box-shadow:0 0 0 1px rgba(255,255,255,.09);"></div><div style="font-size:13px;font-weight:600;margin-top:7px">Liberty</div><div class="lbl" style="font-size:11px">Colour</div></button><button style="background:none;border:0;color:#F5F7FA;font:inherit;text-align:left;cursor:pointer;padding:0"><div style="height:72px;border-radius:16px;background:linear-gradient(135deg,#2d4a2e,#5a4a32);box-shadow:0 0 0 1px rgba(255,255,255,.09);"></div><div style="font-size:13px;font-weight:600;margin-top:7px">Satellite</div><div class="lbl" style="font-size:11px">ESRI imagery</div></button><button style="background:none;border:0;color:#F5F7FA;font:inherit;text-align:left;cursor:pointer;padding:0"><div style="height:72px;border-radius:16px;background:linear-gradient(135deg,#e8e0d0,#c6dcb8);box-shadow:0 0 0 1px rgba(255,255,255,.09);"></div><div style="font-size:13px;font-weight:600;margin-top:7px">OpenStreetMap</div><div class="lbl" style="font-size:11px">Standard</div></button><button style="background:none;border:0;color:#F5F7FA;font:inherit;text-align:left;cursor:pointer;padding:0"><div style="height:72px;border-radius:16px;background:linear-gradient(135deg,#f5efe0,#d6e6f2);box-shadow:0 0 0 1px rgba(255,255,255,.09);"></div><div style="font-size:13px;font-weight:600;margin-top:7px">Bright</div><div class="lbl" style="font-size:11px">OpenFreeMap</div></button><button style="background:none;border:0;color:#F5F7FA;font:inherit;text-align:left;cursor:pointer;padding:0"><div style="height:72px;border-radius:16px;background:#1a1d23;box-shadow:0 0 0 1px rgba(255,255,255,.09);"></div><div style="font-size:13px;font-weight:600;margin-top:7px">More…</div><div class="lbl" style="font-size:11px">All of layers.js</div></button></div></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:28px"><div><div class="lbl">Overlays</div><label style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)"><span style="flex:1"><span style="font-size:14px">Site distance circles</span></span><input type="checkbox" role="switch" checked style="position:absolute;opacity:0;width:1px;height:1px"><span aria-hidden="true" style="position:relative;width:42px;height:24px;border-radius:12px;background:#FFFFFF"><span style="position:absolute;top:2px;right:2px;width:20px;height:20px;border-radius:50%;background:#000"></span></span></label><label style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)"><span style="flex:1"><span style="font-size:14px">Actual range outline</span></span><input type="checkbox" role="switch"  style="position:absolute;opacity:0;width:1px;height:1px"><span aria-hidden="true" style="position:relative;width:42px;height:24px;border-radius:12px;background:rgba(255,255,255,.14)"><span style="position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff"></span></span></label><label style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)"><span style="flex:1"><span style="font-size:14px">OpenAIP airspace</span></span><input type="checkbox" role="switch"  style="position:absolute;opacity:0;width:1px;height:1px"><span aria-hidden="true" style="position:relative;width:42px;height:24px;border-radius:12px;background:rgba(255,255,255,.14)"><span style="position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff"></span></span></label><label style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)"><span style="flex:1"><span style="font-size:14px">RainViewer radar</span></span><input type="checkbox" role="switch"  style="position:absolute;opacity:0;width:1px;height:1px"><span aria-hidden="true" style="position:relative;width:42px;height:24px;border-radius:12px;background:rgba(255,255,255,.14)"><span style="position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff"></span></span></label><label style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)"><span style="flex:1"><span style="font-size:14px">Wind barbs</span></span><input type="checkbox" role="switch"  style="position:absolute;opacity:0;width:1px;height:1px"><span aria-hidden="true" style="position:relative;width:42px;height:24px;border-radius:12px;background:rgba(255,255,255,.14)"><span style="position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff"></span></span></label><label style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)"><span style="flex:1"><span style="font-size:14px">Dim map</span></span><input type="checkbox" role="switch"  style="position:absolute;opacity:0;width:1px;height:1px"><span aria-hidden="true" style="position:relative;width:42px;height:24px;border-radius:12px;background:rgba(255,255,255,.14)"><span style="position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff"></span></span></label></div>
+<div><div class="lbl">Appearance</div>
+<div style="padding:12px 0;border-bottom:1px solid rgba(255,255,255,.06)"><div style="display:flex;justify-content:space-between;font-size:14px"><span>Aircraft icon size</span><span class="mono lbl">1.2×</span></div><div style="height:4px;border-radius:2px;background:rgba(255,255,255,.14);margin-top:12px;position:relative"><div style="width:42%;height:100%;border-radius:2px;background:#FFFFFF"></div><div style="position:absolute;left:42%;top:-7px;width:18px;height:18px;border-radius:50%;background:#fff;margin-left:-9px"></div></div></div>
+<div style="padding:12px 0;border-bottom:1px solid rgba(255,255,255,.06)"><div style="display:flex;justify-content:space-between;font-size:14px"><span>Label size</span><span class="mono lbl">1.0×</span></div><div style="height:4px;border-radius:2px;background:rgba(255,255,255,.14);margin-top:12px;position:relative"><div style="width:30%;height:100%;border-radius:2px;background:#FFFFFF"></div><div style="position:absolute;left:30%;top:-7px;width:18px;height:18px;border-radius:50%;background:#fff;margin-left:-9px"></div></div></div>
+<label style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)"><span style="flex:1"><span style="font-size:14px">Altitude-coloured aircraft</span></span><input type="checkbox" role="switch" checked style="position:absolute;opacity:0;width:1px;height:1px"><span aria-hidden="true" style="position:relative;width:42px;height:24px;border-radius:12px;background:#FFFFFF"><span style="position:absolute;top:2px;right:2px;width:20px;height:20px;border-radius:50%;background:#000"></span></span></label><label style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)"><span style="flex:1"><span style="font-size:14px">Altitude-coloured trails</span></span><input type="checkbox" role="switch" checked style="position:absolute;opacity:0;width:1px;height:1px"><span aria-hidden="true" style="position:relative;width:42px;height:24px;border-radius:12px;background:#FFFFFF"><span style="position:absolute;top:2px;right:2px;width:20px;height:20px;border-radius:50%;background:#000"></span></span></label></div></div></div></section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

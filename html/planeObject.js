@@ -30,9 +30,6 @@ function PlaneObject(icao) {
     // Display info
     this.visible = false;
     this.marker = null;
-    this.markerStyle = null;
-    this.markerIcon = null;
-    this.markerStyleKey = null;
     this.markerSvgKey = null;
     this.baseScale = 1;
 
@@ -101,6 +98,7 @@ PlaneObject.prototype.setNull = function() {
     this.vert_rate      = null;
 
 
+    this.emergency = null;
     this.wd = null;
     this.ws = null;
     this.oat = null;
@@ -185,6 +183,7 @@ function planeCloneState(target, source) {
     target.vert_rate = source.vert_rate;
     target.wd = source.wd;
     target.ws = source.ws;
+    target.emergency = source.emergency;
     target.oat = source.oat;
     target.tat = source.tat;
     target.version = source.version;
@@ -206,42 +205,6 @@ function planeCloneState(target, source) {
 };
 
 
-
-PlaneObject.prototype.checkLayers = function() {
-    if (!this.trail_features)
-        this.createFeatures();
-    if ((showTrace || trackLabels) && !this.trail_labels)
-        this.createLabels();
-};
-
-PlaneObject.prototype.createFeatures = function() {
-    this.trail_features = new ol.source.Vector();
-
-    this.layer = new ol.layer.Vector({
-        name: `${this.icao}`,
-        isTrail: true,
-        source: this.trail_features,
-        declutter: false,
-        zIndex: 150,
-        renderOrder: null,
-    });
-
-    trailGroup.push(this.layer);
-};
-
-PlaneObject.prototype.createLabels = function() {
-    this.trail_labels = new ol.source.Vector();
-
-    this.layer_labels = new ol.layer.Vector({
-        name: `${this.icao}_labels`,
-        isTrail: true,
-        source: this.trail_labels,
-        declutter: true,
-        zIndex: 151,
-    });
-
-    trailGroup.push(this.layer_labels);
-};
 
 PlaneObject.prototype.logSel = function(loggable) {
     if (debugTracks && this.selected && !SelectedAllPlanes && !globeIndex)
@@ -398,7 +361,7 @@ PlaneObject.prototype.updateTrack = function(now, last, serverTrack, stale) {
         return false;
     }
 
-    let projHere = ol.proj.fromLonLat(this.position);
+    let projHere = mapgeo.fromLonLat(this.position);
     let on_ground = (this.altitude === "ground");
 
     let is_leg = false;
@@ -412,7 +375,7 @@ PlaneObject.prototype.updateTrack = function(now, last, serverTrack, stale) {
         //console.log(this.icao + " new track");
         if (this.leg_ts == now)
             is_leg = 'start';
-        let newseg = { fixed: new ol.geom.LineString([projHere]),
+        let newseg = { fixed: new mapgeo.LineString([projHere]),
             feature: null,
             estimated: false,
             ground: (this.altitude == "ground"),
@@ -439,14 +402,14 @@ PlaneObject.prototype.updateTrack = function(now, last, serverTrack, stale) {
         return this.updateTail();
     }
 
-    let projPrev = ol.proj.fromLonLat(this.prev_position);
+    let projPrev = mapgeo.fromLonLat(this.prev_position);
 
     if (!this.tail_position) {
         lastseg.fixed.appendCoordinate(projPrev);
         return this.updateTail();
     }
 
-    let distance = ol.sphere.getDistance(this.position, this.prev_position);
+    let distance = mapgeo.getDistance(this.position, this.prev_position);
     let elapsed = this.position_time - this.prev_time;
 
     let derivedMach = 0.01;
@@ -471,7 +434,6 @@ PlaneObject.prototype.updateTrack = function(now, last, serverTrack, stale) {
         this.position = this.prev_position;
         this.position_time = this.prev_time;
         if (debugPosFilter) {
-            this.drawRedDot(this.bad_position);
             jumpTo = this.icao;
         }
         return false;
@@ -552,7 +514,7 @@ PlaneObject.prototype.updateTrack = function(now, last, serverTrack, stale) {
 
     let alt_change = Math.abs(this.alt_rounded - lastseg.altitude);
     let since_update = this.prev_time - this.tail_update;
-    let distance_traveled = ol.sphere.getDistance(this.tail_position, this.prev_position);
+    let distance_traveled = mapgeo.getDistance(this.tail_position, this.prev_position);
 
     if (pTracks && since_update < pTracksInterval && !serverTrack) {
         return this.updateTrackPrev();
@@ -623,14 +585,14 @@ PlaneObject.prototype.updateTrack = function(now, last, serverTrack, stale) {
                     seg_index++;
                 }
                 let segment = segments[seg_index];
-                segment.push(ol.proj.fromLonLat(point));
+                segment.push(mapgeo.fromLonLat(point));
                 last_lon = lon;
             }
         }
 
         for (let i in segments) {
             let points = segments[i];
-            this.track_linesegs.push({ fixed: new ol.geom.LineString(points),
+            this.track_linesegs.push({ fixed: new mapgeo.LineString(points),
                 feature: null,
                 estimated: estimated,
                 estimatedFill: estimatedFill,
@@ -737,11 +699,9 @@ PlaneObject.prototype.getMarkerColor = function(options) {
         l += 15;
     }
 
-    // If this marker is selected, change color
-    if (this.selected && !SelectedAllPlanes && !onlySelected){
-        h += ColorByAlt.selected.h;
-        s += ColorByAlt.selected.s;
-        l += ColorByAlt.selected.l;
+    // Skywatch ADS-B: the selected aircraft is drawn white (design accent)
+    if (this.selected && !SelectedAllPlanes){
+        return [0, 0, 100];
     }
 
     // If this marker is a mlat position, change color
@@ -769,6 +729,7 @@ PlaneObject.prototype.getMarkerColor = function(options) {
         h = h % 360;
     }
 
+    s *= markerSaturation;   // Skywatch ADS-B: slightly desaturated so a crowd reads as one texture
     if (s < 0) s = 0;
     else if (s > 95) s = 95;
 
@@ -791,7 +752,7 @@ function altitudeColor(altitude) {
         s = ColorByAlt.ground.s;
         l = ColorByAlt.ground.l;
     } else {
-        const altRound = (altitude < 8000) ? 50 : ((webgl && !pTracks && !SelectedAllPlanes) ? 200 : 500);
+        const altRound = (altitude < 8000) ? 50 : 500;
         // round altitude to limit the number of colors used
         altitude = altRound * Math.round(altitude / altRound);
 
@@ -845,23 +806,14 @@ function altitudeColor(altitude) {
     return [h, s, l];
 }
 
-PlaneObject.prototype.setMarkerRgb = function() {
-    let hsl = this.getMarkerColor({noRound: true});
-    let rgb = hslToRgb(hsl, 'array');
-    if (this.shape && this.shape.svg)
-        rgb = [255, 255, 255];
-    this.glMarker.set('r', rgb[0]);
-    this.glMarker.set('g', rgb[1]);
-    this.glMarker.set('b', rgb[2]);
-};
-
 PlaneObject.prototype.updateIcon = function() {
 
     let fillColor = hslToRgb(this.getMarkerColor());
     let svgKey  = fillColor + '!' + this.shape.name + '!' + this.strokeWidth;
     let labelText = null;
 
-    if ( g.enableLabels && (!multiSelect || (multiSelect && this.selected)) &&
+    // Skywatch ADS-B: the selected aircraft always shows its label pill
+    if ( (g.enableLabels || (this.selected && !SelectedAllPlanes)) && (!multiSelect || (multiSelect && this.selected)) &&
         (this.dataSource != "ais" || g.zoomLvl >= labelZoomAIS) &&
         (
             (g.zoomLvl >= labelZoom && this.altitude != "ground")
@@ -875,10 +827,11 @@ PlaneObject.prototype.updateIcon = function() {
         if (this.flight && this.flight.trim())
             callsign =  this.flight.trim();
         else if (this.registration)
-            callsign =  'reg: ' + this.registration;
+            callsign =  this.registration;
         else
-            callsign =   'hex: ' + this.icao;
-        if (useRouteAPI && this.dataSource != "ais" && this.routeString) {
+            callsign =   this.icao.toUpperCase();
+        // Skywatch ADS-B: the route is only part of the label in the extended label modes (default: logo + callsign)
+        if (useRouteAPI && this.dataSource != "ais" && this.routeString && g.extendedLabels) {
             if (0 && g.extendedLabels) {
                 callsign += ' - ' + this.routeString;
             } else {
@@ -950,96 +903,7 @@ PlaneObject.prototype.updateIcon = function() {
             labelText += callsign;
         }
     }
-    if (!webgl && (this.markerStyle == null || this.markerIcon == null || (this.markerSvgKey != svgKey))) {
-        //console.log(this.icao + " new icon and style " + this.markerSvgKey + " -> " + svgKey);
-
-        if (iconCache[svgKey] == undefined) {
-            let svgURI = svgShapeToURI(this.shape, fillColor, OutlineADSBColor, this.strokeWidth);
-
-            addToIconCache.push([svgKey, null, svgURI]);
-
-            if (true || TrackedAircraftPositions < 200) {
-                this.markerIcon = new ol.style.Icon({
-                    scale: this.scale,
-                    imgSize: [this.shape.w, this.shape.h],
-                    src: svgURI,
-                    rotation: (this.shape.noRotate ? 0 : this.rotation * Math.PI / 180.0),
-                    rotateWithView: (this.shape.noRotate ? false : true),
-                });
-                this.scaleCache = this.scale;
-            } else {
-                svgKey = this.markerSvgKey;
-            }
-        } else {
-            this.markerIcon = new ol.style.Icon({
-                scale: this.scale,
-                imgSize: [this.shape.w, this.shape.h],
-                img: iconCache[svgKey],
-                rotation: (this.shape.noRotate ? 0 : this.rotation * Math.PI / 180.0),
-                rotateWithView: (this.shape.noRotate ? false : true),
-            });
-            this.scaleCache = this.scale;
-        }
-        this.markerSvgKey = svgKey;
-
-        //iconCache[svgKey] = undefined; // disable caching for testing
-    }
-    if (!this.markerIcon && !webgl)
-        return;
-
-    let styleKey = (webgl ? '' : svgKey) + '!' + labelText + '!' + this.scale;
-
-    if (this.styleKey != styleKey || !this.marker.getStyle()) {
-        this.styleKey = styleKey;
-        let style;
-        if (labelText) {
-            style = {
-                image: this.markerIcon,
-                text: new ol.style.Text({
-                    text: labelText,
-                    fill: labelFill,
-                    backgroundFill: bgFill,
-                    stroke: labelStrokeNarrow,
-                    textAlign: 'left',
-                    textBaseline: labels_top ? 'bottom' : 'top',
-                    font: labelFont,
-                    offsetX: (this.shape.w *0.5*0.74*this.scale),
-                    offsetY: labels_top ? (this.shape.w *-0.3*0.74*this.scale) : (this.shape.w *0.5*0.74*this.scale),
-                    padding: [1, 0, -1, 2],
-                }),
-                zIndex: this.zIndex,
-            };
-        } else {
-            style = {
-                image: this.markerIcon,
-                zIndex: this.zIndex,
-            };
-        }
-        if (webgl)
-            delete style.image;
-        this.markerStyle = new ol.style.Style(style);
-        this.marker.setStyle(this.markerStyle);
-    }
-    if (webgl)
-        return;
-
-    /*
-    if (this.opacityCache != opacity) {
-        this.opacityCache = opacity;
-        this.markerIcon.setOpacity(opacity);
-    }
-    */
-    const iconRotation = this.shape.noRotate ? 0 : this.rotation;
-    if (this.rotationCache != iconRotation && Math.abs(this.rotationCache - iconRotation) > 0.35) {
-        this.rotationCache = iconRotation;
-        this.markerIcon.setRotation(iconRotation * Math.PI / 180.0);
-    }
-
-    if (this.scaleCache != this.scale) {
-        this.scaleCache = this.scale;
-        this.markerIcon.setScale(this.scale);
-    }
-
+        MLR.setPlane(this, fillColor, svgKey, labelText);
     return;
 };
 
@@ -1068,7 +932,6 @@ PlaneObject.prototype.processTrace = function() {
 
     let legStart = traceOpts.legStart;
     let legEnd = traceOpts.legEnd;
-    this.checkLayers();
     let trace = null;
     let _now, _last = 0;
     this.history_size = 0;
@@ -1179,7 +1042,7 @@ PlaneObject.prototype.processTrace = function() {
                     clearTimeout(traceOpts.showTimeout);
                     traceOpts.animateRealtime = (timestamp - traceOpts.showTime) * 1000;
                     traceOpts.animateTime = traceOpts.animateRealtime / traceOpts.replaySpeed;
-                    let fps = webgl ? 28 : 1;
+                    let fps = 1;
                     traceOpts.animateSteps = Math.round(traceOpts.animateTime / (1000 / fps));
                     traceOpts.animateCounter = traceOpts.animateSteps; // will count down
 
@@ -1297,9 +1160,9 @@ PlaneObject.prototype.processTrace = function() {
     if (showTrace && !traceOpts.showTime) {
 
         if (this.track_linesegs.length > 0 && this.position) {
-            const proj = ol.proj.fromLonLat(this.position);
+            const proj = mapgeo.fromLonLat(this.position);
             this.track_linesegs[this.track_linesegs.length - 1].fixed.appendCoordinate(proj);
-            this.track_linesegs.push({ fixed: new ol.geom.LineString([proj]),
+            this.track_linesegs.push({ fixed: new mapgeo.LineString([proj]),
                 feature: null,
                 estimated: false,
                 ground: (this.altitude == "ground"),
@@ -1331,17 +1194,17 @@ PlaneObject.prototype.processTrace = function() {
         this.updateFeatures(true);
     }
 
-    let mapSize = OLMap.getSize();
+    let mapSize = mapa.getSize();
     let size = [Math.max(5, mapSize[0] - 280), mapSize[1]];
     if (!traceOpts.showTime
         && (showTrace || showTraceExit)
         && !multiSelect
         && this.position
         && !(traceOpts.noFollow && traceOpts.noFollow + 3 > new Date().getTime() / 1000)
-        && !inView(this.position, myExtent(OLMap.getView().calculateExtent(size)))
-        && !inView(firstPos, myExtent(OLMap.getView().calculateExtent(size))))
+        && !inView(this.position, myExtent(mapa.calcExtent(size)))
+        && !inView(firstPos, myExtent(mapa.calcExtent(size))))
     {
-        OLMap.getView().setCenter(ol.proj.fromLonLat(this.position));
+        mapa.setCenter(this.position);
     }
 
     showTraceExit = false;
@@ -1372,9 +1235,9 @@ PlaneObject.prototype.processTrace = function() {
 PlaneObject.prototype.updatePositionData = function(now, last, data, init) {
     if (this.position && SitePosition) {
         if (pTracks && this.sitedist) {
-            this.sitedist = Math.max(ol.sphere.getDistance(SitePosition, this.position), this.sitedist);
+            this.sitedist = Math.max(mapgeo.getDistance(SitePosition, this.position), this.sitedist);
         } else if (!init || pTracks) {
-            this.sitedist = ol.sphere.getDistance(SitePosition, this.position);
+            this.sitedist = mapgeo.getDistance(SitePosition, this.position);
         }
     }
 
@@ -1609,6 +1472,7 @@ PlaneObject.prototype.updateData = function(now, last, data, init) {
     this.oat = data.oat;
     this.tat = data.tat;
     this.receiverCount = data.receiverCount;
+    this.emergency = data.emergency;
 
     // fields with more complex behaviour
 
@@ -1630,10 +1494,11 @@ PlaneObject.prototype.updateData = function(now, last, data, init) {
         this.addrtype = null;
 
     // Pick a selected altitude
-    if (data.nav_altitude_fms != null) {
-        this.nav_altitude = data.nav_altitude_fms;
-    } else if (data.nav_altitude_mcp != null){
+    // (selected / MCP altitude first, the FMS target only when the aircraft sends no selected altitude)
+    if (data.nav_altitude_mcp != null) {
         this.nav_altitude = data.nav_altitude_mcp;
+    } else if (data.nav_altitude_fms != null) {
+        this.nav_altitude = data.nav_altitude_fms;
     } else {
         this.nav_altitude = null;
     }
@@ -1716,18 +1581,10 @@ PlaneObject.prototype.updateFeatures = function(redraw) {
 
 PlaneObject.prototype.clearMarker = function() {
     this.markerDrawn = false;
-    if (this.marker && this.marker.visible) {
-        PlaneIconFeatures.removeFeature(this.marker);
-        this.marker.visible = false;
-    }
-    delete this.marker;
-    if (this.glMarker && this.glMarker.visible) {
-        webglFeatures.removeFeature(this.glMarker);
-        this.glMarker.visible = false;
-    }
-    delete this.glMarker;
+        MLR.removePlane(this);
     delete this.styleKey;
     delete this.olPoint;
+    return;
 };
 
 // Update our marker on the map
@@ -1772,149 +1629,12 @@ PlaneObject.prototype.updateMarker = function(moved) {
     this.scale = iconSize * this.baseScale;
     this.strokeWidth = outlineWidth * ((this.selected && !SelectedAllPlanes && !onlySelected) ? 0.85 : 0.7) / this.baseScale;
 
-    if (!this.marker && (!webgl || g.enableLabels)) {
-        this.marker = new ol.Feature(this.olPoint);
-        this.marker.hex = `${this.icao}`;
-    }
-    if (webgl && !g.enableLabels && this.marker) {
-        if (this.marker.visible) {
-            PlaneIconFeatures.removeFeature(this.marker);
-            this.marker.visible = false;
-        }
-    }
-
-    if (webgl) {
-        if (!this.glMarker) {
-            this.glMarker = new ol.Feature(this.olPoint);
-            this.glMarker.hex = `${this.icao}`;
-        }
-
-        this.setMarkerRgb();
-        const iconRotation = this.shape.noRotate ? 0 : this.rotation;
-        this.glMarker.set('rotation', iconRotation * Math.PI / 180.0 + g.mapOrientation);
-        this.glMarker.set('scale', this.scale * Math.max(this.shape.w, this.shape.h) / glIconSize);
-        this.glMarker.set('sx', getSpriteX(this.shape) * glIconSize);
-        this.glMarker.set('sy', getSpriteY(this.shape) * glIconSize);
-    }
-
-    if (this.marker && (!webgl || g.enableLabels)) {
         this.updateIcon();
-        if (!this.marker.visible) {
-            this.marker.visible = true;
-            PlaneIconFeatures.addFeature(this.marker);
-        }
-    }
-    if (webgl && this.glMarker && !this.glMarker.visible) {
-        this.glMarker.visible = true;
-        webglFeatures.addFeature(this.glMarker);
-    }
-    if (!webgl && this.glMarker && this.glMarker.visible) {
-        webglFeatures.removeFeature(this.glMarker);
-        this.glMarker.visible = false;
-    }
+    return;
 };
 
 
 // return the styling of the lines based on altitude
-function altitudeLines (segment) {
-    let colorArr = altitudeColor(segment.altitude);
-    if (segment.estimated)
-        colorArr = [colorArr[0], colorArr[1], colorArr[2] * 0.8];
-    //let color = 'hsl(' + colorArr[0].toFixed(0) + ', ' + colorArr[1].toFixed(0) + '%, ' + colorArr[2].toFixed(0) + '%)';
-
-    let color = hslToRgb(colorArr);
-
-    if (monochromeTracks)
-        color = monochromeTracks;
-
-    const modeS = (segment.dataSource == 'modeS');
-    const lineKey = '_' + color + debugTracks + noVanish + segment.estimated + newWidth + modeS + segment.noLabel + segment.estimatedFill;
-
-    if (lineStyleCache[lineKey])
-        return lineStyleCache[lineKey];
-
-    let multiplier = segment.estimated ? 0.6 : 1;
-
-    if (noVanish)
-        multiplier *= (segment.estimated ? 0.3 : 0.6);
-
-    let join = 'round';
-    let cap = 'square';
-    if (!debugTracks) {
-        if (modeS) {
-            lineStyleCache[lineKey]	= [
-                new ol.style.Style({}),
-                new ol.style.Style({
-                    image: new ol.style.Circle({
-                        radius: 3 * newWidth,
-                        fill: new ol.style.Fill({
-                            color: color
-                        })
-                    }),
-                    geometry: function(feature) {
-                        return new ol.geom.MultiPoint(feature.getGeometry().getCoordinates());
-                    }
-                })
-            ];
-        } else if (segment.estimated && !noVanish) {
-            lineStyleCache[lineKey]	= [
-                new ol.style.Style({
-                    stroke: new ol.style.Stroke({
-                        color: 'black',
-                        width: 2 * newWidth * 0.3,
-                        lineJoin: join,
-                        lineCap: cap,
-                    })
-                }),
-                new ol.style.Style({
-                    stroke: new ol.style.Stroke({
-                        color: color,
-                        width: 2 * newWidth,
-                        lineDash: [10, 20 + 3 * newWidth],
-                        lineDashOffset: 5,
-                        lineJoin: join,
-                        lineCap: cap,
-                    }),
-                })
-            ];
-        } else if (segment.estimated && pTracks) {
-            lineStyleCache[lineKey]	= new ol.style.Style({});
-        } else {
-            lineStyleCache[lineKey]	= new ol.style.Style({
-                stroke: new ol.style.Stroke({
-                    color: color,
-                    width: 2 * newWidth * multiplier,
-                    lineJoin: join,
-                    lineCap: cap,
-                })
-            });
-        }
-    } else {
-        lineStyleCache[lineKey] = [
-            new ol.style.Style({
-                image: new ol.style.Circle({
-                    radius: (segment.estimatedFill ? 0 : 2) * newWidth,
-                    fill: new ol.style.Fill({
-                        color: color
-                    })
-                }),
-                geometry: function(feature) {
-                    return new ol.geom.MultiPoint(feature.getGeometry().getCoordinates());
-                }
-            }),
-            new ol.style.Style({
-                stroke: new ol.style.Stroke({
-                    color: color,
-                    width: ((segment.noLabel || segment.estimated) ? 0.5 : 1) * newWidth * multiplier,
-                    lineJoin: join,
-                    lineCap: cap,
-                })
-            })
-        ];
-    }
-    return lineStyleCache[lineKey];
-}
-
 // Update our planes tail line,
 PlaneObject.prototype.updateLines = function() {
     this.drawLine = false;
@@ -1924,217 +1644,7 @@ PlaneObject.prototype.updateLines = function() {
         }
         return;
     }
-
-    this.linesDrawn = true;
-    this.clearTraceAfter = null;
-
-    if (this.track_linesegs.length == 0)
-        return;
-
-    this.checkLayers();
-
-    let trail_add = [];
-    let label_add = [];
-
-    if (!this.layer.getVisible())
-        this.layer.setVisible(true);
-
-    if (trackLabels || showTrace) {
-        if (!this.layer_labels.getVisible())
-            this.layer_labels.setVisible(true);
-    } else if (this.layer_labels && this.layer_labels.getVisible()) {
-        this.layer_labels.setVisible(false);
-    }
-
-    // create the new elastic band feature
-    if (this.elastic_feature) {
-        this.trail_features.removeFeature(this.elastic_feature);
-        this.elastic_feature = null;
-    }
-    if (this.heading_feature) {
-        this.trail_features.removeFeature(this.heading_feature);
-        this.heading_feature = null;
-    }
-
-    // create any missing fixed line features
-
-    for (let i = this.track_linesegs.length-1; i >= 0; i--) {
-        let seg = this.track_linesegs[i];
-        if (seg.feature && (!trackLabels || seg.label))
-            break;
-
-        if ((filterTracks && altFiltered(seg.altitude)) || altitudeLines(seg) == nullStyle) {
-            seg.feature = true;
-        } else if (!seg.feature) {
-            seg.feature = true;
-            let feature = new ol.Feature(seg.fixed);
-            feature.setStyle(altitudeLines(seg));
-            feature.hex = `${this.icao}`;
-            feature.timestamp = Number(seg.ts);
-            trail_add.push(feature);
-        }
-
-        if (seg.label) {
-            // nothing to do, label already present
-        } else if ((filterTracks && altFiltered(seg.altitude)) || seg.noLabel) {
-            seg.label = true;
-        } else if (
-            trackLabels ||
-            ((i == 0 || i == this.track_linesegs.length-1 ||seg.leg) && showTrace && g.enableLabels)
-        ) {
-            // 0 vertical rate to avoid arrow
-            let altString;
-            if(seg.alt_real == "ground") {
-                altString = "Ground";
-            } else {
-                let alt;
-                if (labelsGeom) {
-                    alt = adjust_geom_alt(seg.alt_geom, seg.position);
-                } else {
-                    alt = adjust_baro_alt(seg.alt_real);
-                }
-
-                if (alt == null) {
-                    altString = (NBSP+'?'+NBSP);
-                } else {
-                    altString = format_altitude_brief(alt, 0, DisplayUnits, showLabelUnits);
-                }
-            }
-            const speedString = (seg.speed == null) ? (NBSP+'?'+NBSP) : format_speed_brief(seg.speed, DisplayUnits, showLabelUnits).padStart(3, NBSP);
-
-            seg.label = new ol.Feature(new ol.geom.Point(seg.fixed.getFirstCoordinate()));
-            let timestamp1;
-            let timestamp2 = "";
-            const historic = (showTrace || replay);
-            const useLocal = ((historic && !utcTimesHistoric) || (!historic && !utcTimesLive));
-            const date = new Date(seg.ts * 1000);
-            if (!date) {
-                console.log(seg);
-            }
-            let refDate = showTrace ? traceDate : new Date();
-            if (replay) { refDate = replay.ts };
-            if (useLocal && historic) {
-                timestamp1 = lDateString(date);
-                timestamp1 += '\n';
-            } else if (getDay(refDate) == getDay(date)) {
-                timestamp1 = "";
-            } else {
-                if (useLocal) {
-                    timestamp1 = lDateString(date);
-                } else {
-                    timestamp1 = zDateString(date);
-                }
-                timestamp1 += '\n';
-            }
-
-            if (useLocal) {
-                timestamp2 += localTime(date);
-            } else {
-                timestamp2 += zuluTime(date);
-            }
-
-            if (traces_high_res || debugTracks) {
-                timestamp2 += '.' + (Math.floor((seg.ts*10)) % 10);
-            }
-
-            if (showTrace && !utcTimesHistoric) {
-                timestamp2 += '\n' + TIMEZONE;
-            } else if (!useLocal) {
-                timestamp2 += NBSP + 'Z';
-            }
-
-            let text =
-                speedString.padStart(3, NBSP) + "  "
-                + altString.padStart(6, NBSP)
-                + "\n"
-                //+ NBSP + format_track_arrow(seg.track)
-                + timestamp1 + timestamp2;
-            if (seg.rId && show_rId) {
-                text += "\n" + seg.rId.substring(0,9); //+ "\n" + seg.rId.substring(9,18);
-            }
-
-            if (showTrace && !trackLabels)
-                text = timestamp1 + timestamp2;
-
-            let fill = labelFill;
-            let zIndex = -i - 50 * (seg.alt_real == null);
-            if (seg.leg == 'start') {
-                fill = new ol.style.Fill({color: '#88CC88' });
-                zIndex += 123499;
-            }
-            if (seg.leg == 'end') {
-                fill = new ol.style.Fill({color: '#8888CC' });
-                zIndex += 123455;
-            }
-            const otherDiag = seg.track != null && ((seg.track > 270 && seg.track < 360) || (seg.track > 90 && seg.track < 180));
-            seg.label.setStyle(
-                new ol.style.Style({
-                    text: new ol.style.Text({
-                        text: `${text}`,
-                        fill: fill,
-                        stroke: labelStroke,
-                        textAlign: 'left',
-                        //backgroundFill: bgFill,
-                        textBaseline: otherDiag ? 'bottom' : 'top',
-                        font: labelFont,
-                        offsetX: (otherDiag ? 4 : 8) * globalScale,
-                        offsetY: (otherDiag ? -4 : 8) * globalScale,
-                    }),
-                    image: new ol.style.Circle({
-                        radius: 2 * globalScale,
-                        fill: blackFill,
-                    }),
-                    zIndex: Number(zIndex),
-                })
-            );
-            seg.label.hex = `${this.icao}`;
-            seg.label.timestamp = Number(seg.ts);
-            seg.label.isLabel = true;
-            label_add.push(seg.label)
-        }
-    }
-
-    let lastseg = this.track_linesegs[this.track_linesegs.length - 1];
-    let lastfixed = lastseg.fixed.getCoordinateAt(1.0);
-    let geom = new ol.geom.LineString([lastfixed, ol.proj.fromLonLat(this.position)]);
-
-
-    if (!showTrace) {
-        this.elastic_feature = new ol.Feature(geom);
-        if (filterTracks && altFiltered(lastseg.altitude)) {
-            this.elastic_feature.setStyle(nullStyle);
-        } else {
-            this.elastic_feature.setStyle(altitudeLines(lastseg));
-        }
-        this.elastic_feature.hex = this.icao;
-        trail_add.push(this.elastic_feature);
-    }
-
-    // dashed line in the direction of travel for the selected aircraft
-    if (headingLineMinutes > 0 && !showTrace && this.selected && !SelectedAllPlanes
-        && this.track != null && this.gs > 0 && this.altitude != "ground" && this.seen_pos < 15) {
-        const distance = this.gs * 1852 / 60 * headingLineMinutes; // knots to meters
-        const end = TAR.utils.geodesic_destination(this.position, this.track * Math.PI / 180, distance);
-        let line = new ol.geom.LineString([this.position, end]);
-        line.transform('EPSG:4326', 'EPSG:3857');
-        this.heading_feature = new ol.Feature(line);
-        this.heading_feature.setStyle(new ol.style.Style({
-            stroke: new ol.style.Stroke({
-                color: monochromeTracks || hslToRgb(altitudeColor(this.altitude)),
-                width: newWidth,
-                lineDash: [4 * newWidth, 6 * newWidth],
-            })
-        }));
-        this.heading_feature.hex = this.icao;
-        trail_add.push(this.heading_feature);
-    }
-
-
-    if (trail_add.length > 0)
-        this.trail_features.addFeatures(trail_add);
-    if (this.trail_labels && label_add.length > 0)
-        this.trail_labels.addFeatures(label_add);
-
+    return this.updateLinesML();
 };
 
 PlaneObject.prototype.resetTrail = function() {
@@ -2143,29 +1653,19 @@ PlaneObject.prototype.resetTrail = function() {
 
 }
 PlaneObject.prototype.removeTrail = function() {
-
-    if (this.trail_features)
-        this.trail_features.clear();
-    if (this.trail_labels)
-        this.trail_labels.clear();
-
+    MLR.clearTrail(this);
     for (let i in this.track_linesegs) {
         delete this.track_linesegs[i].feature;
         delete this.track_linesegs[i].label;
     }
-    this.elastic_feature = null;
-    this.heading_feature = null;
 };
+
 
 // This is to remove the line from the screen if we deselect the plane
 PlaneObject.prototype.clearLines = function() {
     this.linesDrawn = false;
-    if (this.layer && this.layer.getVisible()) {
-        this.layer.setVisible(false);
-    }
-    if (this.layer_labels && this.layer_labels.getVisible()) {
-        this.layer_labels.setVisible(false);
-    }
+        MLR.hideTrail(this);
+    return;
 };
 
 PlaneObject.prototype.clearTrace = function() {
@@ -2182,22 +1682,15 @@ PlaneObject.prototype.clearTrace = function() {
 
 PlaneObject.prototype.destroyTrace = function() {
     this.clearTrace();
-    if (this.layer) {
-        trailGroup.remove(this.layer);
-        this.trail_features = null;
-        this.layer = null;
-    }
-    if (this.layer_labels) {
-        trailGroup.remove(this.layer_labels);
-        this.trail_labels = null;
-        this.layer_labels = null;
-    }
+        MLR.destroyTrail(this);
+    return;
 }
 
 PlaneObject.prototype.makeTR = function (trTemplate) {
 
     this.trCache = [];
-    this.bgColorCache = undefined;
+    this.trClassCache = undefined;
+    this.trAltCache = undefined;
     this.tr = trTemplate;
 
     this.clickListener = (evt) => {
@@ -2269,21 +1762,6 @@ function calcAltitudeRounded(altitude) {
     } else {
         return (altitude/125).toFixed(0)*125;
     }
-};
-
-PlaneObject.prototype.drawRedDot = function(bad_position) {
-    this.checkLayers();
-    if (debugJump && loadFinished && SelectedPlane != this) {
-        OLMap.getView().setCenter(ol.proj.fromLonLat(bad_position));
-        selectPlaneByHex(this.icao, false);
-    }
-    let badFeat = new ol.Feature(new ol.geom.Point(ol.proj.fromLonLat(bad_position)));
-    badFeat.setStyle(this.dataSource == "mlat"  ? badDotMlat : badDot);
-    this.trail_features.addFeature(badFeat);
-    let geom = new ol.geom.LineString([ol.proj.fromLonLat(this.prev_position), ol.proj.fromLonLat(bad_position)]);
-    let lineFeat = new ol.Feature(geom);
-    lineFeat.setStyle(this.dataSource == "mlat" ? badLineMlat : badLine);
-    this.trail_features.addFeature(lineFeat);
 };
 
 function hexToHSL(hex) {
@@ -2703,13 +2181,13 @@ PlaneObject.prototype.cross180 = function(on_ground, is_leg) {
     seg2.unshift(midPoint2);
 
     for (let i in seg1)
-        seg1[i] = ol.proj.fromLonLat(seg1[i]);
+        seg1[i] = mapgeo.fromLonLat(seg1[i]);
     for (let i in seg2)
-        seg2[i] = ol.proj.fromLonLat(seg2[i]);
+        seg2[i] = mapgeo.fromLonLat(seg2[i]);
 
     seg1.unshift(seg1[0]);
 
-    this.track_linesegs.push({ fixed: new ol.geom.LineString([seg1.shift()]),
+    this.track_linesegs.push({ fixed: new mapgeo.LineString([seg1.shift()]),
         feature: null,
         estimated: true,
         ground: (this.prev_alt == "ground"),
@@ -2724,7 +2202,7 @@ PlaneObject.prototype.cross180 = function(on_ground, is_leg) {
         rId: this.prev_rId,
     });
 
-    this.track_linesegs.push({ fixed: new ol.geom.LineString(seg1),
+    this.track_linesegs.push({ fixed: new mapgeo.LineString(seg1),
         feature: null,
         estimated: true,
         ground: (this.prev_alt == "ground"),
@@ -2739,7 +2217,7 @@ PlaneObject.prototype.cross180 = function(on_ground, is_leg) {
         rId: this.prev_rId,
     });
 
-    this.track_linesegs.push({ fixed: new ol.geom.LineString(seg2),
+    this.track_linesegs.push({ fixed: new mapgeo.LineString(seg2),
         feature: null,
         estimated: true,
         ground: (this.prev_alt == "ground"),
@@ -2929,19 +2407,14 @@ PlaneObject.prototype.setProjection = function(arg) {
     //let trace = new Error().stack.toString();
     //console.log(lat + ' ' + trace);
 
-    // manual wrap around (no longer necessary due to OpenLayers changing their webGL code)
-    if (0 && webgl && Math.abs(CenterLon - lon) > 180) {
-        if (CenterLon < 0)
-            lon -= 360;
-        else
-            lon += 360;
-    }
     //console.log([lat, lon]);
 
-    let proj = ol.proj.fromLonLat([lon, lat]);
+    let proj = mapgeo.fromLonLat([lon, lat]);
 
-    if (this == SelectedPlane && (arg == 'follow' || checkFollow())) {
-        OLMap.getView().setCenter(proj);
+    const smooth = typeof MLR != 'undefined' && MLR.smoothActive && MLR.smoothActive();
+    if (this == SelectedPlane && (arg == 'follow' || checkFollow()) && !(typeof MLR != 'undefined' && MLR.focusAnim)) {
+        if (smooth) { if (arg == 'follow') MLR.followStart(this, proj); }   // the camera follows the drawn position (ui/maplibre-motion.js)
+        else mapa.setCenterProj(proj);
     }
 
     if (this.proj) {
@@ -2950,9 +2423,10 @@ PlaneObject.prototype.setProjection = function(arg) {
         moved = true;
     }
     this.proj = proj;
+    if (typeof MLR != 'undefined' && MLR.onFix) MLR.onFix(this);
 
     if (!this.olPoint) {
-        this.olPoint = new ol.geom.Point(proj);
+        this.olPoint = new mapgeo.Point(proj);
     } else if (moved) {
         this.olPoint.setCoordinates(proj);
     }

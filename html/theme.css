@@ -1,0 +1,514 @@
+/*
+ * Skywatch ADS-B: theme (design/DESIGN.md v2, "floating glass")
+ *
+ * Dark only. Tokens first, then components. Phase 2 restyles the existing
+ * layout; later phases replace the markup (shell, list, infoblock, settings)
+ * and the matching sections here get rewritten with it.
+ */
+
+/* ---------- Fonts (self-hosted, SIL OFL 1.1, see fonts/*-OFL.txt) ---------- */
+
+@font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 100 900;
+    src: url('fonts/inter-latin-wght-normal.woff2') format('woff2-variations'),
+         url('fonts/inter-latin-wght-normal.woff2') format('woff2');
+    unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+@font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 100 900;
+    src: url('fonts/inter-latin-ext-wght-normal.woff2') format('woff2-variations'),
+         url('fonts/inter-latin-ext-wght-normal.woff2') format('woff2');
+    unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+@font-face {
+    font-family: 'JetBrains Mono';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 100 800;
+    src: url('fonts/jetbrains-mono-latin-wght-normal.woff2') format('woff2-variations'),
+         url('fonts/jetbrains-mono-latin-wght-normal.woff2') format('woff2');
+    unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+@font-face {
+    font-family: 'JetBrains Mono';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 100 800;
+    src: url('fonts/jetbrains-mono-latin-ext-wght-normal.woff2') format('woff2-variations'),
+         url('fonts/jetbrains-mono-latin-ext-wght-normal.woff2') format('woff2');
+    unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+/* ---------- Tokens ---------- */
+
+:root {
+    --bg:         #000;
+    --glass:      rgba(36, 38, 43, 0.80);   /* level 1: panels, toolbars, pills */
+    --glass-solid: #1c1d21;
+    --panel:      #1c1d21;               /* docked panels (sidebar, infoblock) until Phase 4 */
+    --tile:       rgba(255, 255, 255, 0.07);   /* level 2: tiles, chips, inputs */
+    --tile-hover: rgba(255, 255, 255, 0.11);
+    --line:       rgba(255, 255, 255, 0.12);
+    --line-strong: rgba(255, 255, 255, 0.20);
+    --text:       #FFFFFF;
+    --text2:      #CCCCCC;
+    --muted:      #B8B8B8;
+    --accent:     #FFFFFF;
+    --accent-bg:  rgba(255, 255, 255, 0.16);
+    --on-accent:  #000;
+    --ok:         #3DDC97;
+    --warn:       #F5B94A;
+    --bad:        #FF6B6B;
+    --src-adsb:   #3DDC97;
+    --src-mlat:   #5FB6D9;
+    --src-tisb:   #C9A0F0;
+    --src-other:  #B8B8B8;
+
+    --blur:       28px;
+    --shadow:     0 8px 32px rgba(0, 0, 0, 0.5);
+    --map-land:   #1a1a1c;   /* land colour of the map (ocean stays pure black); read by ui/mapstyle.js at load */
+
+    --r-panel:    32px;
+    --r-card:     22px;
+    --r-input:    14px;
+    --r-pill:     999px;
+
+    --font-ui:    'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --font-mono:  'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+
+    /* icons as data URIs (no external requests) */
+    --ico-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23CCCCCC' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 6l6 6-6 6'/%3E%3C/svg%3E");
+    --ico-resize:  url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23CCCCCC' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 7l-5 5 5 5M16 7l5 5-5 5M3 12h18'/%3E%3C/svg%3E");
+    --ico-close:   url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23CCCCCC' stroke-width='2.2' stroke-linecap='round'%3E%3Cpath d='M6 6l12 12M18 6L6 18'/%3E%3C/svg%3E");
+    --ico-check:   url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E");
+
+    color-scheme: dark;
+
+    /* style.css still uses these for markup not yet replaced (removed by Phase 10) */
+    --BGCOLOR1:  var(--panel);
+    --BGCOLOR2:  var(--tile);
+    --TXTCOLOR1: var(--text);
+    --TXTCOLOR2: var(--text);
+    --TXTCOLOR3: var(--text2);
+    --ACCENT:    var(--line-strong);
+
+    --ol-partial-background-color: var(--glass);
+    --ol-foreground-color:         var(--text);
+    --ol-subtle-foreground-color:  var(--text2);
+    --ol-brand-color:              var(--accent);
+}
+
+/* ---------- Glass surface ---------- */
+
+.glass,
+#sidebar_container,
+#selected_infoblock,
+#highlighted_infoblock,
+#altitude_chart,
+.ol-attribution {
+    background: var(--glass) !important;
+    -webkit-backdrop-filter: blur(var(--blur)) saturate(1.2);
+    backdrop-filter: blur(var(--blur)) saturate(1.2);
+    border: 1px solid var(--line);
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .glass, #sidebar_container, #selected_infoblock, #highlighted_infoblock, #altitude_chart,
+    .ol-attribution {
+        background: var(--glass-solid) !important;
+    }
+}
+@media (prefers-reduced-transparency: reduce) {
+    .glass, #sidebar_container, #selected_infoblock, #highlighted_infoblock, #altitude_chart,
+    .ol-attribution {
+        background: var(--glass-solid) !important;
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+    }
+}
+
+/* ---------- Base ---------- */
+
+[hidden] { display: none !important; }
+
+html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-ui);
+    -webkit-font-smoothing: antialiased;
+}
+body, .ui-widget, .ui-widget input, .ui-widget select, .ui-widget textarea, .ui-widget button,
+input, select, textarea, button {
+    font-family: var(--font-ui);
+}
+input, select, textarea, progress { accent-color: var(--accent); }
+
+a { color: var(--text); }
+.link, .link a,
+.infoblock_heading a,
+.largeText, .largeText a {
+    color: var(--text);
+    text-decoration: underline;
+    text-decoration-color: var(--line-strong);
+    text-underline-offset: 2px;
+}
+.link a:hover, .infoblock_heading a:hover { text-decoration-color: var(--text); }
+
+:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+::selection { background: var(--accent); color: var(--on-accent); }
+
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--line-strong) transparent;
+}
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }
+::-webkit-scrollbar-thumb {
+    background: var(--line-strong);
+    border: 2px solid transparent;
+    border-radius: var(--r-pill);
+    background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover { background-color: var(--muted); }
+
+/* ---------- Sidebar text (layout lives in ui/shell.css) ---------- */
+
+#sidebar_container { color: var(--text); }
+#webinterface_version, #decoder_version {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--muted);
+}
+
+/* ---------- Inputs and buttons ---------- */
+
+.searchInput,
+.altitudeFilterInput,
+#altimeter_input,
+#units_selector,
+#settings_infoblock select,
+#sidebar_container input[type="text"],
+#sidebar_container input[type="number"] {
+    box-sizing: border-box;
+    height: 32px;
+    padding: 0 12px;
+    background: var(--tile);
+    color: var(--text);
+    border: 1px solid var(--line);
+    border-radius: var(--r-input);
+    font-size: var(--FS2);
+}
+#units_selector option, #settings_infoblock select option { background: var(--panel); }
+.searchInput { width: 160px; }
+.altitudeFilterInput,
+#altimeter_input {
+    width: 76px;
+    font-family: var(--font-mono);
+}
+.searchInput:focus,
+.altitudeFilterInput:focus,
+#altimeter_input:focus,
+#units_selector:focus,
+#settings_infoblock select:focus {
+    border-color: var(--line-strong);
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}
+::placeholder { color: var(--muted); opacity: 1; }
+
+.formButton {
+    box-sizing: border-box;
+    min-height: 32px;
+    padding: 0 14px;
+    margin: 2px;
+    background: var(--tile);
+    color: var(--text);
+    border: 1px solid var(--line);
+    border-radius: var(--r-pill);
+    font-size: var(--FS2);
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color .12s;
+}
+.formButton:hover {
+    background: var(--tile-hover);
+}
+.formButton:active { background: var(--accent-bg); }
+.formButton:disabled {
+    color: var(--muted);
+    opacity: .6;
+    cursor: default;
+}
+button[type="submit"].formButton {
+    background: var(--accent);
+    color: var(--on-accent);
+    border-color: var(--accent);
+    font-weight: 600;
+}
+button[type="submit"].formButton:hover { background: #E6E9ED; }
+
+.warning {
+    background: rgba(245, 185, 74, 0.10);
+    border: 1px solid var(--warn);
+    border-radius: var(--r-input);
+    color: var(--text);
+}
+
+/* ---------- Source markers (rows, legend, source filter chips) ---------- */
+
+.plane_table_row > td:first-child::before,
+.legendItem::before,
+#sourceFilter li::before {
+    content: "";
+    display: inline-block;
+    box-sizing: border-box;
+    width: 8px;
+    height: 8px;
+    margin-right: 7px;
+    vertical-align: middle;
+    border: 1.5px solid var(--src-other);       /* other / no position: outlined square */
+    border-radius: 1px;
+}
+.src-adsb > td:first-child::before,
+.legendItem.src-adsb::before,
+#sourceFilter li.src-adsb::before {
+    border: none;
+    border-radius: 50%;                          /* ADS-B: green circle */
+    background: var(--src-adsb);
+}
+.src-mlat > td:first-child::before,
+.legendItem.src-mlat::before,
+#sourceFilter li.src-mlat::before {
+    border: none;
+    border-radius: 1px;                          /* MLAT: blue square */
+    background: var(--src-mlat);
+}
+.src-tisb > td:first-child::before,
+.legendItem.src-tisb::before,
+#sourceFilter li.src-tisb::before {
+    border: none;
+    border-radius: 0;                            /* TIS-B: purple triangle */
+    background: var(--src-tisb);
+    clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+
+/* ---------- Filters and column picker ---------- */
+
+.buttonFilter li {
+    box-sizing: border-box;
+    background: var(--tile);
+    border: 1px solid var(--line) !important;
+    border-radius: var(--r-pill);
+    color: var(--text2);
+    padding: 5px 8px;
+    margin: 0 6px 6px 0;
+}
+.buttonFilter li.ui-selecting,
+.buttonFilter li.ui-selected {
+    background: var(--accent);
+    border-color: var(--accent) !important;
+    color: var(--on-accent);
+}
+
+#sortableColumns li {
+    box-sizing: border-box;
+    background: var(--tile);
+    border: 1px solid var(--line);
+    border-radius: var(--r-input);
+    color: var(--text2);
+    padding: 0 6px;
+    cursor: grab;
+}
+#sortableColumns li.ui-sortable-helper {
+    background: var(--glass-solid);
+    box-shadow: var(--shadow);
+}
+
+/* (planes table and source legend: ui/list.css) */
+
+/* ---------- Altitude legend (ui/altlegend.js) ---------- */
+
+#altitude_chart { box-sizing: border-box; }   /* position and size: ui/shell.css */
+.altLegendHead {
+    display: flex;
+    justify-content: space-between;
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 14px;
+}
+.altLegendUnit { font-family: var(--font-mono); }
+.altLegendBar {
+    height: 6px;
+    border-radius: 3px;
+    margin: 7px 0 5px;
+}
+.altLegendTicks {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    line-height: 13px;
+    color: var(--muted);
+}
+
+/* ---------- Identity text (hover infoblock) ---------- */
+
+.identLarge {
+    font-family: var(--font-mono);
+    font-weight: 600;
+    font-size: 20px;
+    color: var(--text);
+}
+.identMedium, .identSmall {
+    font-weight: 600;
+    color: var(--text2);
+}
+
+/* ---------- Hover infoblock ---------- */
+
+#highlighted_infoblock {
+    color: var(--text);
+    border-radius: var(--r-card);
+    box-shadow: var(--shadow);
+    padding: 8px 14px;
+}
+#highlighted_infoblock .highlightedTitle { border-bottom: 1px solid var(--line); }
+#highlighted_infoblock .infoBlockSection { padding: 6px 0; }
+
+/* ---------- Checkboxes (column picker; the settings dialog restyles them as switches) ---------- */
+
+.settingsText {
+    color: var(--text2);
+    font-size: 13px;
+}
+.settingsCheckbox {
+    box-sizing: border-box;
+    width:  16px;
+    height: 16px;
+    margin: 0 8px 0 4px;
+    background-color: var(--tile);
+    background-image: none;
+    border: 1.5px solid var(--muted);
+    border-radius: 5px;
+    vertical-align: middle;
+}
+.settingsCheckbox.settingsCheckboxChecked {
+    background-color: var(--accent);
+    border-color: var(--accent);
+    background-image: var(--ico-check) !important;
+    background-size: 12px 12px;
+}
+.settingsCheckbox:hover { border-color: var(--text); }
+
+/* ---------- map controls (zoom, attribution; the class names are historical) ---------- */
+
+.ol-control { background: transparent; }
+.ol-control button {
+    background-color: var(--glass);
+    color: var(--text);
+    border: 1px solid var(--line);
+    border-radius: var(--r-pill);
+}
+.ol-control button:hover,
+.ol-control button:focus {
+    background-color: var(--glass-solid);
+    color: var(--text);
+}
+
+.ol-zoom .ol-zoom-in,
+.ol-zoom .ol-zoom-out {
+    background-image: none !important;
+    background-color: var(--glass) !important;
+    -webkit-backdrop-filter: blur(var(--blur));
+    backdrop-filter: blur(var(--blur));
+    color: var(--text) !important;
+    width:  36px !important;
+    height: 36px !important;
+    border: 1px solid var(--line) !important;
+    border-radius: var(--r-pill) !important;
+    font: 400 20px/1 var(--font-ui) !important;
+    margin: 0 0 6px 0 !important;
+}
+.ol-zoom .ol-zoom-in:hover,
+.ol-zoom .ol-zoom-out:hover { background-color: var(--glass-solid) !important; }
+
+.ol-attribution {
+    border-radius: var(--r-pill);
+    color: var(--text2);
+}
+.ol-attribution ul { color: var(--text2); text-shadow: none; }
+.ol-attribution a { color: var(--text); }
+.ol-attribution button { background: transparent; border: none; }
+
+
+/* ---------- Messages, loader ---------- */
+
+.error_box,
+#js_error {
+    background: var(--glass-solid);
+    color: var(--text);
+    border: 1px solid var(--warn);
+    border-radius: var(--r-card);
+    box-shadow: var(--shadow);
+    opacity: 1;
+    font-weight: 500;
+}
+#update_error.error_box { border-color: var(--bad); }
+.inaccurate_warning {
+    background: var(--glass-solid);
+    color: var(--warn);
+    border: 1px solid var(--line);
+    border-radius: var(--r-card);
+}
+
+/* ---------- jQuery UI datepicker ---------- */
+
+.ui-datepicker.ui-widget-content {
+    background: var(--glass-solid);
+    color: var(--text);
+    border: 1px solid var(--line);
+    border-radius: var(--r-card);
+    box-shadow: var(--shadow);
+    padding: 8px;
+}
+.ui-datepicker .ui-widget-header {
+    background: var(--tile);
+    color: var(--text);
+    border: none;
+    border-radius: var(--r-pill);
+}
+.ui-datepicker th { color: var(--muted); font-weight: 500; }
+.ui-datepicker .ui-state-default {
+    background: var(--tile);
+    color: var(--text2);
+    border: 1px solid var(--line) !important;
+    border-radius: var(--r-pill);
+    text-align: center;
+    font-family: var(--font-mono);
+}
+.ui-datepicker .ui-state-hover { background: var(--tile-hover); color: var(--text); }
+.ui-datepicker .ui-state-active,
+.ui-datepicker .ui-state-highlight {
+    background: var(--accent);
+    color: var(--on-accent);
+    border-color: var(--accent) !important;
+}
+.ui-datepicker .ui-datepicker-prev,
+.ui-datepicker .ui-datepicker-next { filter: invert(.85); }
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition: none !important; animation: none !important; }
+}
+
+/* Respect reduced transparency: solid panels */
+@media (prefers-reduced-transparency: reduce) {
+    :root { --glass: #1c1d21; --blur: 0px; }
+}

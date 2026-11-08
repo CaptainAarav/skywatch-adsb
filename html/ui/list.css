@@ -1,0 +1,349 @@
+/*
+ * Skywatch ADS-B: aircraft list panel (design/mockups/02-aircraft-list.html).
+ * #planesTable keeps the structure planeMan.redraw builds; rows are styled here.
+ */
+
+#sidebar_canvas { padding: 16px; }
+#sidebar-table {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-height: 100%;
+}
+
+.infoblock_row:not(.hidden) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+    justify-content: space-between;
+    padding: 10px 12px;
+    border-radius: 16px;
+    background: var(--tile);
+    font-size: 13px;
+}
+
+/* header */
+.listHead {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 2px 4px 0;
+}
+.listTitle {
+    margin: 0;
+    font-size: 19px;
+    font-weight: 600;
+    letter-spacing: -.01em;
+    color: var(--text);
+}
+.listDecoder {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* stat tiles */
+.statTiles {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+}
+.statTile {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 10px;
+    min-width: 0;
+}
+.statLabel {
+    font-size: 11px;
+    color: var(--muted);
+    white-space: nowrap;
+}
+.statValue {
+    margin-top: 6px;
+    font-family: var(--font-mono);
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1.15;
+    letter-spacing: -.02em;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.altimeterTile:not(.hidden) {
+    background: var(--tile);
+    border-radius: 16px;
+    padding: 10px 12px;
+}
+.altimeterTile form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+}
+.altimeterTile input { width: 80px; height: 30px; }
+
+/* list filter */
+.listSearch {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 44px;
+    padding: 0 14px;
+    border-radius: 22px;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid var(--line-strong);
+    color: var(--muted);
+}
+.listSearch:focus-within { box-shadow: inset 0 0 0 1px rgba(255,255,255,.25); }
+#list_filter {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    padding: 0;
+    border: 0;
+    outline: 0;
+    background: none;
+    box-shadow: none;
+    color: var(--text);
+    font: inherit;
+    font-size: 14px;
+}
+#list_filter::placeholder { color: var(--muted); opacity: 1; }
+
+/* chips */
+.listChips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+#chip_columns {
+    flex: none; width: 40px; height: 40px; margin: 0 -10px 0 0; padding: 0;
+    border: 0; border-radius: 50%; cursor: pointer;
+    background-color: transparent;
+    background-repeat: no-repeat; background-position: center; background-size: 18px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23CCCCCC' stroke-width='1.8' stroke-linecap='round'%3E%3Cpath d='M4 5h16M4 12h16M4 19h16M9 3v18M15 3v18'/%3E%3C/svg%3E");
+}
+#chip_columns:hover, #chip_columns[aria-expanded="true"] { background-color: rgba(255,255,255,.12); }
+#chip_columns:focus-visible { outline: 2px solid #fff; outline-offset: -2px; }
+
+/* columns popover (inside the list panel) */
+#columnsPopover {
+    left: 16px;
+    right: 16px;
+    top: 250px;
+    max-height: calc(100% - 270px);
+    background: var(--glass-solid) !important;
+}
+.popoverHint { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+#columnsPopover #sortableColumns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+#columnsPopover #sortableColumns li {
+    float: none;
+    width: auto;
+    margin: 0;
+    padding: 6px 10px;
+    border: 0;
+    border-radius: 12px;
+    background: var(--tile);
+    cursor: grab;
+}
+#columnsPopover .settingsOptionContainer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    font-size: 12px;
+}
+
+/* table */
+#planesTable {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 4px;
+    margin: -4px 0 0;
+    font-size: 13px;
+    table-layout: auto;
+}
+.aircraft_table_header {
+    background: none;
+    box-shadow: none;
+}
+.aircraft_table_header td {
+    padding: 4px 8px 6px;
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--muted);
+    white-space: nowrap;
+    cursor: pointer;
+    text-align: right;
+}
+.aircraft_table_header td:first-child { padding-left: 23px; text-align: left; }
+.aircraft_table_header td#flight,
+.aircraft_table_header td#type,
+.aircraft_table_header td#route,
+.aircraft_table_header td#registration,
+.aircraft_table_header td#airline,
+.aircraft_table_header td#icao,
+.aircraft_table_header td#country { text-align: left; }
+.aircraft_table_header td:hover { color: var(--text); }
+.colUnit { color: var(--muted); }
+
+.plane_table_row {
+    color: var(--text);
+    cursor: pointer;
+    --alt: transparent;
+}
+.plane_table_row.filteredOut { display: none; }
+.plane_table_row > td {
+    padding: 9px 8px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text2);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    border: 0;
+    background: none;
+}
+/* 3px altitude bar + source marker live in the first cell */
+.plane_table_row > td:first-child {
+    position: relative;
+    padding-left: 23px;
+    border-radius: 14px 0 0 14px;
+    color: var(--text);
+    font-weight: 600;
+    font-size: 13px;
+}
+.plane_table_row > td:first-child::after {
+    content: "";
+    position: absolute;
+    left: 10px;
+    top: 9px;
+    bottom: 9px;
+    width: 3px;
+    border-radius: 2px;
+    background: var(--alt);
+}
+.plane_table_row > td:last-child { border-radius: 0 14px 14px 0; }
+.plane_table_row:hover > td { background: var(--tile); }
+.plane_table_row.selected > td { background: var(--accent-bg); }
+
+/* source marker (::before) after the bar */
+.plane_table_row > td:first-child::before {
+    width: 8px;
+    height: 8px;
+    margin: 0 7px 1px 0;
+}
+
+/* emergency squawk: --bad outline and a squawk badge (mockup 02) */
+.plane_table_row.emergency > td {
+    background: rgba(255,107,107,.14);
+    box-shadow: inset 0 1px 0 rgba(255,107,107,.5), inset 0 -1px 0 rgba(255,107,107,.5);
+}
+.plane_table_row.emergency > td:first-child {
+    box-shadow: inset 0 1px 0 rgba(255,107,107,.5), inset 0 -1px 0 rgba(255,107,107,.5), inset 1px 0 0 rgba(255,107,107,.5);
+}
+.plane_table_row.emergency > td:last-child {
+    box-shadow: inset 0 1px 0 rgba(255,107,107,.5), inset 0 -1px 0 rgba(255,107,107,.5), inset -1px 0 0 rgba(255,107,107,.5);
+}
+.sqBadge {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 0 5px;
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 15px;
+    color: var(--bad);
+    border: 1px solid var(--bad);
+    border-radius: 5px;
+    vertical-align: 1px;
+}
+
+/* flag column (when enabled) stays on one line with the marker */
+.plane_table_row > td > img {
+    display: inline-block !important;
+    vertical-align: middle;
+    margin: 0 !important;
+    border-radius: 2px;
+}
+
+/* source legend (bottom of the panel) */
+#legend.legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-top: auto;
+    padding: 8px 4px 0;
+    font-size: 11px;
+    color: var(--text2);
+}
+.legendItem {
+    display: inline-flex;
+    align-items: center;
+    padding: 0;
+    line-height: 16px;
+    background: none;
+    border: 0;
+}
+.legendItem::before { width: 8px; height: 8px; margin-right: 6px; }
+
+.listCredits {
+    display: none;      /* credits live in the wordmark and Settings > About */
+    padding: 0 4px;
+    font-size: 11px;
+    color: var(--muted);
+}
+.listCredits a { color: var(--text2); text-decoration: none; }
+.listCredits a:hover { color: var(--text); text-decoration: underline; }
+#webinterface_version, #decoder_version { margin-left: 4px; }
+
+/* the filter popover opened from a list chip sits beside the list */
+#filterPopover.fromList {
+    left: calc(var(--edge) + 0px);
+    right: auto;
+    top: 230px;
+    max-height: calc(100% - 254px);
+}
+#filterPopover .filterSection.chipHidden { display: none; }
+#filterPopover.fromList .filterSection { border-top: 0; padding-top: 4px; }
+@media (max-width: 700px) {
+    #filterPopover.fromList { left: 8px; right: 8px; top: auto; }
+    .statTiles { gap: 6px; }
+    .statTile { padding: 10px; }
+    .statValue { font-size: 18px; }
+}
+#filterPopover.fromList .filterTitle { display: none; }
+
+/* many columns: tighten spacing so nothing is clipped (class set by fitListTable() in ui/shell.js) */
+#planesTable.dense .aircraft_table_header td { padding: 4px 4px 6px; font-size: 10px; }
+#planesTable.dense .plane_table_row > td { padding: 9px 4px; font-size: 11px; }
+#planesTable.dense .plane_table_row > td:first-child { padding-left: 21px; font-size: 12px; }
+#planesTable.denser .aircraft_table_header td { padding: 4px 2px 6px; font-size: 9px; }
+#planesTable.denser .plane_table_row > td { padding: 9px 2px; font-size: 10px; }
+#planesTable.denser .plane_table_row > td:first-child { padding-left: 19px; font-size: 11px; }
+#planesTable .plane_table_row > td.col_clip { max-width: 96px; overflow: hidden; text-overflow: ellipsis; }
+
+/* ---------- Elevation: readable rows without more borders ---------- */
+.aircraft_table_header td { background: rgba(255,255,255,.05); }
+.aircraft_table_header td:first-child { border-radius: 12px 0 0 12px; }
+.aircraft_table_header td:last-child { border-radius: 0 12px 12px 0; }
+.plane_table_row > td { border-bottom: 1px solid rgba(255,255,255,.05); }
+.plane_table_row:nth-child(even) > td { background: rgba(255,255,255,.025); }
+.plane_table_row:hover > td { background: var(--tile-hover); }
+.plane_table_row.selected > td { background: var(--accent-bg); }

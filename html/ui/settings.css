@@ -1,0 +1,304 @@
+/*
+ * Skywatch ADS-B: settings dialog (design/mockups/04-settings-basemaps.html).
+ */
+
+#settingsBackdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    background: rgba(0,0,0,.55);
+}
+
+#settings_infoblock {
+    position: fixed;
+    z-index: 61;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: min(1040px, calc(100vw / var(--SCALE, 1) - 32px));
+    height: min(720px, calc(100vh / var(--SCALE, 1) - 32px));
+    max-height: none;
+    box-sizing: border-box;
+    padding: 0;
+    overflow: hidden;
+    border-radius: 36px;
+    background: rgba(18,20,25,.9) !important;
+    border: 1px solid var(--line);
+    box-shadow: none;
+    color: var(--text);
+    zoom: var(--SCALE);
+}
+#settings_infoblock:not([hidden]) { display: flex; }
+
+/* section nav */
+.setNav {
+    flex: none;
+    width: 230px;
+    box-sizing: border-box;
+    padding: 24px 16px;
+    border-right: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow-y: auto;
+}
+.setTitle { font-size: 20px; font-weight: 600; padding: 0 14px 16px; }
+.setNavBtn {
+    display: block;
+    width: 100%;
+    text-align: left;
+    border: 0;
+    background: none;
+    font: inherit;
+    font-size: 14px;
+    padding: 11px 14px;
+    border-radius: 14px;
+    color: var(--text2);
+    cursor: pointer;
+}
+.setNavBtn:hover { color: var(--text); background: var(--tile); }
+.setNavBtn.on { color: var(--accent); background: var(--accent-bg); }
+.setReset {
+    margin-top: auto;
+    border: 0;
+    background: none;
+    color: var(--bad);
+    font: inherit;
+    font-size: 13px;
+    text-align: left;
+    padding: 10px 14px;
+    border-radius: 12px;
+    cursor: pointer;
+}
+.setReset:hover { background: rgba(255,107,107,.1); }
+.setReset.confirm { background: rgba(255,107,107,.16); font-weight: 600; }
+
+/* main column */
+.setMain {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 24px 28px 0;
+}
+.setHead { display: flex; align-items: center; flex: none; margin-bottom: 18px; }
+.setHead h2 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -.005em; }
+#settings_infoblock .setClose {
+    margin-left: auto;
+    width: 38px;
+    height: 38px;
+    background: var(--tile);
+    border: 0;
+    color: var(--text);
+}
+#settings_infoblock .setClose:hover { background: rgba(255,255,255,.1); }
+.setBody {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding-bottom: 24px;
+    scrollbar-width: thin;
+}
+.setSec { display: flex; flex-direction: column; gap: 18px; }
+.setSec[hidden] { display: none; }
+.setLbl { font-size: 12px; color: var(--muted); margin-bottom: -8px; }
+.setCols { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+.setCols > div { min-width: 0; }
+.setCols .setLbl { margin-bottom: 0; }
+.setHalf { max-width: calc(50% - 14px); }
+.setNote { margin: 0; font-size: 12px; line-height: 1.55; color: var(--muted); max-width: 640px; }
+
+/* base map picker */
+.baseGrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.baseTile {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    min-width: 0;
+    padding: 0;
+    background: none;
+    border: 0;
+    color: var(--text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.baseThumb {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 72px;
+    border-radius: 16px;
+    box-shadow: 0 0 0 1px var(--line);
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 13px;
+}
+.baseThumbMore { background: #1a1d23; }
+.baseTile:hover .baseThumb { box-shadow: 0 0 0 1px rgba(255,255,255,.35); }
+.baseTile.on .baseThumb { box-shadow: 0 0 0 2px var(--accent); }
+.baseTile:focus-visible { outline: none; }
+.baseTile:focus-visible .baseThumb { box-shadow: 0 0 0 2px var(--accent), 0 0 0 5px rgba(255,255,255,.25); }
+.baseName { font-size: 13px; font-weight: 600; margin-top: 7px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.baseSub { font-size: 11px; }
+.baseMore { display: flex; flex-wrap: wrap; gap: 6px; margin-top: -4px; }
+.baseMore[hidden] { display: none; }
+#settings_infoblock .baseChip { height: 30px; padding: 0 12px; border: 0; border-radius: 15px; background: var(--tile); color: var(--text2); font: inherit; font-size: 12px; cursor: pointer; }
+#settings_infoblock .baseChip:hover { color: var(--text); background: rgba(255,255,255,.1); }
+#settings_infoblock .baseChip.on { color: #000; background: var(--accent); }
+
+/* rows with switches (built rows and tar1090 Toggle rows) */
+.setList { display: flex; flex-direction: column; }
+.setRow,
+#settings_infoblock .settingsOptionContainer {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    margin: 0;
+    border-bottom: 1px solid rgba(255,255,255,.06);
+    cursor: pointer;
+    position: relative;
+}
+.setRowText, #settings_infoblock .settingsText {
+    flex: 1;
+    min-width: 0;
+    display: block;
+    order: 0;
+    font-size: 14px;
+    line-height: 1.35;
+    color: var(--text);
+}
+.setRowSub { display: block; font-size: 12px; margin-top: 2px; }
+#settings_infoblock .settingsOptionContainer:focus-visible { outline: none; }
+#settings_infoblock .settingsOptionContainer:focus-visible .settingsCheckbox,
+.setSwitch:focus-visible + .switch { box-shadow: 0 0 0 2px var(--accent), 0 0 0 5px rgba(255,255,255,.25); }
+.setSwitch { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; }
+
+/* 42x24 switch, white when on (mockup 04) */
+.switch,
+#settings_infoblock .settingsCheckbox {
+    flex: none;
+    order: 1;
+    position: relative;
+    width: 42px;
+    height: 24px;
+    margin: 0;
+    border: 0;
+    border-radius: 12px;
+    background: rgba(255,255,255,.14) !important;
+    background-image: none !important;
+    box-sizing: border-box;
+    transition: background-color .15s;
+}
+.switch::after,
+#settings_infoblock .settingsCheckbox::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #fff;
+    transition: left .15s, background-color .15s;
+}
+.setSwitch:checked + .switch,
+#settings_infoblock .settingsCheckbox.settingsCheckboxChecked { background: #fff !important; }
+.setSwitch:checked + .switch::after,
+#settings_infoblock .settingsCheckbox.settingsCheckboxChecked::after { left: 20px; background: #000; }
+
+/* sliders */
+.setSlider { padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,.06); }
+.setSlider label { display: flex; justify-content: space-between; font-size: 14px; }
+.setSlider input[type=range] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 18px;
+    margin: 6px 0 0;
+    background: transparent;
+    cursor: pointer;
+    --fill: 50%;
+}
+.setSlider input[type=range]::-webkit-slider-runnable-track {
+    height: 4px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, #fff var(--fill), rgba(255,255,255,.14) var(--fill));
+}
+.setSlider input[type=range]::-moz-range-track { height: 4px; border-radius: 2px; background: rgba(255,255,255,.14); }
+.setSlider input[type=range]::-moz-range-progress { height: 4px; border-radius: 2px; background: #fff; }
+.setSlider input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    margin-top: -7px;
+    border-radius: 50%;
+    background: #fff;
+    border: 0;
+}
+.setSlider input[type=range]::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: #fff; border: 0; }
+.setSlider input[type=range]:focus-visible { outline: none; }
+.setSlider input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 4px rgba(255,255,255,.3); }
+
+/* units */
+.segmented { display: inline-flex; align-self: flex-start; gap: 2px; padding: 3px; border-radius: 22px; background: var(--tile); }
+.segmented button {
+    height: 34px;
+    padding: 0 16px;
+    border: 0;
+    border-radius: 19px;
+    background: none;
+    color: var(--text2);
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+}
+.segmented button:hover { color: var(--text); }
+.segmented button.on { background: var(--accent-bg); color: var(--accent); font-weight: 600; }
+
+/* advanced: altimeter */
+#altimeterSlot .altimeterTile:not(.hidden) { background: none; padding: 10px 0 0; }
+#altimeterSlot form { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+#altimeterSlot input { width: 96px; height: 32px; }
+.setOther:not([hidden]) { margin-top: 8px; }
+
+/* about */
+.about { display: flex; flex-direction: column; gap: 8px; }
+.aboutName { font-size: 24px; font-weight: 600; letter-spacing: -.01em; }
+.about p { margin: 8px 0; color: var(--text2); font-size: 14px; line-height: 1.55; max-width: 640px; }
+.about a { color: var(--text); }
+.kvRow { display: flex; justify-content: space-between; gap: 16px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,.06); font-size: 14px; }
+.kvRow > span:first-child { color: var(--muted); }
+.kvRow > span:last-child { text-align: right; }
+
+@media (max-width: 700px) {
+    #settings_infoblock {
+        left: 0;
+        top: auto;
+        bottom: 0;
+        transform: none;
+        width: 100%;
+        height: calc(100% - 40px);
+        border-radius: 32px 32px 0 0;
+        flex-direction: column;
+    }
+    .setNav {
+        width: auto;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding: 16px 16px 10px;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+        gap: 4px;
+        scrollbar-width: none;
+    }
+    .setTitle { display: none; }
+    .setNavBtn { width: auto; flex: none; white-space: nowrap; padding: 8px 12px; font-size: 13px; }
+    .setReset { margin: 0; flex: none; white-space: nowrap; }
+    .setMain { padding: 16px 16px 0; }
+    .setCols { grid-template-columns: 1fr; gap: 18px; }
+    .setHalf { max-width: none; }
+    .baseGrid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+}

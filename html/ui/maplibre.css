@@ -1,0 +1,39 @@
+/* Skywatch ADS-B: MapLibre renderer extras (ui/maplibre.js) */
+
+/* selected aircraft label (a DOM marker: MapLibre symbol labels have no background box) */
+.mlPill {
+    pointer-events: none;
+    background: #fff;
+    color: #000;
+    padding: 4px 7px 3px;
+    border-radius: 7px;
+    white-space: pre;
+    line-height: 1.2;
+    font-family: var(--font-mono);
+    box-shadow: 0 1px 3px rgba(0,0,0,.5);
+    display: flex;
+    align-items: flex-start;
+}
+.mlPillText { white-space: pre; }
+
+#webglNotice {
+    position: fixed;
+    left: 50%;
+    bottom: 90px;
+    transform: translateX(-50%);
+    z-index: 70;
+    padding: 10px 16px;
+    border-radius: 14px;
+    background: var(--glass, rgba(18,20,25,.9));
+    color: var(--text, #fff);
+    border: 1px solid var(--line, rgba(255,255,255,.1));
+    font-size: 13px;
+}
+
+#map_canvas.maplibregl-map { position: absolute; }
+#map_canvas .maplibregl-canvas { outline: none; }
+
+/* attribution: plain muted text like the mockups */
+.ol-attribution ul { list-style: none; margin: 0; padding: 0; }
+.ol-attribution a { text-decoration: none; }
+.ol-attribution a:hover { text-decoration: underline; }

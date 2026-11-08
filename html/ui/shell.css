@@ -1,0 +1,650 @@
+/*
+ * Skywatch ADS-B: floating glass shell (desktop layout).
+ * Positions follow design/mockups/01 and 02. The left edge of the bottom
+ * toolbar and altitude legend tracks whichever left panel is open (--edge).
+ * Everything floating is scaled with the "Interface scale" slider via zoom.
+ */
+
+/* ---------- Layout: full-bleed map, panels float on top ---------- */
+#layout_container {
+    position: fixed;
+    inset: 0;
+    display: block;
+    height: auto;
+}
+#map_container {
+    position: absolute;
+    inset: 0;
+    height: auto;
+    background: var(--bg);
+}
+#map_canvas { background: var(--bg); }
+
+body { --edge: 28px; }
+body.listOpen:not(.infoOpen):not(.panelsHidden) { --edge: calc(var(--list-w, 420px) + 60px); }
+body.infoOpen:not(.panelsHidden) { --edge: 410px; }
+body.infoOpen.infoWide:not(.panelsHidden) { --edge: calc(clamp(680px, 62vw, 1040px) + 56px); }
+
+.shell, #sidebar_container, #selected_infoblock, #altitude_chart,
+.ol-zoom, .ol-attribution, #highlighted_infoblock {
+    zoom: var(--SCALE, 1);
+}
+
+.visuallyHidden {
+    position: absolute !important;
+    width: 1px; height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+
+.ico {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    flex: none;
+}
+
+/* shared controls */
+.btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    color: var(--text);
+    background: none;
+    border: 0;
+    cursor: pointer;
+    font: inherit;
+}
+.btn.glass { border: 1px solid var(--line); }
+.btn:hover { background-color: var(--tile); }
+
+.tb {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    height: 34px;
+    padding: 0 8px;
+    border-radius: 12px;
+    background: none;
+    border: 0;
+    color: var(--text2);
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+    white-space: nowrap;
+    text-decoration: none;
+}
+.tb:hover { color: var(--text); background: var(--tile); }
+.tb.on, .tb.activeButton {
+    background: var(--accent-bg);
+    color: var(--accent);
+}
+.tb kbd, .chip kbd {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    line-height: 14px;
+    color: var(--muted);
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    padding: 0 4px;
+}
+.sep {
+    width: 1px;
+    height: 20px;
+    background: var(--line);
+    margin: 0 4px;
+    flex: none;
+}
+.chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 28px;
+    padding: 0 10px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid var(--line-strong);      /* real pills: subtle fill and a visible edge (mockup 02) */
+    font: inherit;
+    font-size: 12px;
+    color: var(--text2);
+    cursor: pointer;
+    white-space: nowrap;
+}
+button.chip:hover { color: var(--text); background: rgba(255,255,255,.12); }
+.chip.on, .chip.activeButton { background: var(--accent-bg); color: var(--accent); border-color: rgba(255,255,255,.35); }
+
+/* ---------- Top bar ---------- */
+#topbar {
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 0;
+    z-index: 30;
+}
+#wordmark {
+    position: absolute;
+    left: 28px;
+    top: 16px;
+    line-height: 1.15;
+    pointer-events: none;
+}
+.wordmarkTitle {
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -.01em;
+    color: var(--text);
+}
+.wordmarkCredit {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 3px;
+}
+#viewPill {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    top: 14px;
+    display: flex;
+    gap: 4px;
+    padding: 5px;
+    border-radius: 24px;
+}
+#viewPill .tb {
+    height: 34px;
+    padding: 0 16px;
+    font-size: 14px;
+}
+#viewPill .tb:not(.on) { color: var(--text); }
+#viewPill .tb:not(.on):hover { background: var(--tile); }
+
+#searchWrap {
+    position: absolute;
+    right: 84px;
+    top: 14px;
+    width: 214px;
+}
+#search_form {
+    height: 44px;
+    border-radius: 22px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 14px;
+    font-size: 14px;
+    color: var(--text2);
+    margin: 0;
+}
+#search_form:focus-within { border-color: rgba(255,255,255,.28); }
+#search_input {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    background: none;
+    border: 0;
+    outline: 0;
+    padding: 0;
+    color: var(--text);
+    font: inherit;
+    font-size: 14px;
+    box-shadow: none;
+}
+#search_input::placeholder { color: var(--text2); opacity: 1; }
+#search_input::-webkit-search-cancel-button { display: none; }
+#search_form kbd {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--muted);
+}
+#search_form:focus-within kbd { visibility: hidden; }
+#search_warning {
+    position: absolute;
+    top: 52px;
+    right: 0;
+    width: 280px;
+    border-radius: 16px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--text);
+    margin: 0;
+}
+#settingsCog {
+    position: absolute;
+    right: 28px;
+    top: 14px;
+    width: 44px;
+    height: 44px;
+}
+
+/* ---------- Right control stack ---------- */
+#controlStack {
+    position: absolute;
+    right: 28px;
+    top: 84px;
+    width: fit-content;
+    box-sizing: border-box;
+    border-radius: 22px;
+    padding: 3px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    z-index: 25;
+}
+#controlStack .btn {
+    width: 36px;
+    height: 36px;
+    font-size: 13px;
+    font-weight: 600;
+}
+#controlStack .btn[aria-pressed="true"], #controlStack .btn[aria-expanded="true"] {
+    background: var(--accent-bg);
+}
+
+/* ---------- Bottom toolbar ---------- */
+#toolbar {
+    position: absolute;
+    left: var(--edge);
+    bottom: 24px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    padding: 5px 6px;
+    border-radius: 26px;
+    max-width: calc(100vw / var(--SCALE, 1) - var(--edge) - 270px);   /* clear of the 2D / 3D / Globe switch and the zoom bar */
+    z-index: 20;
+    transition: left .2s ease;
+}
+
+/* ---------- Altitude legend (bottom-left, above the toolbar) ---------- */
+#altitude_chart.ol-control {
+    position: absolute;
+    left: var(--edge);
+    right: auto;
+    bottom: calc(34px + var(--tb-h, 50px));   /* sits 10px above the toolbar, even when it wraps */
+    top: auto;
+    width: 200px;
+    max-width: none;
+    margin: 0;
+    padding: 10px 14px;
+    border-radius: 18px;
+    z-index: 20;
+    transition: left .2s ease;
+}
+
+/* ---------- Zoom, 2D/3D, attribution (bottom-right) ---------- */
+.ol-zoom.ol-control {
+    position: absolute;
+    left: auto;
+    top: auto;
+    right: 28px;           /* far right; the 2D / 3D / Globe switch sits to its left */
+    bottom: 44px;
+    width: 44px;
+    padding: 2px;
+    border-radius: 22px;
+    display: flex;
+    flex-direction: column;
+    background: var(--glass) !important;
+    -webkit-backdrop-filter: blur(28px);
+    backdrop-filter: blur(28px);
+    border: 1px solid var(--line);
+}
+.ol-zoom.ol-control button,
+.ol-zoom .ol-zoom-in, .ol-zoom .ol-zoom-out {
+    width: 40px !important;
+    height: 40px !important;
+    margin: 0 !important;
+    border-radius: 50% !important;
+    background: none !important;
+    background-image: none !important;
+    color: var(--text) !important;
+    font-size: 20px !important;
+    font-weight: 400;
+    line-height: 1;
+    border: 0 !important;
+}
+.ol-zoom.ol-control button:hover { background: var(--tile) !important; }
+
+#dimSwitch {
+    position: absolute;
+    right: 84px;
+    bottom: 44px;
+    display: flex;
+    padding: 3px;
+    border-radius: 22px;
+    font-size: 13px;
+    font-weight: 600;
+    z-index: 20;
+    user-select: none;
+}
+#dimSwitch span, #dimSwitch button {
+    padding: 9px 14px;
+    border-radius: 19px;
+    line-height: 16px;
+}
+#dimSwitch .on { background: var(--accent-bg); color: var(--accent); }
+#dimSwitch button { border: 0; background: none; color: var(--muted); font: inherit; cursor: pointer; }
+#dimSwitch button:hover { color: var(--text); }
+#dimSwitch .on, #dimSwitch button.on { background: var(--accent-bg); color: var(--accent); }
+#dimSwitch.noRotate3d { display: none; }
+
+.ol-attribution.ol-control {
+    position: absolute;
+    right: 28px !important;
+    bottom: 8px !important;
+    left: auto;
+    top: auto;
+    max-width: 60%;
+    background: none !important;
+    border: 0;
+    padding: 0;
+}
+.ol-attribution.ol-control ul {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: #6B7280;
+    text-shadow: none;
+    padding: 0;
+    margin: 0;
+    background: none;
+}
+.ol-attribution.ol-control ul a { color: #6B7280; }
+.ol-attribution.ol-control button { display: none; }
+.ol-attribution.ol-control.ol-collapsed ul { display: block; }
+
+
+/* ---------- Left panels ---------- */
+#sidebar_container,
+#selected_infoblock {
+    position: absolute;
+    left: 28px;
+    top: 76px;
+    bottom: 24px;
+    height: auto !important;
+    border-radius: 32px;
+    z-index: 22;
+    overflow: hidden;
+    background: var(--glass);
+    -webkit-backdrop-filter: blur(28px);
+    backdrop-filter: blur(28px);
+    border: 1px solid var(--line);
+    box-shadow: none;
+}
+#sidebar_container {
+    left: 28px !important;      /* style.css pins it to 0 with !important */
+    width: var(--list-w, 420px) !important;     /* widened by fitListTable() when many columns are on */
+    margin: 0 !important;
+    display: flex;
+    flex-direction: column;
+}
+#sidebar_canvas {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    padding: 16px;
+}
+#selected_infoblock { width: 352px !important; }
+body.infoWide #selected_infoblock { width: clamp(680px, 62vw, 1040px) !important; }
+
+body.infoOpen #sidebar_container,
+body.panelsHidden #sidebar_container,
+body.panelsHidden #selected_infoblock { display: none !important; }
+
+/* ---------- Popovers ---------- */
+.popover {
+    position: absolute;
+    z-index: 40;
+    border-radius: 24px;
+    padding: 14px 16px 16px;
+    color: var(--text);
+    overflow: auto;
+}
+.popover[hidden] { display: none !important; }
+#filterPopover {
+    right: 84px;
+    top: 84px;
+    width: 320px;
+    max-height: calc(100% - 120px);
+}
+.popoverHead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+.popoverHead .btn { width: 32px; height: 32px; background: var(--tile); }
+.filterSection {
+    padding: 10px 0;
+    border-top: 1px solid var(--line);
+}
+.filterSection:first-of-type { border-top: 0; }
+.filterSection form { margin: 0; }
+.filterTitle {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 8px;
+}
+.filterRow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.filterRow input {
+    width: 84px;
+    height: 34px;
+    border-radius: 12px;
+}
+.filterTo, .filterRow .altitudeUnit { color: var(--muted); font-size: 12px; }
+.filterButtons {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+}
+#filterTable3:empty, #filterTable3 tbody:empty { display: none; }
+
+/* ---------- Shift+H: hide every floating control ---------- */
+body.buttonsHidden #topbar #viewPill,
+body.buttonsHidden #searchWrap,
+body.buttonsHidden #settingsCog,
+body.buttonsHidden #controlStack,
+body.buttonsHidden #toolbar,
+body.buttonsHidden #dimSwitch,
+body.buttonsHidden .ol-zoom,
+body.buttonsHidden .popover { display: none !important; }
+
+/* text filters (rows built by Filter.init in script.js) */
+.filterHint { color: var(--muted); opacity: .8; font-size: 11px; }
+.textFilters { width: 100%; border-collapse: collapse; }
+.textFilters td { padding: 0; }
+.textFilter {
+    display: grid;
+    grid-template-columns: 116px 1fr 30px;
+    align-items: center;
+    gap: 6px;
+    margin: 0 0 6px;
+}
+.textFilter label { font-size: 12px; color: var(--text2); }
+.textFilter input {
+    height: 32px;
+    min-width: 0;
+    border-radius: 10px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+}
+.textFilter .textFilterReset { width: 30px; height: 30px; color: var(--muted); }
+
+/* ---------- Selected-aircraft panel frame (content: ui/infoblock.css) ---------- */
+#selected_infoblock {
+    display: none;
+    flex-direction: column;
+    padding: 14px;
+    gap: 10px;
+}
+body.infoOpen #selected_infoblock { display: flex; }
+.actionBar {
+    flex: none;
+    display: flex;
+    gap: 2px;
+    padding: 6px;
+    border-radius: 24px;
+    background: var(--tile);
+}
+.act {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    padding: 10px 0;
+    font: inherit;
+    font-size: 12px;
+    color: var(--text2);
+    background: none;
+    border: 0;
+    border-radius: 14px;
+    cursor: pointer;
+}
+.act:hover { color: var(--text); background: var(--tile); }
+.act.on, .act.activeButton { color: var(--accent); background: var(--accent-bg); }
+
+#selected_infoblock, #sidebar_container, .popover { box-sizing: border-box; }
+/* the wordmark is plain text on the map (a soft shadow keeps it readable over labels) */
+#wordmark {
+    left: 24px;
+    top: 14px;
+    padding: 0;
+    background: none;
+    border: 0;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow: none;
+    text-shadow: 0 0 6px #000, 0 0 12px #000, 0 1px 2px #000;
+}
+
+/* source / flag chips in the filter popover (jQuery UI selectable lists) */
+#filterPopover .buttonFilter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    float: none;
+    width: auto;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+#filterPopover .buttonFilter li {
+    float: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    width: auto;
+    height: 28px;
+    margin: 0;
+    padding: 0 10px;
+    font-size: 12px;
+    border: 0 !important;
+    border-radius: 14px;
+    background: var(--tile);
+    color: var(--text2);
+    cursor: pointer;
+    white-space: nowrap;
+}
+#filterPopover .buttonFilter li.ui-selecting,
+#filterPopover .buttonFilter li.ui-selected {
+    background: var(--accent);
+    color: var(--on-accent);
+}
+#filterPopover .textFilter input { width: 100%; box-sizing: border-box; }
+
+/* ---------- Elevation (map < panel < tile) ---------- */
+/* every floating control sits on a visible glass surface and lifts off the map with a soft shadow */
+.glass, #sidebar_container, #selected_infoblock, #highlighted_infoblock, #altitude_chart,
+#viewPill, #toolbar, #controlStack, #dimSwitch, .ol-zoom.ol-control, #search_form, #settingsBtn {
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow);
+}
+#search_form, .listSearch { background: var(--tile); }
+/* wordmark: plain text only, a soft dark halo keeps it readable over map labels */
+#wordmark {
+    left: 24px;
+    top: 14px;
+    padding: 0;
+    background: none !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    text-shadow: 0 0 4px rgba(0,0,0,.95), 0 0 10px rgba(0,0,0,.85), 0 1px 2px #000;
+}
+/* the zoom bar and 2D/3D/Globe switch hug their contents (no blank space on the right) */
+.ol-zoom.ol-control { box-sizing: border-box; width: fit-content; padding: 3px; }
+.ol-zoom.ol-control button { display: block; }
+#dimSwitch { box-sizing: border-box; width: fit-content; gap: 2px; right: 84px; }
+#dimSwitch button { margin: 0; }
+
+/* north button: compass needle rotates with the map bearing; lit when the view is rotated or tilted */
+#north_up .northIco { overflow: visible; }
+#north_up .northRing { fill: none; stroke: currentColor; stroke-opacity: .35; stroke-width: 1.4; }
+#north_up .northNeedle { transform-origin: 12px 12px; transform-box: view-box; transition: none; }
+#north_up .northN { fill: #FF6B6B; stroke: none; }
+#north_up .northS { fill: currentColor; fill-opacity: .55; stroke: none; }
+#north_up.on { background: #fff !important; color: #000; }
+#north_up.on .northRing { stroke-opacity: .5; }
+#north_up.on .northS { fill-opacity: .6; }
+
+/* ---------- Graphs overlay (graphs1090 PNGs, dark colour scheme) ---------- */
+#graphsOverlay {
+    position: fixed; z-index: 30; left: 28px; right: 28px; top: 76px; bottom: 28px;
+    display: flex; flex-direction: column; gap: 16px; padding: 20px 24px 24px;
+    background: var(--glass); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255,255,255,.08); border-radius: 32px; color: var(--text);
+    box-shadow: 0 24px 64px rgba(0,0,0,.45);
+}
+#graphsOverlay[hidden] { display: none; }
+#graphsOverlay .gHead { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+#graphsOverlay h2 { margin: 0 auto 0 0; font: 600 20px/1.2 Inter, system-ui, sans-serif; }
+#graphsOverlay .gTabs { display: flex; gap: 4px; padding: 4px; background: rgba(255,255,255,.06); border-radius: 999px; }
+#graphsOverlay .gTabs button { border: 0; background: none; color: var(--text2); font: 500 14px Inter, system-ui, sans-serif; padding: 8px 16px; border-radius: 999px; cursor: pointer; }
+#graphsOverlay .gTabs button:hover { color: var(--text); }
+#graphsOverlay .gTabs button.on { background: rgba(255,255,255,.14); color: var(--text); }
+#graphsOverlay .gFull { color: var(--text2); font: 500 13px Inter, system-ui, sans-serif; text-decoration: none; }
+#graphsOverlay .gFull:hover { color: var(--text); }
+#graphsOverlay .gClose { width: 40px; height: 40px; border-radius: 50%; border: 0; background: rgba(255,255,255,.08); color: var(--text); font-size: 22px; cursor: pointer; }
+#graphsOverlay .gGrid { flex: 1; min-height: 0; overflow: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 16px; align-content: start; }
+#graphsOverlay .gCard { margin: 0; padding: 14px 14px 10px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.08); border-radius: 24px; }
+#graphsOverlay .gCard figcaption { font: 600 14px Inter, system-ui, sans-serif; margin: 2px 6px 10px; }
+#graphsOverlay .gCard img { display: block; width: 100%; height: auto; border-radius: 14px; background: #1d1e22; }
+#graphsOverlay .gCard.gMissing { display: none; }
+@media (max-width: 700px) {
+    #graphsOverlay { left: 0; right: 0; top: 0; bottom: 0; border-radius: 0; padding: 16px; }
+    #graphsOverlay .gGrid { grid-template-columns: 1fr; }
+    #graphsOverlay .gFull { display: none; }
+}
+
+/* ---------- live charts (ui/graphs.js) ---------- */
+#graphsOverlay .gGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+#graphsOverlay .gCard.gLive { height: 320px; display: flex; flex-direction: column; padding: 16px 18px 12px; box-sizing: border-box; }
+#graphsOverlay .gCard.gLive figcaption { margin: 0; font: 600 14px Inter, system-ui, sans-serif; color: var(--text2); }
+#graphsOverlay .gBig { display: flex; align-items: baseline; gap: 8px; margin-top: 2px; }
+#graphsOverlay .gVal { font: 600 34px/1.1 'JetBrains Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+#graphsOverlay .gUnit { font: 500 13px 'JetBrains Mono', ui-monospace, monospace; color: var(--muted); }
+#graphsOverlay .gSub { font: 500 12px 'JetBrains Mono', ui-monospace, monospace; color: var(--muted); margin: 2px 0 6px; font-variant-numeric: tabular-nums; }
+#graphsOverlay .gPlot { position: relative; flex: 1; min-height: 0; }
+#graphsOverlay .gPlot canvas { position: absolute; left: 0; top: 0; }
+#graphsOverlay .gTip { position: absolute; z-index: 2; pointer-events: none; padding: 6px 10px; border-radius: 12px; background: rgba(18,19,22,.9); border: 1px solid rgba(255,255,255,.16); display: flex; flex-direction: column; gap: 1px; white-space: nowrap; }
+#graphsOverlay .gTip b { font: 600 13px 'JetBrains Mono', ui-monospace, monospace; }
+#graphsOverlay .gTip span { font: 500 11px Inter, system-ui, sans-serif; color: var(--muted); }
+#graphsOverlay .gNote { grid-column: 1 / -1; padding: 10px 14px; border-radius: 16px; background: rgba(245,185,74,.12); color: #F5B94A; font: 500 13px Inter, system-ui, sans-serif; }
+#graphsOverlay .gFull { font-size: 12px; opacity: .8; }
+@media (max-width: 700px) {
+    #graphsOverlay .gGrid { grid-template-columns: 1fr; }
+    #graphsOverlay .gCard.gLive { height: 320px; }
+    #graphsOverlay .gHead { gap: 10px; }
+    #graphsOverlay .gTabs button { padding: 7px 11px; font-size: 13px; }
+}

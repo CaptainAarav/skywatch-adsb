@@ -1,0 +1,172 @@
+/*
+ * Skywatch ADS-B: history bar (design/mockups/03-aircraft-details-history.html).
+ * #replayBar = Replay (heatmap), #historyBar = per-aircraft trace (needs traces).
+ */
+
+.histBar {
+    position: absolute;
+    left: var(--edge);
+    right: 28px;
+    bottom: 24px;
+    z-index: 21;
+    box-sizing: border-box;
+    padding: 14px 18px;
+    border-radius: 28px;
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+#replayBar { display: none; }           /* showReplayBar() sets display: flex */
+.histRows { display: flex; flex-direction: column; gap: 10px; }
+
+.histRow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+.histBar .lbl { font-size: 12px; color: var(--muted); }
+.histBar .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.histBar .histNav {
+    flex: none;
+    width: 34px;
+    height: 34px;
+    background: var(--tile);
+    border: 0;
+}
+.histBar .histNav:hover { background: rgba(255,255,255,.1); }
+.histBar .histDate {
+    flex: none;
+    width: 128px;
+    height: 34px;
+    padding: 0 12px;
+    background: var(--tile);
+    border: 0;
+    border-radius: 12px;
+    color: var(--text2);
+    font: inherit;
+    font-size: 12px;
+    text-align: center;
+    cursor: pointer;
+    outline: none;
+}
+.histBar .histDate:hover, .histBar .histDate:focus-visible { color: var(--text); background: rgba(255,255,255,.1); }
+.histBar .chip { height: 28px; padding: 0 10px; border-radius: 14px; font-size: 12px; color: var(--text2); background: var(--tile); white-space: nowrap; }
+
+.histPlay .icoPlay, .histPlay.playing .icoPause { display: inline; }
+.histPlay .icoPause, .histPlay.playing .icoPlay { display: none; }
+.histPlay .ico { fill: currentColor; stroke: currentColor; }
+.histPlay.playing .ico { fill: none; }
+.histLoading:empty { display: none; }
+
+.histSpeeds { margin-left: auto; display: flex; gap: 2px; flex: none; }
+
+/* timeline: 8px rail (white elapsed / 18% white rest), 24px playhead with a 3px line through the bar, a time bubble above it at all times */
+.histTrack {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+    height: 92px;
+    cursor: pointer;
+    touch-action: none;
+    outline: none;
+    user-select: none;
+    -webkit-user-select: none;
+}
+.histTrack::before { content: ""; position: absolute; left: 0; right: 0; top: 34px; height: 44px; }   /* 44px invisible hit area around the rail */
+.histTrack:focus-visible { box-shadow: 0 0 0 2px #fff; border-radius: 10px; }
+.histTrack .hbody { position: absolute; left: 16px; right: 16px; top: 0; bottom: 0; }
+.hrail {
+    position: absolute; left: 0; right: 0; top: 52px; height: 8px;
+    border-radius: 4px; background: rgba(255,255,255,.18); overflow: hidden;
+}
+.hfill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 4px; background: #fff; }
+.hgaps { position: absolute; inset: 0; }
+.hgaps i { position: absolute; top: 0; bottom: 0; background: repeating-linear-gradient(135deg, rgba(245,185,74,.95) 0 3px, rgba(120,80,20,.9) 3px 6px); }
+.hgaps i.future { background: rgba(0,0,0,.35); }
+.hticks { position: absolute; left: 0; right: 0; top: 66px; height: 26px; pointer-events: none; }
+.hticks i { position: absolute; top: 0; width: 1px; height: 5px; margin-left: -.5px; background: rgba(255,255,255,.28); }
+.hticks i.maj { height: 8px; background: rgba(255,255,255,.5); }
+.hticks b {
+    position: absolute; top: 11px; transform: translateX(-50%);
+    font: 500 10px/12px var(--font-mono); color: var(--muted); font-variant-numeric: tabular-nums;
+}
+.histHead {
+    position: absolute; top: 56px; left: 0; width: 24px; height: 24px; margin: -12px 0 0 -12px;
+    border-radius: 50%; background: #fff; pointer-events: auto; cursor: grab; z-index: 2;
+    border: 2px solid #15161a; box-sizing: border-box;
+    box-shadow: 0 0 0 3px rgba(255,255,255,.35), 0 0 18px 4px rgba(255,255,255,.35), 0 2px 8px rgba(0,0,0,.6);
+}
+.histHead::before { content: ""; position: absolute; left: 50%; top: -30px; bottom: -8px; width: 3px; margin-left: -1.5px; border-radius: 2px; background: #fff; z-index: -1; box-shadow: 0 0 6px rgba(255,255,255,.5); }
+.histTrack.dragging .histHead { cursor: grabbing; box-shadow: 0 0 0 6px rgba(255,255,255,.3), 0 0 22px 6px rgba(255,255,255,.45), 0 2px 8px rgba(0,0,0,.6); }
+body.histDragging, body.histDragging * { cursor: grabbing !important; }
+/* time bubble: always visible while replay is active, rides above the playhead */
+.hBubble {
+    position: absolute; top: 2px; left: 0; transform: translateX(-50%);
+    padding: 6px 12px; border-radius: 999px; white-space: nowrap; pointer-events: none; z-index: 3;
+    background: rgba(18,19,22,.78); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255,255,255,.18); box-shadow: 0 6px 18px rgba(0,0,0,.45);
+    color: #fff; font: 600 12px/16px var(--font-mono); font-variant-numeric: tabular-nums;
+}
+.hBubble span { color: rgba(255,255,255,.65); font-weight: 500; }
+.hTip {
+    position: absolute; top: 34px; transform: translateX(-50%);
+    padding: 3px 8px; border-radius: 8px; background: rgba(0,0,0,.85); border: 1px solid rgba(255,255,255,.18);
+    color: #fff; font-size: 11px; white-space: nowrap; pointer-events: none; z-index: 1;
+}
+.histLive {
+    flex: none; height: 40px; padding: 0 14px 0 12px; border: 0; border-radius: 999px; cursor: pointer;
+    background: #FF6B6B; color: #fff; font: 700 12px/1 var(--font-sans, Inter, system-ui, sans-serif); letter-spacing: .08em;
+    display: inline-flex; align-items: center; gap: 8px; align-self: flex-start; margin-top: 26px;
+}
+.histLive::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #fff; }
+.histLive:hover { background: #ff8585; }
+.hGapNote { color: #F5B94A; }
+
+/* 40px controls */
+.histBar .histNav, .histBar .tb, .histBar .histDate { height: 40px; }
+.histBar .histNav { width: 40px; border-radius: 14px; }
+.histBar .histDate { border-radius: 14px; }
+.histBar .histPlay { width: 40px; padding: 0; justify-content: center; border-radius: 50%; background: #fff; color: #000; }
+.histBar .histPlay:hover { background: #e8e8e8; color: #000; }
+.histBar .histPlay .ico { width: 16px; height: 16px; }
+.histPlayLabel { display: none; }
+.histBar .histSpeeds .tb { min-width: 48px; justify-content: center; border-radius: 14px; font-size: 13px; }
+.histBar .histSpeeds .tb[data-speed] { background: var(--tile); margin-left: 4px; }
+.histBar .histSpeeds .tb[data-speed].on { background: #fff; color: #000; font-weight: 600; }
+.histBar .histSpeeds .tb[data-speed]:not(.on):hover { background: rgba(255,255,255,.14); }
+.histBar .histSpeeds #replayStop { width: 40px; padding: 0; justify-content: center; margin-left: 4px; }
+
+.histInfo { justify-content: space-between; font-size: 12px; gap: 16px; }
+.histInfo b { color: var(--text); font-weight: 600; }
+.histInfo > span { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* with a history bar open the bottom toolbar steps aside; zoom and the legend sit above the bar */
+body.replayOpen #toolbar,
+body.traceOpen #toolbar { display: none !important; }
+body.replayOpen #altitude_chart.ol-control,
+body.traceOpen #altitude_chart.ol-control { bottom: calc(34px + var(--hb-h, 140px)); }
+body.replayOpen .ol-zoom.ol-control,
+body.traceOpen .ol-zoom.ol-control,
+body.replayOpen #dimSwitch,
+body.traceOpen #dimSwitch { bottom: calc(42px + var(--hb-h, 140px)); }
+body.replayOpen.traceOpen #replayBar { display: none !important; }
+
+@media (max-width: 700px) {
+    .histBar {
+        left: 8px;
+        right: 8px;
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
+        padding: 12px 14px;
+        border-radius: 24px;
+        gap: 8px;
+    }
+    .histRow { flex-wrap: wrap; }
+    .histSpeeds { margin-left: 0; width: 100%; justify-content: space-between; }
+    .histTrack { height: 92px; }
+    .histLive { margin-top: 26px; }
+    .histBar .histSpeeds { gap: 4px; }
+    .histBar .histSpeeds .tb[data-speed] { flex: 1; margin-left: 0; }
+    body.infoOpen .histBar { display: none !important; }
+}
