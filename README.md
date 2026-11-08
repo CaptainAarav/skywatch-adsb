@@ -46,6 +46,7 @@ against ultrafeeder (readsb 3.16).
        environment:
          - UPDATE_TAR1090=true
    ```
+   Keep the rest of your ultrafeeder configuration (decoder, location, feeders) as it is.
 3. Recreate the container: `docker compose up -d`.
 4. Hard-refresh the browser (Ctrl+Shift+R).
 
@@ -118,6 +119,18 @@ Visitors' browsers contact these services directly, and each sees the visitor's 
 Licences, terms found for each service and doubtful cases are in [THIRD_PARTY.md](THIRD_PARTY.md), including a
 suggested Content Security Policy. If you publish your site, `aircraft.json` and `receiver.json` are served to
 everyone, and `receiver.json` contains the receiver position unless your decoder is configured to hide it.
+
+## Running this publicly
+
+- **Map tiles:** the CARTO basemaps are free only for non-commercial use within usage limits. A public instance should
+  use OpenFreeMap or VersaTiles as the default base map, or have its own CARTO plan. If every vector provider fails,
+  the map falls back to the OpenStreetMap standard tile server, whose policy forbids heavy use.
+- **Visitor privacy:** every viewer's browser contacts the services in the table above directly, so those services see
+  the viewer's IP address. Switch off the logos, photos and route lookup if that is not acceptable
+  (see `airlineLogos`, `planespottersAPI`, `useRouteAPI`).
+- **Receiver position:** `receiver.json` and `aircraft.json` are public if your site is. Keep `SiteShow` off and
+  configure your decoder accordingly if you do not want your location known.
+- A starting Content Security Policy is in [THIRD_PARTY.md](THIRD_PARTY.md).
 
 ## Browser support
 
