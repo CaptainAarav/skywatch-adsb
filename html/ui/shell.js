@@ -15,7 +15,7 @@ function shellSync() {
     const listState = !!(toggles['sidebar_visible'] && toggles['sidebar_visible'].state);
     const infoOpen = body.classList.contains('infoOpen');
     body.classList.toggle('listOpen', listState);
-    const listShown = listState && !infoOpen && !body.classList.contains('panelsHidden');
+    const listShown = listState && !infoOpen && !body.classList.contains('airportOpen') && !body.classList.contains('panelsHidden');
     setPressed('#view_list', listShown);
     setPressed('#view_map', !listShown && !body.classList.contains('replayOpen'));
     setPressed('#RP', body.classList.contains('replayOpen'));
@@ -73,6 +73,13 @@ function onUnifiedSearch(e) {
             if (results.length < 100)
                 getTrace(null, null, {list: results});
         }
+    } else if (typeof AIRPT != 'undefined') {
+        // airport (ICAO, IATA or name): open its panel; fall back to the old jump for codes the airport list does not know
+        AIRPT.searchAndOpen(term).then(found => {
+            if (found) hideSearchWarning();
+            else if (/^[a-z0-9]{3,4}$/i.test(term)) { onJumpInput = term; onJump(); }
+            else if (!(db.regCache && db.regCache[term.toUpperCase().replace('-', '')])) showSearchWarning('No aircraft, airport or coordinates match "' + term + '"');
+        });
     } else if (/^[a-z0-9]{3,4}$/i.test(term)) {
         onJumpInput = term; // airport code: onJump() shows a warning if unknown
         onJump();

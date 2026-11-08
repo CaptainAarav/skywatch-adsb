@@ -385,6 +385,10 @@ let airlineLogos = true;
 // Skywatch ADS-B: airport detail (apron, taxiways, runways) is loaded from OpenFreeMap vector tiles whatever the base map is.
 // Set to false to never contact tiles.openfreemap.org for it.
 let airportDetail = true;
+// Skywatch ADS-B: airport panel. Weather comes from the recorder's wx.json (no third-party request from the browser);
+// links are plain external links. Both can be switched off.
+let airportWeather = true;
+let airportLinks = true;
 let airlineLogoUrl = 'https://pics.avs.io/al_square/{size}/{size}/{iata}.png';
 let airlineLogoKey = '';
 // get pictures from planespotters.net

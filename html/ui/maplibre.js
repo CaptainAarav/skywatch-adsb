@@ -979,6 +979,7 @@ MLR.onClick = function (e, dbl) {
         }
     }
     if (dbl && planeHex && !showTrace) e.preventDefault();   // double click on an aircraft selects and follows it; no zoom
+    if (!planeHex && !trailHex && !showTrace && typeof AIRPT != 'undefined' && AIRPT.mapClick(e)) return;   // airport pin or airport area
     mapClickResult(planeHex, trailHex, trailTS, dbl);
 };
 

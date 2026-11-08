@@ -12,6 +12,7 @@ A modern, map-first web interface for your own ADS-B receiver: a fork of [tar109
 |---|---|
 | ![3D view](docs/screenshots/readme-3d.png) | ![Details](docs/screenshots/readme-details.png) |
 | ![Graphs](docs/screenshots/readme-graphs.png) | ![Phone](docs/screenshots/readme-phone.png) |
+| ![Airport panel](docs/screenshots/readme-airport.png) | |
 
 *Screenshots are from the author's live receiver. They show commercial airliners only and no receiver position.*
 
@@ -22,6 +23,7 @@ A modern, map-first web interface for your own ADS-B receiver: a fork of [tar109
 - Selecting an aircraft zooms to its flight path and follows it; tracks use an altitude colour gradient.
 - Instrument panel for the selected aircraft: altitude and speed gauges, direction and wind compass, attitude and autopilot cards (when the aircraft broadcasts them), altitude profile.
 - Airport detail overlay at high zoom (aprons, taxiways, runways, stands) from OpenStreetMap data.
+- Airport panel: click an airport (or search an ICAO or IATA code, or a name) for METAR and TAF with flight category, runways with wind components and the best end, local traffic, frequencies, sun times and links. Weather needs the recorder (below).
 - Replay bar to scrub through the receiver history.
 - Live receiver graphs (aircraft, messages, range, signal, polar) drawn in the browser, with a link to the classic graphs1090 images.
 - Smooth aircraft movement (dead reckoning between position updates; the table and tracks use real positions).
@@ -73,6 +75,7 @@ Options added or changed by this fork:
 | `airportDetail` | `true` | Airport detail overlay (OpenFreeMap tiles). |
 | `planespottersAPI` | `true` | Aircraft photos from planespotters.net. |
 | `useRouteAPI`, `routeApiUrl` | `false`, adsb.im | Route lookup. Off by default; set `routeApiUrl = ""` to forbid it. |
+| `airportWeather`, `airportLinks` | `true` | Weather cards and external link buttons in the airport panel. |
 | `SiteShow`, `actual_range_show` | `false` | Show the receiver marker and range outline. |
 
 The receiver position drives the distance column, bearings and the instrument panel's receiver distance only when
@@ -105,6 +108,15 @@ Other variables: `SW_INTERVAL`, `SW_KEEP_DAYS`, `SW_RRD`. Without the recorder t
 graphs1090 images, or says nothing is available. The polar plot reveals the bearing and range pattern around your
 receiver, so only publish it if that is acceptable.
 
+### Weather for the airport panel
+
+The same recorder also fetches METAR and TAF from [aviationweather.gov](https://aviationweather.gov/data/api/) every
+5 minutes (one request each, for a bounding box of whole degrees about 3 degrees around your receiver, taken from
+`receiver.json`; override with `SW_WX_BOX=lat0,lon0,lat1,lon1`) and writes `wx.json` next to `history.json`. Browsers
+cannot call that API themselves because it sends no CORS headers. `wx.json` holds the weather reports (raw and decoded)
+for stations in that area and no coordinates. Set `SW_WX=0` to turn the fetch off. Without `wx.json` (or when it is more
+than 3 hours old) the airport panel simply has no weather cards.
+
 ## Data sources and privacy
 
 Visitors' browsers contact these services directly, and each sees the visitor's IP address and what is requested:
@@ -115,6 +127,11 @@ Visitors' browsers contact these services directly, and each sees the visitor's 
 | pics.avs.io | airline logos | yes (`airlineLogos`) |
 | planespotters.net | aircraft photos | yes (`planespottersAPI`) |
 | adsb.im | flight routes | off by default (`useRouteAPI`) |
+| aviationweather.gov | METAR and TAF, fetched by the recorder on your server, not by browsers | `SW_WX=0`, or `airportWeather = false` hides the cards |
+| SkyVector, NATS AIP, Wikipedia | only when a visitor clicks a link in the airport panel | `airportLinks = false` |
+
+Airport data (`html/airport-db/airports.json`) comes from [OurAirports](https://ourairports.com/data/) (public domain) and is
+built by `tools/build-airports.py`; it has no ILS data, so none is shown.
 
 Licences, terms found for each service and doubtful cases are in [THIRD_PARTY.md](THIRD_PARTY.md), including a
 suggested Content Security Policy. If you publish your site, `aircraft.json` and `receiver.json` are served to
@@ -154,6 +171,7 @@ Expect conflicts in `html/index.html`, `html/script.js` and `html/style.css`, wh
 - The dashed route line has not been checked with a real looked-up route.
 - Phone layout of the replay bar and touch scrubbing have not been tried on a real device.
 - The polar plot has only been seen with a few days of data.
+- Airport panel: runway-in-use is inferred from a few minutes of traffic and can be wrong; the TAF strip is an approximation; the UK AIP link goes to the NATS AIP page, not to the airport's own page; the airport search only knows airports with an ICAO or IATA code (plus larger fields).
 - The standalone `install.sh` path is untested.
 - Only Chromium has been tested.
 - The aircraft icons are the stock tar1090 shapes; there is no custom icon set yet.

@@ -1,0 +1,70 @@
+/* Skywatch ADS-B: airport panel (ui/airport-panel.js). Same slot and glass as the aircraft panel. */
+#airport_panel {
+    position: absolute; left: 28px; top: 76px; bottom: 24px; width: 380px; z-index: 23;
+    display: flex; flex-direction: column; overflow: hidden; box-sizing: border-box;
+    border-radius: 32px; background: var(--glass); border: 1px solid var(--line);
+    -webkit-backdrop-filter: blur(28px); backdrop-filter: blur(28px); color: var(--text);
+}
+#airport_panel[hidden] { display: none !important; }
+body.airportOpen #sidebar_container, body.airportOpen #selected_infoblock { display: none !important; }
+body.panelsHidden #airport_panel { display: none !important; }
+.apScroll { flex: 1; min-height: 0; overflow: auto; padding: 20px 16px 12px; display: flex; flex-direction: column; gap: 12px; scrollbar-width: thin; }
+.apHead { display: flex; gap: 12px; align-items: flex-start; }
+.apIcao { font-size: 34px; font-weight: 700; letter-spacing: .02em; line-height: 1; }
+.apName { color: var(--muted); margin-top: 4px; }
+.apX { margin-left: auto; flex: none; width: 36px; height: 36px; border-radius: 50%; background: var(--tile); border: 0; color: var(--muted); display: grid; place-items: center; cursor: pointer; }
+.apX:hover { background: var(--tile-hover); color: var(--text); }
+.apChips { display: flex; flex-wrap: wrap; gap: 6px; }
+.apChip { padding: 4px 10px; border-radius: 999px; background: var(--tile); border: 1px solid var(--line); font-size: 12px; }
+.apChip.k { color: var(--muted); }
+.apCard { background: rgba(255,255,255,.06); border: 1px solid var(--line); border-radius: 24px; padding: 14px; }
+.apCard h3 { margin: 0 0 10px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.apSpacer { flex: 1; }
+.apCard h3 .age { text-transform: none; letter-spacing: 0; font-weight: 500; font-size: 11px; }
+.apCat { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-weight: 700; font-size: 12px; letter-spacing: 0; text-transform: none; }
+.apCat i { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.apCat.ok { background: rgba(61,220,151,.14); color: var(--ok); }
+.apCat.mv { background: rgba(79,140,255,.16); color: #7fa8ff; }
+.apCat.bad { background: rgba(255,107,107,.16); color: var(--bad); }
+.apCat.lf { background: rgba(214,92,255,.16); color: #d98cff; }
+.apGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.apTile { background: var(--tile); border-radius: 16px; padding: 10px 12px; min-width: 0; }
+.apTile b { display: block; font-size: 15px; font-weight: 600; overflow-wrap: anywhere; }
+.apTile small { color: var(--muted); font-size: 11px; }
+.apRaw { margin-top: 10px; padding: 10px 12px; border-radius: 14px; background: rgba(0,0,0,.25); font-size: 11.5px; color: #cfd3da; word-break: break-word; line-height: 1.5; }
+.apTaf { display: flex; gap: 3px; margin-top: 6px; }
+.apTafSlot { flex: 1; height: 26px; border-radius: 7px; display: grid; place-items: center; font-size: 10px; color: #0b0b0d; font-weight: 700; background: #666; }
+.apTafSlot.ok { background: var(--ok); } .apTafSlot.mv { background: #7fa8ff; } .apTafSlot.bad { background: var(--bad); } .apTafSlot.lf { background: #d98cff; }
+.apTafSlot.na { background: rgba(255,255,255,.12); color: var(--muted); }
+.apTafSlot.tmp { outline: 2px dashed rgba(255,255,255,.7); outline-offset: -2px; }
+.apAxis { display: flex; justify-content: space-between; color: var(--muted); font-size: 10px; margin-top: 4px; }
+.apNote { color: var(--muted); font-size: 11.5px; margin-top: 8px; line-height: 1.4; }
+.apRwRow { display: grid; grid-template-columns: 168px 1fr; gap: 10px; align-items: start; }
+.apEnds { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.apEnd { background: var(--tile); border-radius: 14px; padding: 8px 10px; }
+.apEnd .top { display: flex; justify-content: space-between; align-items: baseline; }
+.apEnd.best { outline: 1.5px solid var(--ok); background: rgba(61,220,151,.08); }
+.apEnd small { display: block; color: var(--muted); font-size: 11px; margin-top: 2px; }
+.apEnd small.txt { color: var(--text); } .apEnd small.warn { color: var(--warn); }
+.bestTag { font-size: 10px; color: var(--ok); font-weight: 700; }
+.apMeta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+.apList { margin-top: 8px; display: flex; flex-direction: column; }
+.apRow { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 9px 0; border: 0; border-top: 1px solid var(--line); background: none; color: var(--text); font: inherit; font-size: 13px; text-align: left; cursor: pointer; }
+.apRow:first-child { border-top: 0; } .apRow:hover { background: rgba(255,255,255,.04); }
+.mut { color: var(--muted); }
+.apPill { display: inline-flex; gap: 6px; align-items: center; padding: 6px 12px; border-radius: 999px; background: var(--tile); border: 1px solid var(--line); font-size: 12.5px; margin: 2px 4px 2px 0; }
+.apPill .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+.apSun { display: flex; align-items: center; gap: 10px; } .apSun svg { flex: 1; min-width: 0; }
+.apLink { display: flex; justify-content: space-between; gap: 8px; padding: 9px 0; border-top: 1px solid var(--line); color: var(--text); text-decoration: none; font-size: 13.5px; }
+.apLink:first-of-type { border-top: 0; } .apLink:hover { color: #fff; text-decoration: underline; }
+.apFoot { font-size: 11px; color: var(--muted); padding: 2px 6px; }
+.apBar { display: flex; gap: 8px; padding: 12px 16px 16px; border-top: 1px solid var(--line); }
+.apBtn { flex: 1; padding: 11px 6px; font: inherit; font-size: 13px; font-weight: 600; border-radius: 999px; background: var(--tile); border: 1px solid var(--line); color: var(--text); cursor: pointer; }
+.apBtn.p { background: #fff; color: #0b0b0d; border-color: #fff; }
+.apBtn:hover { filter: brightness(1.1); }
+@media (max-width: 700px) {
+    #airport_panel { left: 8px; right: 8px; top: auto; width: auto; max-height: 62%; bottom: calc(env(safe-area-inset-bottom, 0px) + 8px); border-radius: 32px 32px 28px 28px; }
+    .apScroll { padding: 14px 14px 10px; }
+    .apRwRow { grid-template-columns: 1fr; justify-items: center; }
+    .apEnds { width: 100%; }
+}

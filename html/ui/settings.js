@@ -27,6 +27,8 @@ const SET_ROWS = {
     airportDetail:   ['set_appearance', 'Airport detail (OpenFreeMap tiles)'],
     airportFx:       ['set_appearance', 'Airport detail effects (decorative)'],
     airlineLogos:    ['set_photos', 'Airline logos'],
+    airportWeather:  ['set_photos', 'Airport weather (METAR and TAF)'],
+    airportLinks:    ['set_photos', 'Airport links'],
 
     moreTableLines1: ['set_table', 'More table rows'],
     moreTableLines2: ['set_table', 'Even more table rows'],
