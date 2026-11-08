@@ -5,12 +5,13 @@ that the web UI draws its Graphs from. Standard library only.
   history.json  {"v":1,"interval":60,"fields":[...],"samples":[[t, with_pos, total, msg_s, range_nm, rssi, pos_s], ...]}
   polar.json    {"v":1,"bins":36,"hours":{"<unix hour>":[max range nm per 10 degree bearing bin, ...]}}
 
+Weather: also writes wx.json (METAR/TAF, no coordinates), see below.
 Privacy: only distances and bearings relative to the receiver are stored (readsb's r_dst / r_dir); no coordinates
 of the receiver or of any aircraft are written.
 
 Environment: SW_SRC (default http://ultrafeeder/data), SW_OUT (default /var/globe_history/skywatch), SW_INTERVAL (60), SW_KEEP_DAYS (7).
 """
-import json, os, shutil, subprocess, sys, time, urllib.request
+import json, math, os, shutil, subprocess, sys, threading, time, urllib.error, urllib.request
 
 SRC = os.environ.get('SW_SRC', 'http://ultrafeeder/data').rstrip('/')
 OUT = os.environ.get('SW_OUT', '/var/globe_history/skywatch')
@@ -113,6 +114,84 @@ def backfill(hist):
     return len(new)
 
 
+# ---- weather feed -----------------------------------------------------------------------------------------------
+# aviationweather.gov sends no CORS headers, so browsers cannot call it. Every WX_INTERVAL seconds this thread fetches
+# METAR and TAF for ONE bounding box (whole degrees, about +-3 around the receiver; never written to any file) and
+# writes OUT/wx.json: {v, fetched_at, stations: {ICAO: {m: metar, t: taf}}}. Switch off with SW_WX=0.
+WX = os.environ.get('SW_WX', '1') != '0'
+WX_INTERVAL = max(300, int(os.environ.get('SW_WX_INTERVAL', '300')))
+WX_PAD = int(os.environ.get('SW_WX_PAD', '3'))
+WX_URL = 'https://aviationweather.gov/api/data'
+UA = 'skywatch-adsb-recorder/0.1 (+https://github.com/CaptainAarav/skywatch-adsb)'
+
+
+def wx_box():
+    """-> (lat0, lon0, lat1, lon1) in whole degrees. SW_WX_BOX overrides; otherwise derived from receiver.json."""
+    o = os.environ.get('SW_WX_BOX')
+    if o:
+        return [int(float(x)) for x in o.split(',')]
+    r = get('receiver.json')
+    lat, lon = float(r['lat']), float(r['lon'])
+    return [max(-90, math.floor(lat) - WX_PAD), max(-180, math.floor(lon) - WX_PAD),
+            min(90, math.ceil(lat) + WX_PAD), min(180, math.ceil(lon) + WX_PAD)]
+
+
+def wx_fetch(kind, box):
+    url = f'{WX_URL}/{kind}?bbox={",".join(str(x) for x in box)}&format=json'
+    with urllib.request.urlopen(urllib.request.Request(url, headers={'User-Agent': UA}), timeout=60) as r:
+        if r.status == 204:
+            return []
+        return json.loads(r.read().decode())
+
+
+def wx_clouds(cl):
+    return [[c.get('cover'), c.get('base')] for c in (cl or []) if isinstance(c, dict)]
+
+
+def wx_pack(metars, tafs):
+    st = {}
+    for m in sorted(metars, key=lambda x: x.get('obsTime') or 0):          # latest observation per station wins
+        k = m.get('icaoId')
+        if not k:
+            continue
+        st.setdefault(k, {})['m'] = {
+            'raw': m.get('rawOb'), 'obs': m.get('obsTime'), 'wdir': m.get('wdir'), 'wspd': m.get('wspd'),
+            'wgst': m.get('wgst'), 'vis': m.get('visib'), 'qnh': m.get('altim'), 'temp': m.get('temp'),
+            'dew': m.get('dewp'), 'clouds': wx_clouds(m.get('clouds')), 'cat': m.get('fltCat'), 'wx': m.get('wxString')}
+    for t in sorted(tafs, key=lambda x: x.get('issueTime') or ''):
+        k = t.get('icaoId')
+        if not k:
+            continue
+        st.setdefault(k, {})['t'] = {
+            'raw': t.get('rawTAF'), 'issue': t.get('issueTime'), 'from': t.get('validTimeFrom'), 'to': t.get('validTimeTo'),
+            'f': [{'from': f.get('timeFrom'), 'to': f.get('timeTo'), 'chg': f.get('fcstChange'), 'prob': f.get('probability'),
+                   'wdir': f.get('wdir'), 'wspd': f.get('wspd'), 'wgst': f.get('wgst'), 'vis': f.get('visib'),
+                   'clouds': wx_clouds(f.get('clouds')), 'vv': f.get('vertVis')} for f in (t.get('fcsts') or [])]}
+    return st
+
+
+def wx_loop():
+    path = os.path.join(OUT, 'wx.json')
+    backoff = 0
+    while True:
+        wait = WX_INTERVAL
+        try:
+            box = wx_box()
+            m = wx_fetch('metar', box)
+            time.sleep(3)                                  # the API allows 100 requests a minute; we make 2 every 5
+            t = wx_fetch('taf', box)
+            save(path, {'v': 1, 'fetched_at': int(time.time()), 'stations': wx_pack(m, t)})
+            backoff = 0
+        except urllib.error.HTTPError as e:
+            if e.code == 429:
+                backoff = min(3600, max(600, backoff * 2))
+                wait = backoff
+            print('recorder: weather fetch failed:', e, file=sys.stderr, flush=True)
+        except Exception as e:
+            print('recorder: weather fetch failed:', e, file=sys.stderr, flush=True)
+        time.sleep(wait)
+
+
 def main():
     os.makedirs(OUT, exist_ok=True)
     hp, pp = os.path.join(OUT, 'history.json'), os.path.join(OUT, 'polar.json')
@@ -121,6 +200,8 @@ def main():
     hist['fields'] = FIELDS
     n = backfill(hist)
     print(f'recorder: {SRC} -> {OUT}, {len(hist["samples"])} samples on disk (+{n} backfilled from graphs1090 rrd)', flush=True)
+    if WX:
+        threading.Thread(target=wx_loop, daemon=True).start()
     nxt = time.time()
     while True:
         try:
