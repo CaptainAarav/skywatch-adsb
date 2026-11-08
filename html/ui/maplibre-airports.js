@@ -11,11 +11,17 @@
 
 const AIRPORT = {
     tiles: 'https://tiles.openfreemap.org/planet',
-    detailZoom: 13,         // apron, taxiways, runways (MapLibre zoom)
-    numberZoom: 13.5,       // runway numbers
-    gateZoom: 14,           // stand / gate refs (tar1090 zoom 15)
-    taxiRefZoom: 14,        // taxiway letters
-    fxZoom: 14,             // decorative lighting fades in from here over half a zoom level
+    // Progressive reveal (MapLibre zoom). Each stage starts at its zoom and fades in over one zoom level (opacity
+    // interpolation, no popping); the layers' minzoom is the start of the fade.
+    runwayDbZoom: 9.3,      // runway shapes from the OurAirports data (large and medium airports)
+    runwayDbSmallZoom: 11,  // ... and small airfields
+    runwayZoom: 10.5,       // OpenFreeMap runway and taxiway lines
+    detailZoom: 11,         // aprons, then runway polygons from 11.5
+    numberZoom: 12.5,       // runway numbers
+    gateZoom: 13,           // stand / gate refs
+    buildingZoom: 13,       // building outlines (OpenFreeMap has no building data below zoom 13)
+    taxiRefZoom: 13.5,      // taxiway letters
+    fxZoom: 13,             // decorative lighting
     chipZoom: 8,            // airport chip with flag and name
     color: {
         apron: '#8f8c88',
@@ -98,36 +104,58 @@ MLR.installAirports = function () {
 
     const polyFilter = (cls) => ['all', ['==', ['geometry-type'], 'Polygon'], ['==', ['get', 'class'], cls]];
     const L = (l) => m.addLayer(Object.assign({source: src, 'source-layer': 'aeroway', minzoom: Z}, l));
+    const ramp = (z0, v, len) => ['interpolate', ['linear'], ['zoom'], z0, 0, z0 + (len || 1), v];       // fade in over one zoom level
+    const RZ = AIRPORT.runwayZoom;
     // apron and helipad: lighter than the land
     L({id: 'tar-ap-apron', type: 'fill', filter: ['all', ['==', ['geometry-type'], 'Polygon'], ['in', ['get', 'class'], ['literal', ['apron', 'helipad']]]],
-        paint: {'fill-color': C.apron, 'fill-opacity': C.apronOpacity * 0.5, 'fill-outline-color': C.apronLine}});
+        paint: {'fill-color': C.apron, 'fill-opacity': ramp(Z, C.apronOpacity * 0.5), 'fill-outline-color': C.apronLine}});
     // aprons that contain or lie within 100 m of a stand: full brightness (computed in updateRunwayNumbers)
     m.addSource('tar-apron-main', {type: 'geojson', data: {type: 'FeatureCollection', features: []}});
     m.addLayer({id: 'tar-ap-apron-main', type: 'fill', source: 'tar-apron-main', minzoom: Z,
-        paint: {'fill-color': C.apron, 'fill-opacity': C.apronOpacity, 'fill-outline-color': C.apronLine}});
+        paint: {'fill-color': C.apron, 'fill-opacity': ramp(Z, C.apronOpacity), 'fill-outline-color': C.apronLine}});
     // buildings: pure black polygons above the apron (the base map's own buildings sit under the apron)
-    m.addLayer({id: 'tar-ap-building', type: 'fill', source: src, 'source-layer': 'building', minzoom: 14,
-        paint: {'fill-color': C.building, 'fill-outline-color': '#1c1c1e'}});
+    m.addLayer({id: 'tar-ap-building', type: 'fill', source: src, 'source-layer': 'building', minzoom: AIRPORT.buildingZoom,
+        paint: {'fill-color': C.building, 'fill-opacity': ramp(AIRPORT.buildingZoom, 1), 'fill-outline-color': '#1c1c1e'}});
     // runway body: dark fill with a light outline
-    L({id: 'tar-ap-runway', type: 'fill', filter: polyFilter('runway'), paint: {'fill-color': C.runway}});
-    L({id: 'tar-ap-runway-line', type: 'line', filter: polyFilter('runway'),
-        paint: {'line-color': C.runwayLine, 'line-width': ['interpolate', ['linear'], ['zoom'], 13, 0.6, 17, 1.6], 'line-opacity': 0.9}});
+    L({id: 'tar-ap-runway', type: 'fill', minzoom: Z + 0.5, filter: polyFilter('runway'), paint: {'fill-color': C.runway, 'fill-opacity': ramp(Z + 0.5, 1)}});
+    L({id: 'tar-ap-runway-line', type: 'line', minzoom: Z + 0.5, filter: polyFilter('runway'),
+        paint: {'line-color': C.runwayLine, 'line-width': ['interpolate', ['linear'], ['zoom'], 11.5, 0.4, 13, 0.6, 17, 1.6], 'line-opacity': ramp(Z + 0.5, 0.9)}});
     // runways that only exist as a centre line
-    L({id: 'tar-ap-runway-cl', type: 'line', filter: ['all', ['==', ['geometry-type'], 'LineString'], ['==', ['get', 'class'], 'runway']],
-        paint: {'line-color': C.runway, 'line-width': ['interpolate', ['exponential', 2], ['zoom'], 13, 4, 17, 50],
+    L({id: 'tar-ap-runway-cl', type: 'line', minzoom: RZ, filter: ['all', ['==', ['geometry-type'], 'LineString'], ['==', ['get', 'class'], 'runway']],
+        paint: {'line-color': C.runway, 'line-opacity': ramp(RZ, 1), 'line-width': ['interpolate', ['exponential', 2], ['zoom'], 10.5, 1.6, 12, 2.4, 13, 4, 17, 50],
             'line-gap-width': 0}, layout: {'line-cap': 'butt'}});
     // taxiways: outline plus stroke
     const taxi = ['all', ['==', ['geometry-type'], 'LineString'], ['==', ['get', 'class'], 'taxiway']];
-    L({id: 'tar-ap-taxi-case', type: 'line', filter: taxi, layout: {'line-cap': 'round', 'line-join': 'round'},
-        paint: {'line-color': C.taxiCase, 'line-width': ['interpolate', ['exponential', 2], ['zoom'], 13, 2.2, 17, 20]}});
-    L({id: 'tar-ap-taxi', type: 'line', filter: taxi, layout: {'line-cap': 'round', 'line-join': 'round'},
-        paint: {'line-color': C.taxi, 'line-width': ['interpolate', ['exponential', 2], ['zoom'], 13, 1.2, 17, 13]}});
+    L({id: 'tar-ap-taxi-case', type: 'line', minzoom: RZ + 0.5, filter: taxi, layout: {'line-cap': 'round', 'line-join': 'round'},
+        paint: {'line-color': C.taxiCase, 'line-opacity': ramp(RZ + 0.5, 1), 'line-width': ['interpolate', ['exponential', 2], ['zoom'], 11, 0.9, 13, 2.2, 17, 20]}});
+    L({id: 'tar-ap-taxi', type: 'line', minzoom: RZ + 0.5, filter: taxi, layout: {'line-cap': 'round', 'line-join': 'round'},
+        paint: {'line-color': C.taxi, 'line-opacity': ramp(RZ + 0.5, 1), 'line-width': ['interpolate', ['exponential', 2], ['zoom'], 11, 0.5, 13, 1.2, 17, 13]}});
+    // Runway shapes from the OurAirports data (html/airport-db/airports.json): drawn from zoom 9.5 so a medium airport is
+    // recognisable long before the vector tiles carry any runway geometry. Large and medium airports first, small
+    // airfields from zoom 11. They fade out again (12.5 to 13.3) as the OpenFreeMap runway polygons take over.
+    m.addSource('tar-rwy-db', {type: 'geojson', data: {type: 'FeatureCollection', features: []}});
+    const dbOp = (z0, v) => ['interpolate', ['linear'], ['zoom'], z0, 0, z0 + 1, v, 12.5, v, 13.3, 0];
+    const dbW = (extra) => ['interpolate', ['linear'], ['zoom'], 9.5, 1.6 + extra, 11, 2.6 + extra, 12, 4.2 + extra, 13, 8 + extra];
+    for (const [tag, z0, sm] of [['L', AIRPORT.runwayDbZoom, 0], ['S', AIRPORT.runwayDbSmallZoom, 1]]) {
+        const f = ['==', ['get', 's'], sm];
+        m.addLayer({id: 'tar-ap-rwydb-case-' + tag, type: 'line', source: 'tar-rwy-db', minzoom: z0, filter: f, layout: {'line-cap': 'butt'},
+            paint: {'line-color': '#b4b4bc', 'line-opacity': dbOp(z0, 0.8), 'line-width': dbW(1.4)}}, 'tar-ap-apron');
+        m.addLayer({id: 'tar-ap-rwydb-' + tag, type: 'line', source: 'tar-rwy-db', minzoom: z0, filter: f, layout: {'line-cap': 'butt'},
+            paint: {'line-color': C.runway, 'line-opacity': dbOp(z0, 1), 'line-width': dbW(0)}}, 'tar-ap-apron');
+    }
+    if (!this._dbHook) {
+        this._dbHook = true;
+        const upd = () => MLR.updateDbRunways();
+        m.on('moveend', upd);
+        m.on('styledata', () => { if (!m.getSource('tar-rwy-db')) this._dbHook = false; });
+    }
+    this.updateDbRunways();
     // ---- DECORATIVE EFFECTS (illustrative only) ----
     // Everything below is cosmetic. It is generated from the runway and taxiway geometry, there is no lighting
     // or status data behind it: it is NOT live airport status and must not be used for navigation. Each layer is a
-    // plain GPU line layer (round caps + dasharray make the dots), only drawn from zoom fxZoom, fading in over half a
+    // plain GPU line layer (round caps + dasharray make the dots), only drawn from zoom fxZoom, fading in over one
     // zoom level, and the whole group can be switched off in Settings ("Airport detail effects").
-    const fade = (v) => ['interpolate', ['linear'], ['zoom'], AIRPORT.fxZoom, 0, AIRPORT.fxZoom + 0.5, v];
+    const fade = (v) => ['interpolate', ['linear'], ['zoom'], AIRPORT.fxZoom, 0, AIRPORT.fxZoom + 1, v];
     const FX = AIRPORT.fxLayers = [];
     const fxLine = (id, source, sl, filter, paint, layout) => {
         const lay = {id, type: 'line', source, minzoom: AIRPORT.fxZoom, filter, paint, layout: Object.assign({'line-cap': 'round', 'line-join': 'round'}, layout || {})};
@@ -161,23 +189,23 @@ MLR.installAirports = function () {
         layout: {'symbol-placement': 'line', 'symbol-spacing': 260, 'text-field': ['case', ['==', ['slice', ['get', 'ref'], 0, 8], 'Taxiway '], ['slice', ['get', 'ref'], 8], ['get', 'ref']], 'text-font': font,
             'text-size': ['interpolate', ['linear'], ['zoom'], 14, 9.5, 18, 17], 'text-keep-upright': true, 'text-max-angle': 40,
             'text-padding': 4},
-        paint: {'text-color': C.taxiLabel, 'text-halo-color': C.taxiCase, 'text-halo-width': 2}});
+        paint: {'text-color': C.taxiLabel, 'text-halo-color': C.taxiCase, 'text-halo-width': 2, 'text-opacity': ramp(AIRPORT.taxiRefZoom, 1)}});
     // helipad "H"
     L({id: 'tar-ap-helipad', type: 'symbol', minzoom: 15, filter: ['all', ['==', ['geometry-type'], 'Point'], ['==', ['get', 'class'], 'helipad']],
         layout: {'text-field': 'H', 'text-font': font, 'text-size': 14}, paint: {'text-color': C.number}});
     // stand / gate refs: small rounded chips
     L({id: 'tar-ap-gate', type: 'symbol', minzoom: AIRPORT.gateZoom,
         filter: ['all', ['==', ['geometry-type'], 'Point'], ['==', ['get', 'class'], 'gate'], ['has', 'ref']],
-        layout: {'text-field': ['get', 'ref'], 'text-font': font, 'text-size': ['interpolate', ['linear'], ['zoom'], 14, 14.4, 18, 20.8],   // stand chips 1.6x
+        layout: {'text-field': ['get', 'ref'], 'text-font': font, 'text-size': ['interpolate', ['linear'], ['zoom'], 13, 9.5, 14, 14.4, 18, 20.8],   // stand chips 1.6x
             'icon-image': 'tar-chip-gate', 'icon-text-fit': 'both', 'icon-text-fit-padding': [2, 7, 2, 7],
             'text-padding': 2, 'text-optional': false},
-        paint: {'text-color': C.gateText}});
+        paint: {'text-color': C.gateText, 'text-opacity': ramp(AIRPORT.gateZoom, 1), 'icon-opacity': ramp(AIRPORT.gateZoom, 1)}});
     // runway numbers (generated from the runway geometry, see below)
     m.addLayer({id: 'tar-ap-rwy-num', type: 'symbol', source: 'tar-rwy-nums', minzoom: AIRPORT.numberZoom,
-        layout: {'text-field': ['get', 'n'], 'text-font': font, 'text-size': ['interpolate', ['linear'], ['zoom'], 13.5, 11, 18, 34],
+        layout: {'text-field': ['get', 'n'], 'text-font': font, 'text-size': ['interpolate', ['linear'], ['zoom'], 12.5, 8.5, 13.5, 11, 18, 34],
             'text-rotate': ['get', 'rot'], 'text-rotation-alignment': 'map', 'text-pitch-alignment': 'map',
             'text-allow-overlap': true, 'text-ignore-placement': true, 'text-letter-spacing': 0.06},
-        paint: {'text-color': C.number, 'text-opacity': 0.92}});
+        paint: {'text-color': C.number, 'text-opacity': ramp(AIRPORT.numberZoom, 0.92)}});
     // airport pin: a round flag with the code (medium zoom) and the airport name below (higher zoom).
     // Only airports that have an IATA or ICAO code in the data are shown.
     const code = ['coalesce', ['get', 'iata'], ['get', 'icao']];
@@ -192,8 +220,8 @@ MLR.installAirports = function () {
             'symbol-sort-key': ['match', ['get', 'class'], 'international', 0, 'public', 1, 'regional', 2, 3],
             'icon-padding': 6, 'text-padding': 3},
         paint: {'text-color': '#ffffff', 'text-halo-color': 'rgba(0,0,0,0.85)', 'text-halo-width': 1.4}});
-    pin('tar-ap-pin', AIRPORT.chipZoom, 11, false);
-    pin('tar-ap-pin-name', 11, 15.5, true);
+    pin('tar-ap-pin', AIRPORT.chipZoom, 10, false);
+    pin('tar-ap-pin-name', 10, 15.5, true);
 
     // flag images are created on demand from the bundled SVGs: flag-XX (rectangle) and flagc-XX (round pin)
     if (!this._flagHook) {
@@ -244,7 +272,7 @@ MLR.updateRunwayNumbers = function () {
     const m = this.map;
     const nums = m && m.getSource('tar-rwy-nums');
     if (!nums || !m.getSource('tar-airport')) return;
-    if (m.getZoom() < AIRPORT.numberZoom - 0.2) { if (this._rwyHad) { nums.setData({type: 'FeatureCollection', features: []}); this._rwyHad = false; } return; }
+    if (m.getZoom() < AIRPORT.detailZoom - 0.2) { if (this._rwyHad) { nums.setData({type: 'FeatureCollection', features: []}); this._rwyHad = false; } return; }
     let feats = [];
     const marks = m.getSource('tar-rwy-marks'), axes = [];
     try { feats = m.querySourceFeatures('tar-airport', {sourceLayer: 'aeroway', filter: ['all', ['==', ['get', 'class'], 'runway'], ['has', 'ref']]}); } catch (e) { return; }
@@ -394,6 +422,36 @@ MLR.runwayMarks = function (axes) {
 };
 
 // decorative effects on or off (Settings > "Airport detail effects")
+// feed the runway-shape source with the airports in view (OurAirports data, loaded lazily on first need)
+MLR.updateDbRunways = function () {
+    const m = this.map, src = m && m.getSource('tar-rwy-db');
+    if (!src) return;
+    const z = m.getZoom();
+    if (z < AIRPORT.runwayDbZoom - 0.3 || typeof AIRPT == 'undefined') {
+        if (this._dbHad) { src.setData({type: 'FeatureCollection', features: []}); this._dbHad = false; }
+        return;
+    }
+    const st = AIRPT.state;
+    if (!st.db) { AIRPT.load().then(() => MLR.updateDbRunways()); return; }
+    const b = m.getBounds(), pad = 0.15;
+    const w = b.getWest() - pad, e = b.getEast() + pad, so = b.getSouth() - pad, n = b.getNorth() + pad;
+    const small = z >= AIRPORT.runwayDbSmallZoom - 0.3;
+    const feats = [];
+    for (const r of st.db.a) {
+        const lat = r[4], lon = r[5];
+        if (lat < so || lat > n || lon < w || lon > e) continue;
+        if (r[2] > 1 && !small) continue;
+        for (const rw of r[11]) {
+            if (rw.length < 12 || rw[8] == null || rw[9] == null || rw[10] == null || rw[11] == null) continue;
+            feats.push({type: 'Feature', properties: {s: r[2] > 1 ? 1 : 0},
+                geometry: {type: 'LineString', coordinates: [[rw[9] / 1e4, rw[8] / 1e4], [rw[11] / 1e4, rw[10] / 1e4]]}});
+        }
+        if (feats.length > 2500) break;
+    }
+    src.setData({type: 'FeatureCollection', features: feats});
+    this._dbHad = true;
+};
+
 MLR.applyAirportFx = function () {
     const m = this.map;
     if (!m || !AIRPORT.fxLayers) return;

@@ -6,7 +6,8 @@
 Closed airports and heliports are dropped, and so are small fields without an IATA or 4-letter ICAO-style code. Output (compact, loaded lazily by html/ui/airport-panel.js):
   {v, built, src, types[], countries{code:name}, regions{code:name}, a:[row,...]}
   row = [ident, iata, typeIdx, name, lat, lon, elev_ft, country, region, municipality, wikipedia_path,
-         [[le, he, length_ft, width_ft, surface, lighted, le_hdg_true, he_hdg_true], ...], [[type, mhz], ...]]
+         [[le, he, length_ft, width_ft, surface, lighted, le_hdg_true, he_hdg_true, le_lat, le_lon, he_lat, he_lon], ...]
+  (runway end coordinates are integers: degrees x 10000), [[type, mhz], ...]]
 Note: OurAirports has no ILS data (its navaids file lists NDB/VOR/DME/TACAN only), so none is output.
 """
 import csv, gzip, io, json, os, sys, time, urllib.request, argparse
@@ -31,6 +32,12 @@ def num(s, cast=float):
         return cast(s)
     except (TypeError, ValueError):
         return None
+
+
+def e4(v):
+    """degrees -> integer ten-thousandths (about 11 m), or None"""
+    x = num(v)
+    return None if x is None else int(round(x * 10000))
 
 
 def main():
@@ -63,7 +70,8 @@ def main():
         if not row or r['closed'] == '1':
             continue
         row[11].append([r['le_ident'], r['he_ident'], num(r['length_ft'], int), num(r['width_ft'], int), r['surface'],
-                        1 if r['lighted'] == '1' else 0, num(r['le_heading_degT']), num(r['he_heading_degT'])])
+                        1 if r['lighted'] == '1' else 0, num(r['le_heading_degT']), num(r['he_heading_degT']),
+                        e4(r['le_latitude_deg']), e4(r['le_longitude_deg']), e4(r['he_latitude_deg']), e4(r['he_longitude_deg'])])
     for r in rows(a.src, 'airport-frequencies'):
         row = by_id.get(r['airport_ref'])
         mhz = num(r['frequency_mhz'])

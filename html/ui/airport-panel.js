@@ -423,7 +423,7 @@ const AIRPT = (function () {
         const b1 = h('button', 'apBtn p', st.isolating ? 'Show all traffic' : 'Show traffic here'); b1.type = 'button';
         b1.addEventListener('click', toggleTraffic);
         const b2 = h('button', 'apBtn', 'Zoom to airport'); b2.type = 'button';
-        b2.addEventListener('click', () => ease(r, true));
+        b2.addEventListener('click', () => fitAirport(r, true));
         const b3 = h('button', 'apBtn', 'Layers'); b3.type = 'button';
         b3.addEventListener('click', () => { const l = document.getElementById('layers_button'); l && l.click(); });
         add(bar, b1, b2, b3);
@@ -431,11 +431,61 @@ const AIRPT = (function () {
         body.scrollTop = keep;
     }
 
-    function ease(r, closer) {
+    // ---------- camera ----------
+    // Bounds of the airport: OurAirports runway end points, plus the OpenFreeMap aeroway features that are loaded within
+    // 6 km (aprons, taxiways, gates), with a small margin. Falls back to a box around the airport reference point.
+    function airportBounds(r) {
+        let w = r.lon, e = r.lon, so = r.lat, n = r.lat, have = false;
+        const ext = (lon, lat) => { w = Math.min(w, lon); e = Math.max(e, lon); so = Math.min(so, lat); n = Math.max(n, lat); };
+        for (const rw of r.rwys) {
+            if (rw.length >= 12 && rw[8] != null && rw[9] != null && rw[10] != null && rw[11] != null) { ext(rw[9] / 1e4, rw[8] / 1e4); ext(rw[11] / 1e4, rw[10] / 1e4); have = true; }
+            else if (typeof rw[2] === 'number') {                       // no end points in the data: a runway of the stated length through the reference point
+                const hd = A.endHeading(rw[0], rw[6], null);
+                if (hd != null) {
+                    const half = rw[2] * 0.3048 / 2, rad = hd * Math.PI / 180;
+                    const dLat = Math.cos(rad) * half / 111320, dLon = Math.sin(rad) * half / (111320 * Math.max(0.2, Math.cos(r.lat * Math.PI / 180)));
+                    ext(r.lon - dLon, r.lat - dLat); ext(r.lon + dLon, r.lat + dLat); have = true;
+                }
+            }
+        }
+        try {
+            const m = MLR.map;
+            if (m.getSource('tar-airport') && m.getZoom() >= 10) {
+                const kmLat = 6 / 111, kmLon = kmLat / Math.max(0.2, Math.cos(r.lat * Math.PI / 180));
+                const fs = m.querySourceFeatures('tar-airport', {sourceLayer: 'aeroway', filter: ['in', ['get', 'class'], ['literal', ['runway', 'apron', 'taxiway', 'gate', 'helipad']]]});
+                const flat = (c, out) => { if (typeof c[0] === 'number') out.push(c); else for (const x of c) flat(x, out); return out; };
+                for (const f of fs) for (const p of flat(f.geometry.coordinates, [])) if (Math.abs(p[1] - r.lat) < kmLat && Math.abs(p[0] - r.lon) < kmLon) { ext(p[0], p[1]); have = true; }
+            }
+        } catch (err) { /* tiles not loaded: use the runway ends */ }
+        if (!have || (e - w < 1e-4 && n - so < 1e-4)) { const d = r.type <= 1 ? 0.04 : 0.012; ext(r.lon - d * 1.6, r.lat - d); ext(r.lon + d * 1.6, r.lat + d); }
+        const mx = (e - w) * 0.06, my = (n - so) * 0.06;
+        return [[w - mx, so - my], [e + mx, n + my]];
+    }
+    // free map area: right of the panel on desktop, above the bottom sheet on phones; below the top bar
+    function padding() {
+        const phone = window.matchMedia('(max-width: 700px)').matches, p = st.root && !st.root.hidden ? st.root.getBoundingClientRect() : null;
+        if (phone) return {top: 84, bottom: p ? Math.round(window.innerHeight - p.top + 16) : Math.round(window.innerHeight * 0.55), left: 20, right: 20};
+        return {top: 84, bottom: 70, left: (p ? Math.round(p.right) : 408) + 28, right: 92};
+    }
+    // Ease the camera so the whole airport is in the free area. Never zooms out when the user is already closer
+    // than the fit zoom (it then only centres), unless force is set (the "Zoom to airport" button).
+    function fitAirport(r, force) {
         if (typeof MLR === 'undefined' || !MLR.map) return;
-        const phone = window.matchMedia('(max-width: 700px)').matches;
-        const pad = phone ? {top: 70, bottom: Math.round(window.innerHeight * 0.55), left: 20, right: 20} : {top: 70, bottom: 40, left: 420, right: 80};
-        try { MLR.map.easeTo({center: [r.lon, r.lat], zoom: closer ? 13.2 : Math.max(MLR.map.getZoom(), 11.5), padding: pad, duration: 900}); } catch (e) { /* ignore */ }
+        const m = MLR.map, pad = padding(), b = airportBounds(r);
+        const maxZ = 14.5, cur = m.getZoom();
+        let fit = null;
+        try { const cam = m.cameraForBounds(b, {padding: pad, bearing: m.getBearing(), pitch: m.getPitch(), maxZoom: maxZ}); fit = cam && typeof cam.zoom == 'number' ? cam.zoom : null; } catch (err) { /* ignore */ }
+        if (fit == null) fit = r.type <= 1 ? 12.5 : 14;
+        const zoom = force ? Math.min(fit, maxZ) : (cur >= fit ? cur : Math.min(fit, maxZ));
+        const center = [(b[0][0] + b[1][0]) / 2, (b[0][1] + b[1][1]) / 2];
+        const offset = [(pad.left - pad.right) / 2, (pad.top - pad.bottom) / 2];
+        const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const dur = 1000 + Math.min(200, Math.abs(zoom - cur) * 25);
+        try {
+            if (reduce) m.jumpTo({center, zoom});
+            else m.easeTo({center, zoom, offset, duration: dur, easing: (t) => 1 - Math.pow(1 - t, 3), essential: false});
+            if (reduce) m.panBy([-offset[0], -offset[1]], {duration: 0});
+        } catch (err) { /* ignore */ }
     }
     function toggleTraffic() {
         const r = st.cur;
@@ -471,7 +521,7 @@ const AIRPT = (function () {
         st.root.hidden = false;
         if (typeof shellSync == 'function') shellSync();
         render();
-        ease(st.cur, false);
+        fitAirport(st.cur, false);
         fetchWx().then(() => { if (st.cur && st.cur.icao === row[0]) render(); });
         clearInterval(st.timer);
         clearInterval(st.wxTimer);

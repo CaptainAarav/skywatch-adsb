@@ -134,7 +134,7 @@
     font-family: var(--font-mono);
     font-size: 13px;
 }
-.baseThumbMore { background: #1a1d23; }
+.baseThumbMore { background: #1c1c1f; }
 .baseTile:hover .baseThumb { box-shadow: 0 0 0 1px rgba(255,255,255,.35); }
 .baseTile.on .baseThumb { box-shadow: 0 0 0 2px var(--accent); }
 .baseTile:focus-visible { outline: none; }

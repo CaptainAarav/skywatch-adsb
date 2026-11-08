@@ -220,7 +220,7 @@ body.infoWide .ibScroll { display: block; }
     height: 96px;
     border-radius: 14px;
     overflow: hidden;
-    background: linear-gradient(160deg, #1c2536, #0c0f16);
+    background: linear-gradient(160deg, #26262a, #0e0e10);
 }
 #ib_photo_wide .ibPhoto { height: 128px; border-radius: 20px; }
 #selected_photo, #selected_photo a { display: block; width: 100%; height: 100%; }
