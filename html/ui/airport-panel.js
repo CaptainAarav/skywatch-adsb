@@ -239,12 +239,12 @@ const AIRPT = (function () {
         for (const w of rw.slice(0, 4)) {
             const e = w.ends[0], hd = e.hdg * Math.PI / 180, L = Math.min(78, 40 + (w.len || 4000) / 120);
             const dx = Math.sin(hd) * L, dy = -Math.cos(hd) * L;
-            svg.appendChild(sv('line', {x1: 100 - dx, y1: 100 + dy, x2: 100 + dx, y2: 100 - dy, stroke: '#2f3036', 'stroke-width': 11}));
+            svg.appendChild(sv('line', {x1: 100 - dx, y1: 100 + dy, x2: 100 + dx, y2: 100 - dy, stroke: '#323232', 'stroke-width': 11}));
             svg.appendChild(sv('line', {x1: 100 - dx, y1: 100 + dy, x2: 100 + dx, y2: 100 - dy, stroke: 'rgba(255,255,255,.55)', 'stroke-width': 1.3, 'stroke-dasharray': '5 4'}));
             for (const [en, s] of [[w.ends[0], 1], [w.ends[1], -1]]) {
                 if (!en) continue;
                 const a = en.hdg * Math.PI / 180, tx = 100 + Math.sin(a) * (L + 12), ty = 100 - Math.cos(a) * (L + 12);
-                svg.appendChild(sv('text', {x: tx, y: ty, fill: '#F5F7FA', 'font-size': 10, 'font-weight': 700, 'text-anchor': 'middle', 'dominant-baseline': 'middle'}, String(en.id)));
+                svg.appendChild(sv('text', {x: tx, y: ty, fill: '#f7f7f7', 'font-size': 10, 'font-weight': 700, 'text-anchor': 'middle', 'dominant-baseline': 'middle'}, String(en.id)));
             }
         }
         if (typeof wd === 'number' && ws > 0) {              // arrow pointing the way the wind blows, drawn from the upwind side
@@ -253,7 +253,7 @@ const AIRPT = (function () {
             svg.appendChild(sv('line', {x1, y1, x2, y2, stroke: '#4FD1D9', 'stroke-width': 3, 'stroke-linecap': 'round'}));
             const px = -sy, py = sx;
             svg.appendChild(sv('polygon', {points: [x2 + sx * 0, y2 + sy * 0, x2 + sx * 9 + px * 6, y2 + sy * 9 + py * 6, x2 + sx * 9 - px * 6, y2 + sy * 9 - py * 6].join(','), fill: '#4FD1D9'}));
-            svg.appendChild(sv('text', {x: 100, y: 96, fill: '#F5F7FA', 'font-size': 17, 'font-weight': 700, 'text-anchor': 'middle', 'font-family': 'JetBrains Mono, ui-monospace, monospace'}, String(ws)));
+            svg.appendChild(sv('text', {x: 100, y: 96, fill: '#f7f7f7', 'font-size': 17, 'font-weight': 700, 'text-anchor': 'middle', 'font-family': 'JetBrains Mono, ui-monospace, monospace'}, String(ws)));
             svg.appendChild(sv('text', {x: 100, y: 110, fill: '#B8B8B8', 'font-size': 8, 'text-anchor': 'middle'}, 'kt from ' + pad3(wd) + '°'));
         }
         return svg;
@@ -365,7 +365,7 @@ const AIRPT = (function () {
         const c = card('Frequencies'), box = h('div');
         for (const f of fs.slice(0, 10)) {
             const p = h('span', 'apPill'), d = h('span', 'dot');
-            d.style.background = FREQ_COL[f[0]] || '#8a8a92';
+            d.style.background = FREQ_COL[f[0]] || '#8d8d8d';
             add(p, d, document.createTextNode(f[0] + ' '), h('b', 'mono', f[1].toFixed(3)));
             box.appendChild(p);
         }

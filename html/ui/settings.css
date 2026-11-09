@@ -22,7 +22,7 @@
     padding: 0;
     overflow: hidden;
     border-radius: 36px;
-    background: rgba(18,20,25,.9) !important;
+    background: rgba(0, 0, 0,.9) !important;
     border: 1px solid var(--line);
     box-shadow: none;
     color: var(--text);
@@ -134,7 +134,7 @@
     font-family: var(--font-mono);
     font-size: 13px;
 }
-.baseThumbMore { background: #1c1c1f; }
+.baseThumbMore { background: #000000; }
 .baseTile:hover .baseThumb { box-shadow: 0 0 0 1px rgba(255,255,255,.35); }
 .baseTile.on .baseThumb { box-shadow: 0 0 0 2px var(--accent); }
 .baseTile:focus-visible { outline: none; }

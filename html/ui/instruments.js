@@ -179,8 +179,8 @@ IBI.makeTape = function (slot) {
     const nowTri = IBI.svg('path', {fill: '#fff'}, nowG);
     const nowTxt = IBI.svg('text', {x: 68, 'font-family': 'JetBrains Mono,monospace', 'font-size': 9, fill: '#B8B8B8'}, svg, 'NOW');
     const selG = IBI.svg('g', null, svg);
-    const dia = IBI.svg('path', {fill: '#1d1e22', stroke: '#fff', 'stroke-width': 1.6, 'stroke-linejoin': 'round'}, selG);
-    const selTxt = IBI.svg('text', {x: 68, 'font-family': 'JetBrains Mono,monospace', 'font-size': 9, 'font-weight': 600, fill: '#F5F7FA'}, svg);
+    const dia = IBI.svg('path', {fill: '#000000', stroke: '#fff', 'stroke-width': 1.6, 'stroke-linejoin': 'round'}, selG);
+    const selTxt = IBI.svg('text', {x: 68, 'font-family': 'JetBrains Mono,monospace', 'font-size': 9, 'font-weight': 600, fill: '#f7f7f7'}, svg);
     return {svg, update(altFt, selFt, nowText, selText) {
         const yn = IBI.tapeY(altFt);
         nowG.firstChild.setAttribute('y1', yn); nowG.firstChild.setAttribute('y2', yn);
@@ -210,11 +210,11 @@ IBI.makeCompass = function (slot, phone) {
     C({r: 101, fill: phone ? 'rgba(255,255,255,.04)' : 'rgba(255,255,255,.035)'});
     C({r: 96, fill: 'none', stroke: phone ? 'rgba(255,255,255,.4)' : 'rgba(255,255,255,.38)', 'stroke-width': phone ? 7 : 6,
         'stroke-dasharray': phone ? '2.4 14.355' : '2 14.755', 'stroke-dashoffset': phone ? 1.2 : 1, transform: 'rotate(-90 120 120)'});
-    C({r: 94, fill: 'none', stroke: '#F5F7FA', 'stroke-width': phone ? 11 : 10,
+    C({r: 94, fill: 'none', stroke: '#f7f7f7', 'stroke-width': phone ? 11 : 10,
         'stroke-dasharray': phone ? '3.6 45.618' : '3 46.218', 'stroke-dashoffset': phone ? 1.8 : 1.5, transform: 'rotate(-90 120 120)'});
     if (!phone) C({r: 58, fill: 'none', stroke: 'rgba(255,255,255,.12)'});
     const R = phone ? 70 : 76;
-    const cardinals = IBI.svg('g', {'font-family': 'Inter,sans-serif', 'font-size': phone ? 22 : 14, 'font-weight': 700, fill: '#F5F7FA', 'text-anchor': 'middle', 'dominant-baseline': 'central'}, svg);
+    const cardinals = IBI.svg('g', {'font-family': 'Inter,sans-serif', 'font-size': phone ? 22 : 14, 'font-weight': 700, fill: '#f7f7f7', 'text-anchor': 'middle', 'dominant-baseline': 'central'}, svg);
     [['N', 0], ['E', 90], ['S', 180], ['W', 270]].forEach(([t, a]) => IBI.svg('text',
         {x: 120 + R * Math.sin(a * Math.PI / 180), y: 120 - R * Math.cos(a * Math.PI / 180)}, cardinals, t));
     if (!phone) {
@@ -238,7 +238,7 @@ IBI.makeCompass = function (slot, phone) {
     // true heading: hollow triangle on the inner ring
     const hdg = IBI.svg('g', null, svg);
     IBI.svg('path', {d: phone ? 'M120 58L112.5 73H127.5Z' : 'M120 57L113.5 70H126.5Z', fill: 'none', stroke: '#fff', 'stroke-width': phone ? 2.4 : 1.8, 'stroke-linejoin': 'round'}, hdg);
-    const big = IBI.svg('text', {x: 120, y: phone ? 132 : 118, 'text-anchor': 'middle', 'font-family': 'JetBrains Mono,monospace', 'font-size': phone ? 52 : 38, 'font-weight': 600, fill: '#F5F7FA'}, svg);
+    const big = IBI.svg('text', {x: 120, y: phone ? 132 : 118, 'text-anchor': 'middle', 'font-family': 'JetBrains Mono,monospace', 'font-size': phone ? 52 : 38, 'font-weight': 600, fill: '#f7f7f7'}, svg);
     const sub = phone ? null : IBI.svg('text', {x: 120, y: 138, 'text-anchor': 'middle', 'font-family': 'Inter,sans-serif', 'font-size': 11, fill: '#B8B8B8'}, svg);
 
     return {svg, update(d, windLabel) {
@@ -273,7 +273,7 @@ IBI.makeCompass = function (slot, phone) {
 IBI.makeAttitude = function (slot) {
     const svg = IBI.svg('svg', {role: 'img', width: 210, height: 136, viewBox: '0 0 200 130'}, slot);
     IBI.svg('path', {d: 'M30.72 60A80 80 0 0 1 169.28 60', fill: 'none', stroke: 'rgba(255,255,255,.3)', 'stroke-width': 2}, svg);
-    const ticks = IBI.svg('g', {stroke: '#F5F7FA', 'stroke-width': 2, 'stroke-linecap': 'round'}, svg);
+    const ticks = IBI.svg('g', {stroke: '#f7f7f7', 'stroke-width': 2, 'stroke-linecap': 'round'}, svg);
     for (const [a, len] of [[-60, 12], [-45, 7], [-30, 12], [-20, 7], [-10, 7], [0, 14], [10, 7], [20, 7], [30, 12], [45, 7], [60, 12]])
         IBI.svg('line', {x1: 100, y1: 20, x2: 100, y2: 20 + len, transform: `rotate(${a} 100 100)`}, ticks);
     IBI.svg('line', {x1: 40, y1: 100, x2: 160, y2: 100, stroke: 'rgba(255,255,255,.25)', 'stroke-dasharray': '3 4'}, svg);
@@ -371,7 +371,7 @@ IBI.profile = function (slot, p, d, route) {
     IBI.svg('circle', {cx: lx, cy: ly, r: 11, fill: 'rgba(255,255,255,.18)'}, svg);
     IBI.svg('circle', {cx: lx, cy: ly, r: 5, fill: '#fff'}, svg);
     const nowTxt = ibAlt(last[1]) + ' ' + ibUnit('altitude') + ' · now';
-    IBI.svg('text', {x: Math.min(lx, Rr - 60), y: ly + 26 > B + 6 ? ly - 16 : ly + 26, 'text-anchor': 'middle', 'font-family': 'JetBrains Mono,monospace', 'font-size': 11, 'font-weight': 600, fill: '#F5F7FA'}, svg, nowTxt);
+    IBI.svg('text', {x: Math.min(lx, Rr - 60), y: ly + 26 > B + 6 ? ly - 16 : ly + 26, 'text-anchor': 'middle', 'font-family': 'JetBrains Mono,monospace', 'font-size': 11, 'font-weight': 600, fill: '#f7f7f7'}, svg, nowTxt);
     if (max > 0) {
         const mi = pts.findIndex(q => q[1] === max);
         if (mi > 0 && mi < pts.length - 1) IBI.svg('text', {x: X(pts[mi][0]), y: Math.max(12, Y(max) - 6), 'text-anchor': 'middle', 'font-family': 'JetBrains Mono,monospace', 'font-size': 10, fill: '#B8B8B8'}, svg, ibAlt(max) + ' ' + ibUnit('altitude'));

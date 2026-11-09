@@ -346,13 +346,13 @@ button.chip:hover { color: var(--text); background: rgba(255,255,255,.12); }
 .ol-attribution.ol-control ul {
     font-family: var(--font-mono);
     font-size: 10px;
-    color: #6B7280;
+    color: #747474;
     text-shadow: none;
     padding: 0;
     margin: 0;
     background: none;
 }
-.ol-attribution.ol-control ul a { color: #6B7280; }
+.ol-attribution.ol-control ul a { color: #747474; }
 .ol-attribution.ol-control button { display: none; }
 .ol-attribution.ol-control.ol-collapsed ul { display: block; }
 
@@ -619,7 +619,7 @@ body.infoOpen #selected_infoblock { display: flex; }
 #graphsOverlay .gGrid { flex: 1; min-height: 0; overflow: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 16px; align-content: start; }
 #graphsOverlay .gCard { margin: 0; padding: 14px 14px 10px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.08); border-radius: 24px; }
 #graphsOverlay .gCard figcaption { font: 600 14px Inter, system-ui, sans-serif; margin: 2px 6px 10px; }
-#graphsOverlay .gCard img { display: block; width: 100%; height: auto; border-radius: 14px; background: #1d1e22; }
+#graphsOverlay .gCard img { display: block; width: 100%; height: auto; border-radius: 14px; background: #000000; }
 #graphsOverlay .gCard.gMissing { display: none; }
 @media (max-width: 700px) {
     #graphsOverlay { left: 0; right: 0; top: 0; bottom: 0; border-radius: 0; padding: 16px; }
@@ -637,7 +637,7 @@ body.infoOpen #selected_infoblock { display: flex; }
 #graphsOverlay .gSub { font: 500 12px 'JetBrains Mono', ui-monospace, monospace; color: var(--muted); margin: 2px 0 6px; font-variant-numeric: tabular-nums; }
 #graphsOverlay .gPlot { position: relative; flex: 1; min-height: 0; }
 #graphsOverlay .gPlot canvas { position: absolute; left: 0; top: 0; }
-#graphsOverlay .gTip { position: absolute; z-index: 2; pointer-events: none; padding: 6px 10px; border-radius: 12px; background: rgba(18,19,22,.9); border: 1px solid rgba(255,255,255,.16); display: flex; flex-direction: column; gap: 1px; white-space: nowrap; }
+#graphsOverlay .gTip { position: absolute; z-index: 2; pointer-events: none; padding: 6px 10px; border-radius: 12px; background: rgba(0, 0, 0,.9); border: 1px solid rgba(255,255,255,.16); display: flex; flex-direction: column; gap: 1px; white-space: nowrap; }
 #graphsOverlay .gTip b { font: 600 13px 'JetBrains Mono', ui-monospace, monospace; }
 #graphsOverlay .gTip span { font: 500 11px Inter, system-ui, sans-serif; color: var(--muted); }
 #graphsOverlay .gNote { grid-column: 1 / -1; padding: 10px 14px; border-radius: 16px; background: rgba(245,185,74,.12); color: #F5B94A; font: 500 13px Inter, system-ui, sans-serif; }

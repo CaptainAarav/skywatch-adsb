@@ -130,7 +130,7 @@ AIRLOGO.mapImage = function (icao, px, dpr) {
     c.width = c.height = s;
     const ctx = c.getContext('2d');
     const rr = (inset) => { ctx.beginPath(); const r = s * 0.24; ctx.roundRect ? ctx.roundRect(inset, inset, s - 2 * inset, s - 2 * inset, r) : ctx.rect(inset, inset, s - 2 * inset, s - 2 * inset); };
-    ctx.fillStyle = '#1a1c21'; rr(0); ctx.fill();
+    ctx.fillStyle = '#000000'; rr(0); ctx.fill();
     ctx.save(); rr(0.5 * dpr); ctx.clip();
     ctx.drawImage(e.bitmap, 0, 0, s, s);
     ctx.restore();

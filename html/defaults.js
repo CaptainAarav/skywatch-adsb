@@ -387,6 +387,8 @@ let airlineLogos = true;
 let airportDetail = true;
 // 3D terrain from AWS Open Data elevation tiles. The default (on only for desktop with a hardware GPU) is chosen in ui/maplibre-terrain.js
 let terrain3d = false;
+// lighten the map land while an aircraft is selected (fades over about 300 ms; off under reduced motion)
+let liftMapOnSelect = true;
 // Skywatch ADS-B: airport panel. Weather comes from the recorder's wx.json (no third-party request from the browser);
 // links are plain external links. Both can be switched off.
 let airportWeather = true;

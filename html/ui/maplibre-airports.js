@@ -36,11 +36,11 @@ const AIRPORT = {
         apronLine: '#6d6b68',
         buildingLow: '#4f4e4a',  // flat warm grey, lighter for the bigger buildings
         buildingHigh: '#7d7b77',
-        runway: '#15171c',
-        runwayLine: '#b8b9bd',
+        runway: '#151515',
+        runwayLine: '#bababa',
         zebra: '#f2f2f2',
-        taxi: '#151618',
-        taxiLow: '#3a3a40',      // taxiway fill at low zoom (reads as a line), settles to `taxi` by zoom 14
+        taxi: '#151515',
+        taxiLow: '#3c3c3c',      // taxiway fill at low zoom (reads as a line), settles to `taxi` by zoom 14
         taxiCase: '#3d3d30',     // thin olive-grey edge lines
         taxiCl: '#8c7a2c',       // thin yellow centre line
         stop: '#e04040',
@@ -226,7 +226,7 @@ MLR.installAirports = function () {
     for (const [tag, z0, sm] of [['L', AIRPORT.runwayDbZoom, 0], ['S', AIRPORT.runwayDbSmallZoom, 1]]) {
         const f = ['==', ['get', 's'], sm];
         m.addLayer({id: 'tar-ap-rwydb-case-' + tag, type: 'line', source: 'tar-rwy-db', minzoom: z0, filter: f, layout: {'line-cap': 'butt'},
-            paint: {'line-color': '#b4b4bc', 'line-opacity': dbOp(z0, 0.8), 'line-width': dbW(1.4)}}, 'tar-ap-apron');
+            paint: {'line-color': '#b7b7b7', 'line-opacity': dbOp(z0, 0.8), 'line-width': dbW(1.4)}}, 'tar-ap-apron');
         m.addLayer({id: 'tar-ap-rwydb-' + tag, type: 'line', source: 'tar-rwy-db', minzoom: z0, filter: f, layout: {'line-cap': 'butt'},
             paint: {'line-color': C.runway, 'line-opacity': dbOp(z0, 1), 'line-width': dbW(0)}}, 'tar-ap-apron');
     }
@@ -299,7 +299,7 @@ MLR.installAirports = function () {
         layout: {
             'icon-image': airportFlagExpr('flagc-'), 'icon-size': 1, 'icon-allow-overlap': false,
             'text-field': withName
-                ? ['format', code, {'font-scale': 0.95}, '\n', {}, ['coalesce', ['get', 'name:latin'], ['get', 'name']], {'font-scale': 0.85, 'text-color': '#a8a8ae'}]
+                ? ['format', code, {'font-scale': 0.95}, '\n', {}, ['coalesce', ['get', 'name:latin'], ['get', 'name']], {'font-scale': 0.85, 'text-color': '#aaaaaa'}]
                 : code,
             'text-font': font, 'text-size': 11 * gs, 'text-anchor': 'top', 'text-offset': [0, 1.0], 'text-optional': true, 'text-max-width': 12,
             'symbol-sort-key': ['match', ['get', 'class'], 'international', 0, 'public', 1, 'regional', 2, 3],
@@ -326,7 +326,7 @@ MLR.installAirports = function () {
                 const x = c.getContext('2d');
                 x.save(); x.beginPath();
                 if (round) x.arc(W / 2, H / 2, W / 2 - 2, 0, Math.PI * 2); else x.roundRect ? x.roundRect(0, 0, W, H, 3) : x.rect(0, 0, W, H);
-                x.fillStyle = '#26262b'; x.fill(); x.clip();
+                x.fillStyle = '#1c1c1c'; x.fill(); x.clip();
                 if (withFlag) { const r = img.width / img.height, h = round ? H : H, w = h * r; x.drawImage(img, (W - w) / 2, 0, w, h); }
                 x.restore();
                 if (round && mm[3]) { x.beginPath(); x.arc(W / 2, H / 2, W / 2 - 2.5, 0, Math.PI * 2); x.lineWidth = 5; x.strokeStyle = AIRPORT_CAT_COLOR[mm[3]]; x.stroke(); }     // ring only with fresh weather

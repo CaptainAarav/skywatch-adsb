@@ -49,16 +49,24 @@
 
 :root {
     --bg:         #000;
-    --glass:      rgba(36, 38, 43, 0.80);   /* level 1: panels, toolbars, pills */
-    --glass-solid: #1c1d21;
-    --panel:      #1c1d21;               /* docked panels (sidebar, infoblock) until Phase 4 */
-    --tile:       rgba(255, 255, 255, 0.07);   /* level 2: tiles, chips, inputs */
-    --tile-hover: rgba(255, 255, 255, 0.11);
-    --line:       rgba(255, 255, 255, 0.12);
+    --glass:      rgba(0, 0, 0, 0.72);   /* level 1: panels, toolbars, pills */
+    --glass-solid: #000000;
+    --panel:      #000000;               /* docked panels (sidebar, infoblock) until Phase 4 */
+    --tile:       #151515;   /* level 2: tiles, chips, inputs */
+    --tile-hover: #1c1c1c;
+    --bg-sheet:   #000000;   /* sheets, panels, dialogs, settings pages */
+    --bg-card:    #161616;   /* cards inside panels, table row base */
+    --bg-control: #151515;   /* search pill, buttons, tab bar, round map buttons, chips */
+    --bg-control-hover: #1c1c1c;
+    --divider:    #1c1c1c;
+    --text-2:     #878787;   /* neutral grey (R=G=B) */
+    --text-3:     #5c5c5c;   /* decorative only: 3.1:1 on black, never for text that must be read */
+    --handle:     #dbdbdb;
+    --line:       rgba(255, 255, 255, 0.06);
     --line-strong: rgba(255, 255, 255, 0.20);
     --text:       #FFFFFF;
     --text2:      #CCCCCC;
-    --muted:      #B8B8B8;
+    --muted:      #878787;   /* = --text-2 */
     --accent:     #FFFFFF;
     --accent-bg:  rgba(255, 255, 255, 0.16);
     --on-accent:  #000;
@@ -74,7 +82,7 @@
 
     --blur:       28px;
     --shadow:     0 8px 32px rgba(0, 0, 0, 0.5);
-    --map-land:   #1a1a1c;   /* land colour of the map (ocean stays pure black); read by ui/mapstyle.js at load */
+    --map-land:   #1a1a1a;   /* land colour of the map (ocean stays pure black); read by ui/mapstyle.js at load */
 
     --r-panel:    32px;
     --r-card:     22px;
@@ -256,7 +264,7 @@ button[type="submit"].formButton {
     border-color: var(--accent);
     font-weight: 600;
 }
-button[type="submit"].formButton:hover { background: #E6E9ED; }
+button[type="submit"].formButton:hover { background: #e9e9e9; }
 
 .warning {
     background: rgba(245, 185, 74, 0.10);
@@ -513,7 +521,7 @@ button[type="submit"].formButton:hover { background: #E6E9ED; }
 
 /* Respect reduced transparency: solid panels */
 @media (prefers-reduced-transparency: reduce) {
-    :root { --glass: #1c1d21; --blur: 0px; }
+    :root { --glass: #000000; --blur: 0px; }
 }
 
 

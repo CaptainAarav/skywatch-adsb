@@ -12,15 +12,15 @@
 // OpenFreeMap and CARTO Dark Matter (both keyless) use different layer ids; both are handled.
 // ---------------------------------------------------------------------------------------------
 const ML_STYLE = {
-    land: (function () { try { return getComputedStyle(document.documentElement).getPropertyValue('--map-land').trim() || '#0d0d0f'; } catch (e) { return '#0d0d0f'; } })(),   // --map-land in theme.css;             // dark charcoal land; the ocean is pure black, so coastlines read through contrast alone
+    land: (function () { try { return getComputedStyle(document.documentElement).getPropertyValue('--map-land').trim() || '#1a1a1a'; } catch (e) { return '#1a1a1a'; } })(),   // --map-land in theme.css;             // dark charcoal land; the ocean is pure black, so coastlines read through contrast alone
     water: '#000000',
-    label: {country: '#9a9a9a', state: '#4b4b4b', city: '#707070', town: '#646464', small: '#585858', water: '#3e3e3e', halo: 'rgba(0,0,0,0.9)'},
+    label: {country: '#878787', state: '#878787', city: '#ffffff', town: '#ffffff', small: '#878787', water: '#878787', halo: 'rgba(0,0,0,0.9)'},   // white for big places, grey for the rest; neutral greys only
     // roads: white at low alpha so a dense network reads at UK zoom without getting loud
-    road: {motorway: 'rgba(255,255,255,0.15)', trunk: 'rgba(255,255,255,0.13)', primary: 'rgba(255,255,255,0.09)', secondary: 'rgba(255,255,255,0.06)', minor: 'rgba(255,255,255,0.045)'},
+    road: {motorway: '#313131', trunk: '#313131', primary: '#313131', secondary: '#242424', minor: '#242424'},   // major #313131, minor #242424
     // line width (px) of each road class at MapLibre zoom 5 / 9 / 14
     roadWidth: {motorway: [0.7, 1.0, 3], trunk: [0.6, 0.9, 2.6], primary: [0.5, 0.8, 2.2], secondary: [0.5, 0.7, 1.8], minor: [0.5, 0.6, 1.4]},
     urbanLift: 0.04,            // built-up areas: land + this fraction toward white
-    boundary: {country: '#262626', state: '#1f1f1f'},
+    boundary: {country: '#3a3a3a', state: '#2a2a2a'},
     widthScale: 0.8,
 };
 
@@ -54,7 +54,7 @@ function mlLabelStyle(l, role, size, minzoom) {
     const lay = l.layout || (l.layout = {});
     delete lay['icon-image']; delete lay['text-transform']; delete lay['text-letter-spacing'];
     lay['text-font'] = role === 'water' ? f.ital : f.reg;
-    if (role === 'country') { size = ['interpolate', ['linear'], ['zoom'], 1, 9, 4, 10, 7, 11]; paint['text-opacity'] = 0.35; }   // countries: small and heavily dimmed
+    if (role === 'country') { size = ['interpolate', ['linear'], ['zoom'], 1, 9, 4, 10, 7, 11]; paint['text-opacity'] = 0.8; }   // countries: small and heavily dimmed
     if (role === 'state') { lay['text-transform'] = 'uppercase'; lay['text-letter-spacing'] = 0.14; size = size || 10; }
     if (role === 'water') { lay['text-letter-spacing'] = 0.08; size = size || 12; }
     if (size) lay['text-size'] = size;

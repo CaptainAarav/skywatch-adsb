@@ -1,8 +1,8 @@
 /* Skywatch ADS-B: rain radar playback bar */
 .rdBar { position: fixed; left: 50%; bottom: 84px; transform: translateX(-50%); z-index: 40; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: center;
-  max-width: calc(100vw - 32px); padding: 8px 14px; background: #1d1e22; border: 1px solid rgba(255,255,255,.08); border-radius: 18px; color: #f2f2f3; font: 13px Inter, system-ui, sans-serif; box-shadow: 0 12px 32px rgba(0,0,0,.45); }
+  max-width: calc(100vw - 32px); padding: 8px 14px; background: #000000; border: 1px solid rgba(255,255,255,.08); border-radius: 18px; color: #f2f2f3; font: 13px Inter, system-ui, sans-serif; box-shadow: 0 12px 32px rgba(0,0,0,.45); }
 .rdBtn { background: #fff; color: #000; border: 0; border-radius: 999px; padding: 6px 14px; font: 600 13px Inter, system-ui, sans-serif; cursor: pointer; }
 .rdBtn:focus-visible, .rdBar input:focus-visible, .rdCredit a:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 .rdBar input[type=range] { width: min(240px, 40vw); accent-color: #fff; }
-.rdTime { min-width: 130px; font-size: 12px; color: #d0d0d4; }
-.rdCredit { font-size: 11px; width: 100%; text-align: center; color: #b4b5bb; } .rdCredit a { color: inherit; }
+.rdTime { min-width: 130px; font-size: 12px; color: #d1d1d1; }
+.rdCredit { font-size: 11px; width: 100%; text-align: center; color: #b7b7b7; } .rdCredit a { color: inherit; }

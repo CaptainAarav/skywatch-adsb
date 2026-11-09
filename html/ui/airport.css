@@ -31,7 +31,7 @@ body.panelsHidden #airport_panel { display: none !important; }
 .apTile { background: var(--tile); border-radius: 16px; padding: 10px 12px; min-width: 0; }
 .apTile b { display: block; font-size: 15px; font-weight: 600; overflow-wrap: anywhere; }
 .apTile small { color: var(--muted); font-size: 11px; }
-.apRaw { margin-top: 10px; padding: 10px 12px; border-radius: 14px; background: rgba(0,0,0,.25); font-size: 11.5px; color: #cfd3da; word-break: break-word; line-height: 1.5; }
+.apRaw { margin-top: 10px; padding: 10px 12px; border-radius: 14px; background: rgba(0,0,0,.25); font-size: 11.5px; color: #d4d4d4; word-break: break-word; line-height: 1.5; }
 .apTaf { display: flex; gap: 3px; margin-top: 6px; }
 .apTafSlot { flex: 1; height: 26px; border-radius: 7px; display: grid; place-items: center; font-size: 10px; color: #0b0b0d; font-weight: 700; background: #666; }
 .apTafSlot.ok { background: var(--ok); } .apTafSlot.mv { background: #7fa8ff; } .apTafSlot.bad { background: var(--bad); } .apTafSlot.lf { background: #d98cff; }
@@ -70,12 +70,12 @@ body.panelsHidden #airport_panel { display: none !important; }
 }
 
 /* hover / long-press weather card on an airport pin */
-.apPinCard { position: absolute; z-index: 5; pointer-events: none; min-width: 190px; max-width: 260px; padding: 10px 12px; background: #1d1e22; color: #fff;
+.apPinCard { position: absolute; z-index: 5; pointer-events: none; min-width: 190px; max-width: 260px; padding: 10px 12px; background: #000000; color: #fff;
     border: 1px solid rgba(255,255,255,.08); border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,.5); font: 500 12px/1.4 Inter, system-ui, sans-serif; }
 .apPinTop { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
 .apPinTop b { font-family: 'JetBrains Mono', monospace; font-size: 14px; }
-.apPinRow { display: flex; justify-content: space-between; gap: 12px; padding: 2px 0; } .apPinRow span:first-child { color: #b8b9bd; } .apPinRow span:last-child { text-align: right; font-family: 'JetBrains Mono', monospace; }
-.apPinHint { margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,.08); color: #b8b9bd; font-size: 11px; }
+.apPinRow { display: flex; justify-content: space-between; gap: 12px; padding: 2px 0; } .apPinRow span:first-child { color: #bababa; } .apPinRow span:last-child { text-align: right; font-family: 'JetBrains Mono', monospace; }
+.apPinHint { margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,.08); color: #bababa; font-size: 11px; }
 
 /* recent movements card */
 .apMoves > summary { cursor: pointer; list-style: none; }

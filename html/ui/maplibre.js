@@ -420,7 +420,7 @@ MLR.applySky = function () {
     this.skyOn = true;
     try {
         this.map.setSky({
-            'sky-color': '#000000', 'horizon-color': '#10131a', 'fog-color': '#000000',
+            'sky-color': '#000000', 'horizon-color': '#151515', 'fog-color': '#000000',
             'sky-horizon-blend': 0.5, 'horizon-fog-blend': 0.5, 'fog-ground-blend': 0.5,
             'atmosphere-blend': ['interpolate', ['linear'], ['zoom'], 0, 0.6, 4, 0.2, 6, 0],
         });
@@ -549,8 +549,8 @@ MLR.loadIcon = function (id) {
         const dpr = mlDpr(), sz = Math.ceil(Number(px) * dpr);
         const c = document.createElement('canvas'); c.width = c.height = sz;
         const x = c.getContext('2d');
-        x.fillStyle = '#2a2c33'; x.beginPath(); x.roundRect ? x.roundRect(0, 0, sz, sz, sz * 0.24) : x.rect(0, 0, sz, sz); x.fill();
-        x.fillStyle = '#d6d6da'; x.font = '600 ' + Math.round(sz * 0.36) + 'px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+        x.fillStyle = '#2e2e2e'; x.beginPath(); x.roundRect ? x.roundRect(0, 0, sz, sz, sz * 0.24) : x.rect(0, 0, sz, sz); x.fill();
+        x.fillStyle = '#d7d7d7'; x.font = '600 ' + Math.round(sz * 0.36) + 'px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
         x.fillText(code.slice(0, 3), sz / 2, sz / 2 + sz * 0.03, sz * 0.9);
         try { if (!this.map.hasImage(id)) this.map.addImage(id, x.getImageData(0, 0, sz, sz), {pixelRatio: dpr}); } catch (err) { /* style changed */ }
         return;

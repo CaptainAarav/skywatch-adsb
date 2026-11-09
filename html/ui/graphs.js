@@ -185,7 +185,7 @@ const GRAPHS = (function () {
             P.forEach((p, i) => { const d = Math.abs(p[0] - ch.hover); if (d < bd) { bd = d; bi = i; } });
             const p = P[bi], q = pts[bi];
             ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(Math.round(p[0]) + .5, T); ctx.lineTo(Math.round(p[0]) + .5, T + ph); ctx.stroke();
-            ctx.beginPath(); ctx.arc(p[0], p[1], 5, 0, 7); ctx.fillStyle = '#15161a'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = c.color; ctx.stroke();
+            ctx.beginPath(); ctx.arc(p[0], p[1], 5, 0, 7); ctx.fillStyle = '#151515'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = c.color; ctx.stroke();
             ch.tip.textContent = '';
             const b = el('b', null, ch.tip, c.fmt(q[1]) + ' ' + unitLabel(c));
             el('span', null, ch.tip, new Date(q[0] * 1000).toLocaleString(undefined, {weekday: 'short', hour: '2-digit', minute: '2-digit'}));

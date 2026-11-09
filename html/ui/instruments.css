@@ -103,7 +103,7 @@
 .ibTargetBar .mono { font-size: 11px; color: var(--muted); white-space: nowrap; }
 .pill { height: 24px; padding: 0 10px; border-radius: 12px; font: 600 11px var(--font-mono); display: inline-flex; align-items: center; box-sizing: border-box; }
 .pill.on { background: #fff; color: #000; }
-.pill.off { background: rgba(255,255,255,.06); color: #8A9099; border: 1px solid rgba(255,255,255,.08); }
+.pill.off { background: rgba(255,255,255,.06); color: #919191; border: 1px solid rgba(255,255,255,.08); }
 .ibPillsWrap { gap: 6px; }
 
 /* ---- aircraft card: second facts row, wrapped operator ---- */
@@ -120,7 +120,7 @@
 .ibLimited { text-align: center; padding: 18px 12px; border-radius: 20px; background: var(--mini); }
 
 /* ---- action bar: Replay / Follow / Isolate ---- */
-#infoActions.actionBar { background: #26272c; border: 1px solid rgba(255,255,255,.12); border-radius: 24px; padding: 6px; display: flex; gap: 6px; }
+#infoActions.actionBar { background: #1c1c1c; border: 1px solid rgba(255,255,255,.12); border-radius: 24px; padding: 6px; display: flex; gap: 6px; }
 #infoActions .act { flex: 1; }
 
 /* ---- wide grid (mockup 08) ---- */
