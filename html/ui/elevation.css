@@ -7,14 +7,13 @@
 @media (min-width: 769px) and (not (pointer: coarse)) {
 
     /* ---------- panels ---------- */
-    #sidebar_container, #selected_infoblock, #airport_panel, #settings_infoblock, #graphsOverlay, #highlighted_infoblock {
+    #sidebar_container, #selected_infoblock, #airport_panel, #settings_infoblock, #graphsOverlay {
         background: var(--bg-panel) !important;
         border: 1px solid var(--line);
         border-radius: var(--r-panel);
         box-shadow: 0 12px 40px rgba(0, 0, 0, .55);
         -webkit-backdrop-filter: none; backdrop-filter: none;
     }
-    #highlighted_infoblock { border-radius: var(--r-card); }
     #selected_infoblock, #airport_panel .apScroll { gap: 12px; }
 
     /* ---------- cards: 20px radius, 1px line, 12px apart ---------- */
@@ -40,6 +39,16 @@
     .act:hover { background: var(--bg-action-hover); color: var(--text); }
     .act.on, .act.activeButton { background: #fff; color: #000; }
     #infoActions.actionBar { border-radius: var(--r-card); }
+
+    /* ---------- header: soft black scrim so the title never fights the map labels ---------- */
+    #topbar::before {
+        content: ''; position: absolute; left: 0; right: 0; top: 0; height: 96px; z-index: -1; pointer-events: none;
+        background: linear-gradient(to bottom, rgba(0, 0, 0, .85), rgba(0, 0, 0, 0));
+    }
+    #wordmark { text-shadow: none; }
+    .wordmarkTitle { font-weight: 700; letter-spacing: -.01em; }
+    .wordmarkCredit { font-size: 11px; color: var(--text-3); }
+    .wordmarkTitle small { font-size: 12px; font-weight: 500; color: var(--text-2); margin-left: 6px; letter-spacing: 0; }
 
     /* ---------- text ---------- */
     body, .infoblock_heading { color: var(--text); }
@@ -78,7 +87,7 @@
     #north_up .northN { fill: var(--compass-n); }
     #north_up .northS { fill: var(--compass-n); fill-opacity: .45; }
     #north_up .northRing { stroke: var(--icon); }
-    .ol-zoom.ol-control { padding: 4px; }
+    .ol-zoom.ol-control { padding: 4px; background: var(--bg-segment) !important; }
     #dimSwitch { background: var(--bg-segment) !important; }
     #dimSwitch .on, #dimSwitch button.on { background: var(--bg-segment-on); color: var(--text); }
     #dimSwitch button { color: var(--text-2); }
@@ -104,3 +113,46 @@
     .popover, #filterPopover { background: var(--bg-panel) !important; border: 1px solid var(--line); border-radius: var(--r-card); }
     #search_warning { background: var(--bg-panel) !important; border: 1px solid var(--border-ctl); }
 }
+
+/* ---------- hover card (the old tar1090 popup, restyled with the shared surfaces) ---------- */
+#highlighted_infoblock {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--line);
+    border-radius: var(--r-card);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, .55);
+    padding: 12px;
+    min-width: 188px;
+    max-width: 260px;
+    font-family: var(--font-ui);
+    font-variant-numeric: tabular-nums;
+    color: var(--text);
+    -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+#highlighted_infoblock .highlightedTitle { border: 0; display: block; width: auto; margin-bottom: 8px; }
+#highlighted_infoblock .identLarge { font-size: 17px; line-height: 22px; font-weight: 700; color: var(--text); font-family: var(--font-ui); }
+#highlighted_infoblock .identSmall { font-size: 12px; font-weight: 500; color: var(--text-2); }
+#highlighted_infoblock .infoBlockSection { padding: 0; }
+#highlighted_infoblock .infoBlockSection > div:not(.rSpacer) { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; min-height: 20px; }
+#highlighted_infoblock .rSpacer { padding: 2px 0; }
+#highlighted_infoblock .infoHeading { margin: 0; font-size: 12px; font-weight: 400; color: var(--text-2); }
+#highlighted_infoblock .infoData { float: none; margin: 0; text-align: right; font-size: 13px; font-weight: 600; color: var(--text); }
+#highlighted_infoblock #highlighted_airline { color: var(--text-2); font-weight: 400; }
+#highlighted_infoblock .infoBlockSection > div:has(#routeRowHighlight) { display: none; }
+
+/* below 1100px the credit would reach the view links: it moves to About */
+@media (min-width: 769px) and (max-width: 1099px) { .wordmarkCredit { display: none; } }
+
+/* ---------- type: Inter with tabular numerals for values, codes and times; mono only for raw identifiers ---------- */
+#selected_infoblock .mono, #selected_infoblock .v, #selected_infoblock .ibCallsign, #selected_infoblock .chip.mono, #selected_infoblock .ibSub .mono,
+#airport_panel .mono, #sidebar_container .mono, #highlighted_infoblock .mono, .histBar .mono, #altitude_chart .mono {
+    font-family: var(--font-ui);
+    font-variant-numeric: tabular-nums;
+}
+#selected_infoblock #ib_sq, #selected_infoblock #ib_p_sq_t .v, #selected_infoblock .ibHexW, #selected_infoblock #ib_hex,
+#airport_panel .apRaw, #about_web, #about_decoder, #about_db, #webinterface_version, #decoder_version {
+    font-family: var(--font-mono);
+}
+#selected_infoblock .ibCallsign { font-size: 26px; font-weight: 700; letter-spacing: -.01em; line-height: 1.15; }
+#selected_infoblock .ibBigV { font-size: 22px; font-weight: 600; }
+#selected_infoblock .ibRouteCodes .mono { font-weight: 700; }
+#airport_panel .apIcao { font-weight: 700; letter-spacing: -.01em; }

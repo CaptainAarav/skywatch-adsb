@@ -25,4 +25,17 @@
         row.append(lab, sel);
         list.insertBefore(row, list.firstChild);
     });
+    // "Dim other aircraft": while one is selected the rest draw at about 60%; the selected one stays at full brightness
+    function syncDim() {
+        const m = typeof MLR != 'undefined' && MLR.map;
+        if (!m || !MLR.ready || !m.getLayer('tar-planes')) return;
+        const on = !!dimOthers && document.body.classList.contains('infoOpen');
+        try { m.setPaintProperty('tar-planes', 'icon-opacity', on ? ['case', ['==', ['get', 'sel'], 1], 1, 0.6] : 1); } catch (e) { /* style changing */ }
+    }
+    jQuery(function () {
+        new Toggle({key: 'dimOthers', display: 'Dim other aircraft when one is selected', container: '#set_appearance', init: dimOthers,
+            setState: function (s) { dimOthers = s; syncDim(); }});
+        new MutationObserver(syncDim).observe(document.body, {attributes: true, attributeFilter: ['class']});
+        const t = setInterval(() => { if (typeof MLR == 'undefined' || !MLR.map) return; clearInterval(t); MLR.map.on('style.load', () => setTimeout(syncDim, 80)); }, 200);
+    });
 })();

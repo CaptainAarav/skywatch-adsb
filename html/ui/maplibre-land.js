@@ -1,9 +1,9 @@
 "use strict";
-// Skywatch ADS-B: while an aircraft is selected the land fill lifts from #1a1a1a to #2c2c2c (a paint-property transition of
+// Skywatch ADS-B: while an aircraft is selected the land fill lifts from the land colour to #2c2c2c (a paint-property transition of
 // about 300 ms, instant under prefers-reduced-motion) and returns on deselect. Nothing is repainted per frame.
 (function () {
     const LAND_IDS = ['background', 'landuse_residential', 'landcover_wood', 'landuse_park'];
-    const K = (0x2c - 0x1a) / (255 - 0x1a);                       // fraction toward white that takes #1a1a1a to #2c2c2c
+    const K = (0x2c - 0x18) / (255 - 0x18);                       // fraction toward white that takes the land (#181818) to #2c2c2c
     let lifted = false, base = null;
     const lift = (hex) => { const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex); if (!m) return hex;
         return '#' + [1, 2, 3].map(i => { const v = parseInt(m[i], 16); return Math.round(v + (255 - v) * K).toString(16).padStart(2, '0'); }).join(''); };

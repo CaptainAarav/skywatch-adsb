@@ -297,6 +297,12 @@ function initShell() {
         this.title = hidden ? 'Show sidebar' : 'Hide sidebar';
         shellSync();
     });
+    const b3 = document.getElementById('act_3d');
+    if (b3) {
+        b3.addEventListener('click', () => { if (typeof MLR != 'undefined' && MLR.setView) MLR.setView(MLR.viewMode === '3d' ? '2d' : '3d'); });
+        const sync3 = () => { const on = typeof MLR != 'undefined' && MLR.viewMode === '3d'; b3.classList.toggle('on', on); b3.setAttribute('aria-pressed', on ? 'true' : 'false'); };
+        setInterval(sync3, 500);
+    }
     jQuery('#history_action').on('click', () => { jQuery('#show_trace').click(); shellSync(); });
     jQuery('.popoverClose').on('click', () => closePopovers());
     document.addEventListener('pointerdown', function (e) {

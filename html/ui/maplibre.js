@@ -128,8 +128,10 @@ MLR.updateAttribution = function () {
     if (base && base.get('attribution')) parts.push(base.get('attribution'));
     for (const l of layers.getArray())
         if (l.get('type') === 'overlay' && l.visible && l.get('attribution')) parts.push(l.get('attribution'));
-    // airport detail comes from OpenFreeMap whatever the base map is
-    if (!parts.some(x => /OpenFreeMap/.test(x))) parts.push(ML_ATTR.ofm);
+    // airport detail comes from OpenFreeMap whatever the base map is: credit it only while that detail is on screen
+    const m = this.map;
+    if (m && typeof airportDetail != 'undefined' && airportDetail && m.getSource('tar-airport') && m.getZoom() >= 8 && !parts.some(x => /OpenFreeMap/.test(x))) parts.push(ML_ATTR.ofm);
+    if (m && !this._attrZoomHook) { this._attrZoomHook = true; m.on('zoomend', () => this.updateAttribution()); }
     el.innerHTML = parts.join(' · ');
 };
 
@@ -303,10 +305,11 @@ MLR.install = function () {
     }, extra);
     const labelPaint = {'text-color': '#fff', 'text-halo-color': 'rgba(0,0,0,0.85)', 'text-halo-width': 0};
     // labels are hidden below zoom 6.5 (tar1090 numbering, MapLibre 5.5); the hovered/selected one always shows
-    m.addLayer({id: 'tar-plane-labels', type: 'symbol', source: 'tar-planes', filter: ['==', ['get', 'top'], 0], minzoom: 5.5,
+    m.addLayer({id: 'tar-plane-labels', type: 'symbol', source: 'tar-planes', filter: ['all', ['==', ['get', 'top'], 0], ['!=', ['get', 'label'], '']], minzoom: 5.5,   // never a pill for an empty label (it drew a small dark square beside the selected icon)
+       
         layout: labelLayout({'text-allow-overlap': false, 'text-ignore-placement': false, 'symbol-sort-key': ['get', 'prio']}),
         paint: labelPaint});
-    m.addLayer({id: 'tar-plane-labels-top', type: 'symbol', source: 'tar-planes', filter: ['==', ['get', 'top'], 1],
+    m.addLayer({id: 'tar-plane-labels-top', type: 'symbol', source: 'tar-planes', filter: ['all', ['==', ['get', 'top'], 1], ['!=', ['get', 'label'], '']],
         layout: labelLayout({'text-allow-overlap': true, 'text-ignore-placement': false}),
         paint: labelPaint});
 

@@ -344,15 +344,16 @@ button.chip:hover { color: var(--text); background: rgba(255,255,255,.12); }
     padding: 0;
 }
 .ol-attribution.ol-control ul {
-    font-family: var(--font-mono);
+    font-family: var(--font-ui);
     font-size: 10px;
-    color: #747474;
+    color: var(--text-3);
     text-shadow: none;
     padding: 0;
     margin: 0;
     background: none;
 }
-.ol-attribution.ol-control ul a { color: #747474; }
+.ol-attribution.ol-control ul a { color: var(--text-3); text-decoration: none; }
+.ol-attribution.ol-control ul a:hover { color: var(--text-2); text-decoration: underline; }
 .ol-attribution.ol-control button { display: none; }
 .ol-attribution.ol-control.ol-collapsed ul { display: block; }
 

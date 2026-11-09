@@ -3115,6 +3115,8 @@ let somethingHighlighted = false;
 function refreshHighlighted() {
     // this is following nearly identical logic, etc, as the refreshSelected function, but doing less junk for the highlighted pane
     let highlighted = HighlightedPlane;
+    // the desktop panel already shows the selected aircraft: hover cards are for the others (phones have no hover card)
+    if (highlighted && highlighted === SelectedPlane) highlighted = null;
 
     if (!highlighted) {
         if (somethingHighlighted)

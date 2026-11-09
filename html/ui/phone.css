@@ -135,3 +135,6 @@ body.phone :is(#phoneSheet, #settings_infoblock) a { display: inline-block; padd
 body.phone :is(#phoneSheet, #settings_infoblock) a.apLink, body.phone #airport_panel a { text-align: left; }
 body.phone .apX, body.phone #selected_infoblock .ibBtn { width: 44px; height: 44px; }
 body.phone .chip { display: inline-flex; align-items: center; }
+
+/* the callsign stays the headline on phones (elevation.css sets the desktop size) */
+@media (max-width: 768px), (pointer: coarse) { #selected_infoblock .ibCallsign { font-size: 22px; font-weight: 700; } }

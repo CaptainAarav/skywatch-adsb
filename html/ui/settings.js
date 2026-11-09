@@ -26,6 +26,7 @@ const SET_ROWS = {
     smoothMove:      ['set_aircraft', 'Smooth movement'],
     terrain3d:       ['set_appearance', 'Terrain in 3D view'],
     liftMapOnSelect: ['set_appearance', 'Lift map when an aircraft is selected'],
+    dimOthers: ['set_appearance', 'Dim other aircraft when one is selected'],
     airportDetail:   ['set_appearance', 'Airport detail (OpenFreeMap tiles)'],
     airportFx:       ['set_appearance', 'Airport detail effects (decorative)'],
     airlineLogos:    ['set_photos', 'Airline logos'],

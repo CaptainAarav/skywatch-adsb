@@ -389,6 +389,8 @@ let airportDetail = true;
 let terrain3d = false;
 // lighten the map land while an aircraft is selected (fades over about 300 ms; off under reduced motion)
 let liftMapOnSelect = !!(window.matchMedia && window.matchMedia('(max-width: 768px), (pointer: coarse)').matches);   // phones only; off on desktop (the map stays its own colour)
+// dim the other aircraft to about 60% while one is selected (off by default)
+let dimOthers = false;
 // aircraft icon colour on the map: 'white' (default) or 'altitude'. Tracks are always coloured by altitude.
 let aircraftColor = 'white';
 // Skywatch ADS-B: airport panel. Weather comes from the recorder's wx.json (no third-party request from the browser);
