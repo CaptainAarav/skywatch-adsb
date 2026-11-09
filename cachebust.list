@@ -45,6 +45,9 @@ ui/airport.css
 ui/palette.css
 ui/palette-rank.js
 ui/palette.js
+ui/alerts.css
+ui/alerts-calc.js
+ui/alerts.js
 ui/history.css
 ui/history.js
 ui/settings.css

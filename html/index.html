@@ -22,6 +22,7 @@
     <link rel="stylesheet" href="ui/instruments.css" type="text/css" />
     <link rel="stylesheet" href="ui/airport.css" type="text/css" />
     <link rel="stylesheet" href="ui/palette.css" type="text/css" />
+    <link rel="stylesheet" href="ui/alerts.css" type="text/css" />
     <link rel="stylesheet" href="ui/components.css" type="text/css" />
     <link rel="stylesheet" href="ui/history.css" type="text/css" />
     <link rel="stylesheet" href="ui/settings.css" type="text/css" />
@@ -465,6 +466,7 @@
             <button type="button" class="setNavBtn" data-sec="table">Table &amp; sidebar</button>
             <button type="button" class="setNavBtn" data-sec="units">Units &amp; altitude</button>
             <button type="button" class="setNavBtn" data-sec="photos">Photos &amp; routes</button>
+            <button type="button" class="setNavBtn" data-sec="alerts">Alerts</button>
             <button type="button" class="setNavBtn" data-sec="advanced">Advanced</button>
             <button type="button" class="setNavBtn" data-sec="about">About</button>
             <button type="button" class="setReset" id="settingsReset">Reset all settings</button>
@@ -547,6 +549,9 @@
                 <p class="setNote">Airline logos are loaded from <span class="mono airlineLogoHost"></span>. They belong to their owners, and loading
                   them shares your IP address with that service. With logos off (or when a logo isn't available) a circle with the airline's three-letter
                   code is shown instead, and nothing is requested.</p>
+              </section>
+              <section class="setSec" data-sec="alerts" hidden>
+                <div id="alertsBody"></div>
               </section>
               <section class="setSec" data-sec="advanced" hidden>
                 <div class="setCols">
@@ -915,6 +920,8 @@
     <script src="ui/airport-panel.js"></script>
     <script src="ui/palette-rank.js"></script>
     <script src="ui/palette.js"></script>
+    <script src="ui/alerts-calc.js"></script>
+    <script src="ui/alerts.js"></script>
     <script src="ui/history.js"></script>
     <script src="ui/settings.js"></script>
     <script src="script.js"></script>

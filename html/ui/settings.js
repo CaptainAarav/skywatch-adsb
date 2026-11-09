@@ -6,7 +6,7 @@
 
 const SET_TITLES = {
     map: 'Map & layers', aircraft: 'Aircraft & labels', table: 'Table & sidebar',
-    units: 'Units & altitude', photos: 'Photos & routes', advanced: 'Advanced', about: 'About',
+    units: 'Units & altitude', photos: 'Photos & routes', alerts: 'Alerts', advanced: 'Advanced', about: 'About',
 };
 
 // Toggle key -> [section list id, label]

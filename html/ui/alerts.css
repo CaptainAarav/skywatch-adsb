@@ -1,0 +1,12 @@
+/* Skywatch ADS-B: Settings > Alerts */
+#alertsBody { display: flex; flex-direction: column; gap: 14px; }
+.alRules { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.alRule { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.08); border-radius: 12px; }
+.alRuleText { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.alRule input[type=checkbox] { accent-color: #fff; width: 16px; height: 16px; }
+.alRule input:focus-visible, .alForm select:focus-visible, .alForm input:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.alForm { display: flex; flex-wrap: wrap; gap: 8px; }
+.alForm select, .alForm input[type=text] { flex: 1 1 140px; min-width: 0; }
+.alSnooze { display: flex; align-items: center; gap: 10px; }
+.alErr:empty { display: none; }
+.alErr { color: #FF6B6B; }
