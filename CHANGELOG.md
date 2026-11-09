@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+- Own base map style on OpenFreeMap tiles with VersaTiles fallback and a banner; CARTO opt-in; no OpenStreetMap raster tiles.
+- Shared components (toast, banner, dialog, empty state, tooltip) and a connection banner.
+- Airport night look, weather rings on airport pins with hover card, command palette (Ctrl/Cmd-K).
+- Alerts: browser watchlist (Settings > Alerts) and an optional ntfy sender in the recorder.
+- Real terrain in 3D (AWS Open Data elevation tiles) with terrain-aware altitude lift.
+- Coverage plot, inferred recent movements, rain radar playback (off by default).
+- README rewritten: install, migration, FAQ, privacy and provider tables.
+
 ## 0.1.0
 
 First public release of Skywatch ADS-B, a fork of tar1090 by wiedehopf.

@@ -52,7 +52,7 @@ against ultrafeeder (readsb 3.16) and headless Chromium only.
    The usual `TAR1090_*` variables (`TAR1090_DEFAULTCENTERLAT`, `TAR1090_DEFAULTCENTERLON`, `TAR1090_DEFAULTZOOMLVL`, ...) keep working.
 3. Recreate the container: `docker compose up -d`.
 4. Hard-refresh the browser (Ctrl+Shift+R).
-5. **Confirm it is this interface**: the page shows the floating glass toolbar, `curl -s http://HOST:PORT/ | grep -c ui/palette.js` prints `1`, and Settings > About shows the web interface version.
+5. **Confirm it is this interface**: the page shows the floating glass toolbar, `curl -s http://HOST:PORT/ | grep -c ui/palette-rank` prints `1`, and `curl -s http://HOST:PORT/version.json` shows a version ending in `_dirty` (that is how a mounted source tree is reported; stock tar1090 shows no suffix).
 
 **Roll back to stock tar1090:** remove the `/var/tar1090_git_source` volume line and run `docker compose up -d --force-recreate ultrafeeder`. The container then installs upstream tar1090 again. Your `TAR1090_*` variables and the receiver data are untouched.
 
@@ -66,7 +66,7 @@ To deploy later changes to this clone without recreating the container: `scripts
 | b) tar1090 installed with wiedehopf's `install.sh` | **No** |
 | c) the sdr-enthusiasts `docker-tar1090` container | **No** |
 
-**a) ultrafeeder.** Exactly the install above. What changes: the web files served at `/`. What stays: the decoder, `TAR1090_*` settings, `globe_history` traces and your feeders. Rollback: remove the volume line and recreate (above).
+**a) ultrafeeder.** Exactly the install above. Tested on 2026-11-09 from a fresh clone of this repository in a separate container on another port (page title and files served; then rollback by recreating without the mount returned stock tar1090 3.14.1825). What changes: the web files served at `/`. What stays: the decoder, `TAR1090_*` settings, `globe_history` traces and your feeders. Rollback: remove the volume line and recreate (above).
 
 **b) Standalone tar1090 (untested).** `install.sh` takes an optional fourth argument, a local source tree to install instead of pulling upstream:
 
