@@ -30,7 +30,10 @@
         const m = typeof MLR != 'undefined' && MLR.map;
         if (!m || !MLR.ready || !m.getLayer('tar-planes')) return;
         const on = !!dimOthers && document.body.classList.contains('infoOpen');
-        try { m.setPaintProperty('tar-planes', 'icon-opacity', on ? ['case', ['==', ['get', 'sel'], 1], 1, 0.6] : 1); } catch (e) { /* style changing */ }
+        const op = on ? ['case', ['==', ['get', 'sel'], 1], 1, 0.6] : 1;
+        for (const id of ['tar-planes', 'tar-plane-labels', 'tar-plane-labels-top']) {
+            try { if (m.getLayer(id)) m.setPaintProperty(id, 'icon-opacity', op); } catch (e) { /* style changing */ }
+        }
     }
     jQuery(function () {
         new Toggle({key: 'dimOthers', display: 'Dim other aircraft when one is selected', container: '#set_appearance', init: dimOthers,

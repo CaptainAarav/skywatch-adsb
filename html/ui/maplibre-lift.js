@@ -110,8 +110,6 @@ MLR.liftCamera = function () {
         up.push({id: e.id, newGeometry: {type: 'Point', coordinates: l}});
         const f = this.liftFeats(e, g, l);
         if (f) { addA.push(f.s); addB.push(f.h); }
-        const mk = this.pills.get(p.icao);
-        if (mk) mk.setLngLat(l);
         n++;
     }
     try {

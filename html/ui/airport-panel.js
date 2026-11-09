@@ -438,7 +438,7 @@ const AIRPT = (function () {
         const head = h('div', 'apHead'), t = h('div', 'apTitle');
         t.appendChild(h('div', 'apIcao mono', r.icao));
         t.appendChild(h('div', 'apName', r.name));
-        const x = h('button', 'apX'); x.type = 'button'; x.setAttribute('aria-label', 'Close airport panel'); x.title = 'Close (Esc)';
+        const x = h('button', 'btn sk-x'); x.type = 'button'; x.setAttribute('aria-label', 'Close airport panel'); x.title = 'Close (Esc)';
         x.appendChild(sv('svg', {viewBox: '0 0 24 24', width: 16, height: 16, fill: 'none', stroke: 'currentColor', 'stroke-width': 2, 'stroke-linecap': 'round'})).appendChild(sv('path', {d: 'M6 6l12 12M18 6L6 18'}));
         x.addEventListener('click', close);
         add(head, t, x);
@@ -608,7 +608,7 @@ const AIRPT = (function () {
     function mapClick(e) {
         if (typeof MLR === 'undefined' || !MLR.map) return false;
         const m = MLR.map, x = e.point.x, y = e.point.y;
-        const pinIds = ['tar-ap-pin', 'tar-ap-pin-name'].filter(id => m.getLayer(id));
+        const pinIds = (MLR.airportTierLayers ? MLR.airportTierLayers() : []).filter(id => m.getLayer(id));
         let feats = pinIds.length ? m.queryRenderedFeatures([[x - 16, y - 16], [x + 16, y + 16]], {layers: pinIds}) : [];
         const go = (hit) => { load().then(() => { const row = hit(); if (row) open(row); }); return true; };
         if (feats.length) {

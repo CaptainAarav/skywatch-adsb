@@ -12,8 +12,7 @@ body.panelsHidden #airport_panel { display: none !important; }
 .apHead { display: flex; gap: 12px; align-items: flex-start; }
 .apIcao { font-size: 34px; font-weight: 700; letter-spacing: .02em; line-height: 1; }
 .apName { color: var(--muted); margin-top: 4px; }
-.apX { margin-left: auto; flex: none; width: 36px; height: 36px; border-radius: 50%; background: var(--tile); border: 0; color: var(--muted); display: grid; place-items: center; cursor: pointer; }
-.apX:hover { background: var(--tile-hover); color: var(--text); }
+#airport_panel .sk-x { margin-left: auto; }
 .apChips { display: flex; flex-wrap: wrap; gap: 6px; }
 .apChip { padding: 4px 10px; border-radius: 999px; background: var(--tile); border: 1px solid var(--line); font-size: 12px; }
 .apChip.k { color: var(--muted); }

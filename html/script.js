@@ -4489,22 +4489,15 @@ function onJump(e) {
     }
 }
 
+// one toast component (SKYUI.toast) for search warnings; a single live instance is replaced, never stacked
+let searchWarningToast = null;
 function hideSearchWarning() {
-    const searchWarning = jQuery('#search_warning');
-    if (searchWarning.css('display') !== 'none') {
-        searchWarning.hide('slow');
-    }
+    if (searchWarningToast) { searchWarningToast.close(); searchWarningToast = null; }
 }
 
 function showSearchWarning(message) {
-    const searchWarning = jQuery('#search_warning');
-    searchWarning.text(message)
-    if (searchWarning.css('display') === 'none') {
-        searchWarning.show();
-    }
-
-    //auto hide after 15 seconds
-    setTimeout(() => hideSearchWarning(), 15000);
+    hideSearchWarning();
+    searchWarningToast = SKYUI.toast(message, {kind: 'warn', ms: 15000});
 }
 
 function onResetAltitudeFilter(e) {

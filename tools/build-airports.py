@@ -7,7 +7,8 @@ Closed airports and heliports are dropped, and so are small fields without an IA
   {v, built, src, types[], countries{code:name}, regions{code:name}, a:[row,...]}
   row = [ident, iata, typeIdx, name, lat, lon, elev_ft, country, region, municipality, wikipedia_path,
          [[le, he, length_ft, width_ft, surface, lighted, le_hdg_true, he_hdg_true, le_lat, le_lon, he_lat, he_lon], ...]
-  (runway end coordinates are integers: degrees x 10000), [[type, mhz], ...]]
+  (runway end coordinates are integers: degrees x 10000), [[type, mhz], ...], scheduled_service 0|1]
+  (scheduled_service is the OurAirports flag; the map's airport label tiers use it, see html/ui/airport-tiers.js)
 Note: OurAirports has no ILS data (its navaids file lists NDB/VOR/DME/TACAN only), so none is output.
 """
 import csv, gzip, io, json, os, sys, time, urllib.request, argparse
@@ -61,7 +62,8 @@ def main():
         if r['type'] not in TYPES[:2] and not iata and not (len(code) == 4 and code.isalpha()):
             continue
         row = [code, iata, TYPES.index(r['type']), r['name'], round(lat, 5), round(lon, 5),
-               num(r['elevation_ft'], int), r['iso_country'], r['iso_region'], r['municipality'], wiki, [], []]
+               num(r['elevation_ft'], int), r['iso_country'], r['iso_region'], r['municipality'], wiki, [], [],
+               1 if r['scheduled_service'] == 'yes' else 0]
         by_id[r['id']] = row
         ap_rows.append(row)
 

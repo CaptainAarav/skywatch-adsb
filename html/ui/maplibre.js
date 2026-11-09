@@ -23,7 +23,6 @@ const MLR = {
     ready: false,                    // style loaded and our layers installed
     planes: new Map(),               // icao -> {plane, icon, rot, scale, label, z, pill, feat}
     trails: new Map(),               // icao -> {segs: [{seg, feat}], labels: [feat], elastic, heading, shown}
-    pills: new Map(),                // icao -> maplibregl.Marker (selected aircraft label)
     icons: new Map(),                // image id -> {shape, fill, sw}
     iconData: new Map(),             // image id -> ImageData (kept across style changes)
     pendingIcons: new Set(),
@@ -254,6 +253,7 @@ MLR.install = function () {
 
     // airport detail (apron, taxiways, runways, stands) goes under the aircraft layers
     try { this.installAirports && this.installAirports(); } catch (e) { console.warn('airport layers:', e); }
+    try { this.installAirportPins && this.installAirportPins(); } catch (e) { console.warn('airport pins:', e); }
     for (const l of layers.getArray())
         if (l.get('type') === 'overlay' && l.get('kind') !== 'builtin' && l.visible) this.addOverlay(l);
 
@@ -289,16 +289,14 @@ MLR.install = function () {
         paint: {'circle-color': ['get', 'color'], 'circle-radius': ['get', 'w'], 'circle-stroke-color': 'rgba(0,0,0,0.6)', 'circle-stroke-width': 1}});
     m.addLayer({id: 'tar-trail-label-dots', type: 'circle', source: 'tar-trail-labels',
         paint: {'circle-color': '#000', 'circle-radius': 2 * globalScale}});
-    m.addLayer({id: 'tar-trail-labels', type: 'symbol', source: 'tar-trail-labels',
-        layout: {'text-field': ['get', 'label'], 'text-font': ML_FONT, 'text-size': fs, 'text-anchor': ['get', 'anchor'],
-            'text-justify': 'left', 'text-offset': ['get', 'off'], 'text-allow-overlap': false, 'text-optional': true,
-            'symbol-sort-key': ['get', 'z']},
-        paint: {'text-color': ['get', 'tcolor'], 'text-halo-color': 'rgba(0,0,0,0.75)', 'text-halo-width': 1.6}});
+    m.addLayer({id: 'tar-trail-labels', type: 'symbol', source: 'tar-trail-labels', filter: ['!=', ['get', 'limg'], ''],
+        layout: {'icon-image': ['get', 'limg'], 'icon-anchor': ['get', 'anchor'], 'icon-offset': ['get', 'loff'], 'icon-size': 1, 'icon-padding': 1,
+            'icon-allow-overlap': false, 'icon-rotation-alignment': 'viewport', 'icon-pitch-alignment': 'viewport', 'symbol-sort-key': ['get', 'z']}});
 
     m.addLayer({id: 'tar-location', type: 'circle', source: 'tar-location',
         paint: {'circle-radius': 5, 'circle-color': '#fff', 'circle-stroke-color': '#000', 'circle-stroke-width': 2}});
 
-    this.addLabelPillImage();
+    this.lblReset();
     // aircraft: icons, then labels in their own layers so label collision has its own priority.
     try { this.installLift && this.installLift(); } catch (e) { console.warn('lift layers:', e); }
     try { this.installSelection && this.installSelection(undefined); } catch (e) { console.warn('selection layers:', e); }
@@ -315,30 +313,21 @@ MLR.install = function () {
             'icon-rotate': ['get', 'rot'],
             'icon-rotation-alignment': 'map', 'icon-pitch-alignment': 'map',
             // aircraft always draw, but they take part in collision so the map's own labels give way to them
-            'icon-allow-overlap': true, 'icon-ignore-placement': false,
+            'icon-allow-overlap': true, 'icon-ignore-placement': true,
             'symbol-sort-key': ['get', 'z'],
         }});
-    // label = airline logo (when there is a real one) + text. A label that would overlap another is hidden;
-    // the hovered aircraft's label (layer below) always shows.
-    const labelLayout = (extra) => Object.assign({
-        'text-field': ['case', ['==', ['get', 'logo'], ''],
-            ['format', ['get', 'label'], {}],
-            ['format', ['image', ['get', 'logo']], {'vertical-align': 'center'}, ' ', {}, ['get', 'label'], {}]],
-        'text-font': ML_FONT, 'text-size': fs,
-        'text-anchor': labels_top ? 'bottom-left' : 'top-left', 'text-justify': 'left',
-        'text-offset': ['get', 'toff'],
-        // dark glass pill behind the text (a stretchable image fitted to the text box)
-        'icon-image': 'sw-label-pill', 'icon-text-fit': 'both', 'icon-text-fit-padding': [2, 5, 2, 5], 'icon-allow-overlap': true, 'icon-ignore-placement': true,
+    // ONE label pill (ui/label-sprite.js): a baked sprite placed as an icon, right of the aircraft, vertically centred.
+    // Both layers sit BELOW the aircraft icons, so an icon is never covered by a label; the icons ignore placement, so a label is only
+    // ever hidden by another label. Priority (symbol-sort-key): selected, then lowest altitude, then closest to the screen centre.
+    // The 'top' layer (selected, followed, hovered) allows overlap, so those labels are always shown.
+    const pillLayout = (extra) => Object.assign({
+        'icon-image': ['get', 'limg'], 'icon-anchor': 'left', 'icon-offset': ['get', 'loff'], 'icon-size': 1, 'icon-padding': 1,
+        'icon-rotation-alignment': 'viewport', 'icon-pitch-alignment': 'viewport',
     }, extra);
-    const labelPaint = {'text-color': '#fff', 'text-halo-color': 'rgba(0,0,0,0.85)', 'text-halo-width': 0};
-    // labels are hidden below zoom 6.5 (tar1090 numbering, MapLibre 5.5); the hovered/selected one always shows
-    m.addLayer({id: 'tar-plane-labels', type: 'symbol', source: 'tar-planes', filter: ['all', ['==', ['get', 'top'], 0], ['!=', ['get', 'label'], '']], minzoom: 5.5,   // never a pill for an empty label (it drew a small dark square beside the selected icon)
-       
-        layout: labelLayout({'text-allow-overlap': false, 'text-ignore-placement': false, 'symbol-sort-key': ['get', 'prio']}),
-        paint: labelPaint});
-    m.addLayer({id: 'tar-plane-labels-top', type: 'symbol', source: 'tar-planes', filter: ['all', ['==', ['get', 'top'], 1], ['!=', ['get', 'label'], '']],
-        layout: labelLayout({'text-allow-overlap': true, 'text-ignore-placement': false}),
-        paint: labelPaint});
+    m.addLayer({id: 'tar-plane-labels', type: 'symbol', source: 'tar-planes', filter: ['all', ['==', ['get', 'top'], 0], ['!=', ['get', 'limg'], '']], minzoom: 5.5,
+        layout: pillLayout({'icon-allow-overlap': false, 'icon-ignore-placement': false, 'symbol-sort-key': ['get', 'lprio']})}, 'tar-planes');
+    m.addLayer({id: 'tar-plane-labels-top', type: 'symbol', source: 'tar-planes', filter: ['all', ['==', ['get', 'top'], 1], ['!=', ['get', 'limg'], '']],
+        layout: pillLayout({'icon-allow-overlap': true, 'icon-ignore-placement': false})}, 'tar-planes');
 
     this.ready = true;
     this.sync3DLayers();
@@ -349,16 +338,47 @@ MLR.install = function () {
     this.updateAttribution();
 };
 
-// 9-slice rounded dark glass rectangle used behind aircraft labels
-MLR.addLabelPillImage = function () {
-    const m = this.map;
-    if (m.hasImage('sw-label-pill')) return;
-    const dpr = 2, w = 20, h = 20, c = document.createElement('canvas');
-    c.width = w * dpr; c.height = h * dpr;
-    const x = c.getContext('2d');
-    x.fillStyle = 'rgba(0,0,0,0.72)'; x.strokeStyle = 'rgba(255,255,255,0.10)'; x.lineWidth = dpr;
-    x.beginPath(); x.roundRect(dpr / 2, dpr / 2, w * dpr - dpr, h * dpr - dpr, 6 * dpr); x.fill(); x.stroke();
-    m.addImage('sw-label-pill', x.getImageData(0, 0, c.width, c.height), {pixelRatio: dpr, stretchX: [[7, 13]], stretchY: [[7, 13]], content: [7, 7, 13, 13]});
+// ---- label sprites (ui/label-sprite.js) ----
+// id -> {spec, dpr, used}. Images are added to the map on first use and dropped when unused for a few flushes.
+MLR.lbl = new Map(); MLR.lblTick = 0; MLR.trailImgs = new Set();
+MLR.lblReset = function () { this.lbl.clear(); this.lblTick = 0; this.trailImgs = new Set(); };
+MLR.labelImage = function (spec) {
+    const dpr = Math.max(2, mlDpr());
+    spec.fontPx = Math.round(LABELS.STYLE.fontPx * globalScale * (typeof labelScale == 'number' ? labelScale : 1));
+    if (!this.lblFontOk) {
+        if (document.fonts && document.fonts.check(LABELS.STYLE.fontWeight + ' 13px Inter')) this.lblFontOk = true;
+        else if (document.fonts && !this.lblFontWait) {
+            this.lblFontWait = true;
+            document.fonts.load(LABELS.STYLE.fontWeight + ' 13px Inter').then(() => { this.lblFontOk = true; this.lblClearImages(); this.touch('planes'); this.touch('trails'); }, () => { this.lblFontOk = true; });
+        }
+    }
+    const id = LABELS.spriteId(spec, dpr), hit = this.lbl.get(id);
+    if (hit) { hit.used = this.lblTick; return this.map.hasImage(id) ? id : (this.lblAdd(id, hit) ? id : ''); }
+    const ent = {spec: {lines: spec.lines.slice(), selected: !!spec.selected, fontPx: spec.fontPx, logo: spec.logo || null, mono: spec.mono || null, color: spec.color || null}, dpr, used: this.lblTick};
+    this.lbl.set(id, ent);
+    return this.lblAdd(id, ent) ? id : '';
+};
+MLR.lblAdd = function (id, ent) {
+    try {
+        const r = LABELS.render(ent.spec, ent.dpr);
+        ent.w = r.w; ent.h = r.h;
+        if (!this.map.hasImage(id)) this.map.addImage(id, r.image, {pixelRatio: ent.dpr});
+        return true;
+    } catch (err) { return false; }       // style changing
+};
+MLR.lblClearImages = function () {
+    for (const id of this.lbl.keys()) { try { if (this.map.hasImage(id)) this.map.removeImage(id); } catch (err) { /* ignore */ } }
+    this.lbl.clear();
+};
+// drop sprites no label used for the last few flushes (trail labels are kept while shown)
+MLR.lblSweep = function () {
+    this.lblTick++;
+    if (this.lbl.size < 240) return;
+    for (const [id, ent] of this.lbl) {
+        if (ent.used >= this.lblTick - 3 || this.trailImgs.has(id)) continue;
+        try { if (this.map.hasImage(id)) this.map.removeImage(id); } catch (err) { /* ignore */ }
+        this.lbl.delete(id);
+    }
 };
 
 MLR.dashArray = function (dash, width) {
@@ -371,8 +391,6 @@ MLR.syncBuiltin = function (l) {
     const ids = ML_LAYER_IDS[l.get('name')] || [];
     for (const id of ids)
         if (this.map.getLayer(id)) this.map.setLayoutProperty(id, 'visibility', l.visible ? 'visible' : 'none');
-    const pills = document.querySelectorAll('.mlPill');
-    if (l.get('name') === 'iconLayer') for (const p of pills) p.style.display = l.visible ? '' : 'none';
 };
 
 MLR.syncOverlay = function (l) {
@@ -571,17 +589,17 @@ MLR.touch = function (kind) {
 };
 
 // called from PlaneObject.updateIcon(): colour, shape and label are decided by the data layer
-MLR.setPlane = function (p, fillColor, svgKey, labelText, outline) {
+MLR.setPlane = function (p, fillColor, svgKey, labelSpec, outline) {
     let e = this.planes.get(p.icao);
     if (!e) this.planes.set(p.icao, e = {plane: p, feat: null});
     if (!this.icons.has(svgKey)) this.icons.set(svgKey, {shape: p.shape, fill: fillColor, sw: p.strokeWidth, outline: outline || null});
-    const pill = !!(p.selected && !SelectedAllPlanes);
+    const sel = !!(p.selected && !SelectedAllPlanes);
     e.icon = svgKey;
     e.rot = p.shape.noRotate ? 0 : p.rotation;
-    e.scale = p.scale * (pill ? 1.3 : 1);   // the selected aircraft is a little larger
-    e.label = labelText || '';
-    e.pill = pill && !!labelText;
-    e.sel = pill;
+    e.scale = p.scale * (sel ? 1.3 : 1);   // the selected aircraft is a little larger
+    e.labelSpec = labelSpec && labelSpec.lines && labelSpec.lines.length ? labelSpec : null;
+    e.label = e.labelSpec ? e.labelSpec.lines.join('\n') : '';
+    e.sel = sel;
     e.z = p.zIndex || 0;
     e.w = p.shape.w;
     this.touch('planes');
@@ -638,42 +656,6 @@ MLR.loadIcon = function (id) {
     img.src = svgShapeToURI(d.shape, d.fill, d.outline || OutlineADSBColor, d.sw);
 };
 
-// the selected aircraft's white label pill is a DOM element: MapLibre symbol labels have no background box
-MLR.updatePills = function (list) {
-    const want = new Set();
-    for (const e of list) {
-        if (!e.pill) continue;
-        const p = e.plane;
-        if (!p.proj) continue;
-        want.add(p.icao);
-        const dll = this.drawnLL(e);
-        let mk = this.pills.get(p.icao);
-        const dx = (e.w * 0.5 * 0.74 * e.scale * this.iconZoomFactor(this.map.getZoom())) + 10;
-        if (!mk) {
-            const el = document.createElement('div');
-            el.className = 'mlPill';
-            mk = new maplibregl.Marker({element: el, anchor: 'left', offset: [dx, 0]});
-            mk.setLngLat(dll);
-            mk.addTo(this.map);
-            this.pills.set(p.icao, mk);
-        }
-        mk.setLngLat(dll);
-        mk.setOffset([dx, 0]);
-        const el = mk.getElement();
-        const logoHtml = airlineLogoHTML(airlineFlight(p), 18);
-        const key = logoHtml + '|' + e.label;
-        if (el.dataset.t !== key) {
-            el.dataset.t = key;
-            el.innerHTML = logoHtml + '<span class="mlPillText"></span>';
-            el.querySelector('.mlPillText').textContent = e.label;
-        }
-        el.style.font = selectedLabelFont || 'bold 12px monospace';
-    }
-    for (const [hex, mk] of this.pills) {
-        if (!want.has(hex)) { mk.remove(); this.pills.delete(hex); }
-    }
-};
-
 MLR.idSeq = 0;
 MLR.hoverEntry = function (hov) { return hov ? this.planes.get(hov.icao) : null; };
 
@@ -684,47 +666,46 @@ MLR.flush = function () {
     this.dirty = {};
     if (d.planes) {
         const fs = 10 * globalScale * labelScale;
-        const lpx = Math.round(10 * globalScale);
-        if (Math.abs(fs - this.labelPx) > 0.01) {
-            this.labelPx = fs;
-            for (const l of ['tar-plane-labels', 'tar-plane-labels-top']) m.setLayoutProperty(l, 'text-size', fs);
-            m.setLayoutProperty('tar-trail-labels', 'text-size', fs);
-        }
-        const feats = [], list = [];
+        this.labelPx = fs;
+        const feats = [];
         // with many labels in view show the callsign only until zoomed in
         let nLabels = 0;
         for (const e of this.planes.values()) if (e.label && e.plane.inView) nLabels++;
         this.callsignOnly = nLabels > 40 && m.getZoom() < 8.5;
         const hov = (typeof HighlightedPlane != 'undefined') ? HighlightedPlane : null;
+        const zf = this.iconZoomFactor(m.getZoom()), ctr = m.project(m.getCenter());
+        const logosOn = airlineLogosOn();
         for (const e of this.planes.values()) {
             const p = e.plane;
             if (!p.proj) continue;
-            list.push(e);
             if (!this.iconData.has(e.icon) && !this.map.hasImage(e.icon)) this.loadIcon(e.icon);
             if (!e.id) e.id = ++this.idSeq;
             const lonlat = this.drawnLL(e);
-            const zf = this.iconZoomFactor(m.getZoom());
-            const oxPx = e.w * 0.5 * 0.74 * e.scale * zf;
-            const oyPx = (labels_top ? e.w * -0.3 : e.w * 0.5) * 0.74 * e.scale * zf;
-            // airline logo in front of the label, once the real logo has loaded
-            let logo = '';
-            if (e.label && !e.pill && airlineLogosOn()) {
-                const info = airlineFlight(p), st = info && AIRLOGO.get(info);
-                if (st && st.state === 'ok' && st.bitmap) logo = 'logo-' + info.icao + '-' + lpx;
-                else if (info) logo = 'mono-' + info.icao + '-' + lpx;   // no logo (yet / at all): monogram so labels line up
+            const isTop = (hov && p === hov) || e.sel;
+            let limg = '', loff = [0, 0];
+            if (e.labelSpec) {
+                const spec = Object.assign({}, e.labelSpec, {selected: e.sel});
+                if (this.callsignOnly && !isTop) spec.lines = spec.lines.slice(0, 1);
+                if (spec.logo && logosOn) {                          // airline chip: the real logo once loaded, a monogram until then
+                    const info = airlineFlight(p), st = info && AIRLOGO.get(info);
+                    if (st && st.state === 'ok' && st.bitmap) { spec.logo = AIRLOGO.mapImage(info.icao, Math.round(LABELS.STYLE.chip * globalScale), Math.max(2, mlDpr())); spec.logoKey = 'L' + info.icao; }
+                    else if (info) { spec.logo = null; spec.mono = info.icao; spec.logoKey = 'M' + info.icao; }
+                    else spec.logo = null;
+                } else spec.logo = null;
+                limg = this.labelImage(spec);
+                loff = LABELS.pillOffset(e.w, e.scale, zf);
             }
-            let label = e.pill ? '' : e.label;
-            if (label && this.callsignOnly && e !== this.hoverEntry(hov)) label = label.split('\n').pop();
+            const sp = m.project(lonlat);
+            const lprio = LABELS.sortKey({pinned: isTop, altFt: typeof p.altitude == 'number' ? p.altitude : null, distPx: Math.hypot(sp.x - ctr.x, sp.y - ctr.y)});
             if (!this.smoothActive() || e.rotDraw == null) e.rotDraw = e.rot;
-            feats.push({type: 'Feature', id: e.id, geometry: {type: 'Point', coordinates: lonlat},
-                properties: {hex: p.icao, icon: e.icon, rot: e.rotDraw, scale: e.scale, label, z: e.z, prio: -e.z, sel: e.sel ? 1 : 0,
-                    top: (hov && p === hov) ? 1 : 0, toff: [oxPx / fs, oyPx / fs], logo}});
+            feats.push({type: 'Feature', geometry: {type: 'Point', coordinates: lonlat}, id: e.id,
+                properties: {hex: p.icao, icon: e.icon, rot: e.rotDraw, scale: e.scale, limg, loff, lprio, z: e.z, sel: e.sel ? 1 : 0, top: isTop ? 1 : 0}});
             e.feat = true;
         }
         const src = m.getSource('tar-planes');
         src && src.setData({type: 'FeatureCollection', features: feats});
         this.liftFlushAll && this.liftFlushAll();
-        this.updatePills(list);
+        this.lblSweep();
     }
     if (d.trails) this.flushTrails();
     this.flushSelection && this.flushSelection();
@@ -785,7 +766,7 @@ function mlSegCoords(seg) {
 }
 
 MLR.flushTrails = function () {
-    const lines = [], labels = [];
+    const lines = [], labels = [], used = new Set();
     for (const [thex, t] of this.trails) {
         if (!t.shown) continue;
         // the selected aircraft's track is drawn as one gradient line instead (ui/maplibre-route.js)
@@ -798,8 +779,18 @@ MLR.flushTrails = function () {
         }
         if (t.elastic && !hidden) lines.push(t.elastic);
         if (t.heading) lines.push(t.heading);
-        for (const f of t.labels) labels.push(f);
+        for (const f of t.labels) {
+            const pr = f.properties;
+            const spec = LABELS.fromText(pr.label, {});
+            spec.color = pr.tcolor !== '#ffffff' ? pr.tcolor : null;
+            spec.logoKey = pr.tcolor;
+            const id = spec.lines.length ? this.labelImage(spec) : '';
+            pr.limg = id; pr.loff = pr.offpx;
+            if (id) used.add(id);
+            labels.push(f);
+        }
     }
+    this.trailImgs = used;
     const a = this.map.getSource('tar-trails'), b = this.map.getSource('tar-trail-labels');
     a && a.setData({type: 'FeatureCollection', features: lines});
     b && b.setData({type: 'FeatureCollection', features: labels});
@@ -933,13 +924,12 @@ PlaneObject.prototype.mlTrailLabel = function (seg, i) {
     if (seg.leg == 'start') { color = '#88CC88'; z += 123499; }
     if (seg.leg == 'end') { color = '#8888CC'; z += 123455; }
     const otherDiag = seg.track != null && ((seg.track > 270 && seg.track < 360) || (seg.track > 90 && seg.track < 180));
-    const fs = Math.max(8, MLR.labelPx);
     const c = seg.fixed.getFirstCoordinate();
     if (!c) return null;
     return {type: 'Feature', geometry: {type: 'Point', coordinates: mapgeo.toLonLat(c)},
         properties: {hex: this.icao, label: text, tcolor: color, z,
             anchor: otherDiag ? 'bottom-left' : 'top-left',
-            off: [(otherDiag ? 4 : 8) * globalScale / fs, (otherDiag ? -4 : 8) * globalScale / fs], ts: Number(seg.ts)}};
+            offpx: [(otherDiag ? 4 : 8) * globalScale, (otherDiag ? -4 : 8) * globalScale], ts: Number(seg.ts)}};
 };
 
 // ------------------------------------------------------------------------------------------

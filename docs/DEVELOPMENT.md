@@ -606,3 +606,23 @@ Cost (headless, software GL): camera-move refresh of 54 aircraft = 0.50 ms JS; s
 ### Map provider failures
 `MLR.onError` keeps the last 30 tile failures (`MLR.tileFailures`: status, URL) and logs one `console.warn` per 15 s. Errors whose URL belongs to a different provider than the current style (requests still in flight after a switch) are ignored, which stops one provider's failure being charged to the next. If every provider fails the first is retried after 45 s.
 
+
+## UI components: one implementation each
+
+Desktop and phone render the same components; only layout and density change (CSS container queries and `body[data-snap]`). Lines removed are from `git diff --stat` of the working tree against the previous commit (net deletions per file).
+
+| File | What was merged or deleted | Lines removed |
+| --- | --- | --- |
+| `html/ui/infoblock.css` | phone-only instrument tiles (`ibT6`, `ibPhoneInst`, `ibRow2`), old phone selected-sheet block | 125 |
+| `html/ui/instruments.css` | one `.ibInstGrid` with `data-component` altitude/speed/direction and summary/detail parts replaces the separate phone grid | net -78 +… (rewritten) |
+| `html/ui/maplibre-airports.js` | vector-tile airport pins, flag-image hook, `airportFlagExpr`, `chipZoom`, duplicate pin card, replaced by `maplibre-airport-pins.js` (tiered layers) | 137 |
+| `html/ui/maplibre.js` | DOM label pills (`updatePills`, `pills`); labels are now sprites from `label-sprite.js` | 208 (net) |
+| `html/ui/maplibre-motion.js`, `maplibre-lift.js` | pill marker code | 6 |
+| `html/ui/maplibre.css`, `airlines.css` | `.mlPill`, `.mlPill .alogo` | 17 |
+| close controls | `.setClose`, `.apX`, `.gClose`, `.popoverClose`, per-surface close buttons: all use the one `.sk-x` | ~40 across `settings.css`, `airport.css`, `shell.css`, `phone.css`, `elevation.css` |
+| `html/script.js`, `index.html`, `shell.css`, `elevation.css`, `phone.css` | `#search_warning` banner and its jQuery show/hide: `showSearchWarning` now calls `SKYUI.toast` | ~25 |
+| `html/ui/palette.css`, `palette.js` | `.palEmpty` replaced by `.sk-empty` | 1 |
+
+Not merged, on purpose: the airport panel's `.apChip` / `.apPill` (small status chips with their own density) and the phone `.pcBtn` map buttons versus the desktop control stack (different placement and touch size; same actions and handlers).
+
+`tools/test/one-component-set.test.js` fails if any retired class, function or file name above reappears, or if a `data-component` set is duplicated in `index.html`.

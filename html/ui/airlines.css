@@ -30,7 +30,6 @@
 .alogo.sm { margin-right: 6px; }
 .alogo.head { margin-right: 10px; }
 .ibTitleRow .alogo { align-self: center; }
-.mlPill .alogo { --s: 18px; margin-right: 6px; vertical-align: -4px; border-color: rgba(0,0,0,.25); }
 
 #highlighted_logo { display: inline-flex; vertical-align: middle; }
 #highlighted_logo .alogo { margin-right: 8px; }

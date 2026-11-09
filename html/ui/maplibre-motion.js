@@ -226,10 +226,6 @@ MLR.motionTick = function (now) {
         if (lf !== ll) { const f = this.liftFeats(e, ll, lf); if (f) { stemU.push({id: e.id, newGeometry: f.s.geometry}); shU.push({id: e.id, newGeometry: f.h.geometry}); } }
         if (rotChanged) u.addOrUpdateProperties = [{key: 'rot', value: e.rotDraw}];
         updates.push(u);
-        if (isHot) {
-            const mk = this.pills.get(p.icao);
-            if (mk) mk.setLngLat(lf);
-        }
     }
     if (updates.length) {
         try {

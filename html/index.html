@@ -101,7 +101,6 @@
 
       <div id="selected_infoblock" aria-label="Selected aircraft">
         <!-- Skywatch ADS-B: selected aircraft panel (mockups 01 compact, 03 wide, 05 phone sheet). Rendered by ui/infoblock.js -->
-        <button type="button" class="sheetHandle phoneOnly" id="sheetHandle" aria-label="Show all details" aria-expanded="false"></button>
         <div class="ibHead">
           <div class="ibPhotoSlot wideOnly" id="ib_photo_wide"></div>
           <div class="ibHeadMain">
@@ -111,22 +110,19 @@
               <span id="ib_hex_w" class="ibHexW mono wideOnly" title="ICAO hex id"></span>
               <span id="ib_dbflags" class="ibDbFlags"></span>
               <span class="ibHeadBtns">
-                <span class="ibHeadSrc phoneOnly" id="ib_head_src"></span>
-                <button type="button" class="btn ibBtn phoneOnly" id="ib_p_share" aria-label="Share this aircraft">
+                <button type="button" class="btn ibBtn" id="ib_p_share" aria-label="Share this aircraft">
                   <svg aria-hidden="true" class="ico" width="18" height="18" viewBox="0 0 24 24"><path d="M12 15V4M8 8l4-4 4 4M5 12v7h14v-7"/></svg>
                 </button>
                 <button type="button" class="btn ibBtn wideOnly" id="ib_collapse" aria-label="Collapse to compact card" title="Compact card">
                   <svg aria-hidden="true" class="ico" width="16" height="16" viewBox="0 0 24 24"><path d="M9 4H4v5M15 20h5v-5M4 4l6 6M20 20l-6-6"/></svg>
                 </button>
-                <button type="button" class="btn ibBtn" id="infoblock_close" aria-label="Close" title="Close (Esc)">
-                  <svg aria-hidden="true" class="ico compactOnly" width="16" height="16" viewBox="0 0 24 24"><path d="m15 6-6 6 6 6"/></svg>
-                  <svg aria-hidden="true" class="ico wideOnly" width="16" height="16" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                <button type="button" class="btn sk-x" id="infoblock_close" aria-label="Close" title="Close (Esc)">
+                  <svg aria-hidden="true" class="ico" width="16" height="16" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>
                 </button>
               </span>
             </div>
             <div class="ibSub compactOnly" id="ib_sub"></div>
-            <div class="ibSub phoneOnly" id="ib_sub_phone"></div>
-            <div class="ibPhoneRow phoneOnly" id="ib_p_row"><span class="ibPType" id="ib_p_type"></span><span class="ibPSpd" id="ib_p_spd"></span></div>
+            <p class="ibStatusLine compactOnly" id="ib_status" hidden></p>
             <div class="ibLine1 wideOnly" id="ib_line1"></div>
             <div class="ibLine2 wideOnly" id="ib_line2"></div>
             <div class="ibHeadChips wideOnly" id="ib_head_chips"></div>
@@ -160,56 +156,56 @@
             <div class="ibRouteWarn" id="ib_route_warn" hidden>Route not confirmed by position (plausibility check failed)</div>
           </section>
 
-          <!-- phone sheet (mockup 09): compass + three tiles, chips, track/squawk/distance -->
-          <div class="ibStatus phoneOnly" id="ib_p_status" hidden></div>
-          <div class="ibPhoneInst phoneOnly" aria-label="Flight data">
-            <div class="ibCompassSlot ibCompassPhone" id="ib_compass_phone"></div>
-            <div class="ibPhoneTiles">
-              <div class="ibT6" data-row><div class="lbl">Altitude</div><div class="v mono"><span id="ib_p_alt"></span><span class="u" id="ib_p_alt_u"></span></div></div>
-              <div class="ibT6" data-row><div class="lbl">V/S</div><div class="v mono" id="ib_p_vs_v"><span id="ib_p_vs"></span><span class="u" id="ib_p_vs_u"></span></div></div>
-              <div class="ibT6 ibWindTile" data-row><div class="lbl">Wind</div><div class="v mono"><span id="ib_p_wind"></span><span class="u" id="ib_p_wind_u"></span></div></div>
-            </div>
-          </div>
-          <div class="ibChips phoneOnly" id="ib_p_chips"></div>
-          <div class="ibTiles3 phoneOnly">
-            <div class="ibT6" data-row><div class="lbl">Track</div><div class="v mono"><span id="ib_p_trk"></span></div></div>
-            <div class="ibT6" data-row id="ib_p_sq_t"><div class="lbl">Squawk</div><div class="v mono"><span id="ib_p_sq"></span></div></div>
-            <div class="ibT6" data-row><div class="lbl">Distance</div><div class="v mono"><span id="ib_p_dist"></span><span class="u" id="ib_p_dist_u"></span></div></div>
-          </div>
-
           <!-- compact instruments (mockup 07): Altitude + Speed, Direction & wind, Track/Squawk/Distance, chips, Autopilot -->
           <div class="ibLimited lbl compactOnly" id="ib_limited_c" hidden>Limited data from this aircraft</div>
-          <div class="ibRow2 compactOnly">
-            <section class="ibCard ibInst" id="ib_alt_card" aria-label="Altitude" hidden>
-              <div class="lbl">Altitude</div>
-              <div class="ibBigV mono"><span id="ib_alt_v"></span><span class="unit" id="ib_alt_u"></span></div>
-              <div class="ibTapeSlot" id="ib_alt_tape"></div>
-              <div class="ibVs mono" id="ib_alt_vs" hidden></div>
-              <div class="lbl ibSmall" id="ib_alt_geom" hidden></div>
+          <!-- ONE instrument component for desktop and phone (ui/instruments.js). Each card has a SUMMARY (headline value) and a
+               DETAIL part (tape, bars, compass); CSS decides which are shown (phone peek: summaries only). -->
+          <div class="ibInstGrid compactOnly" data-component="instruments">
+            <section class="ibCard ibInst" id="ib_alt_card" data-component="altitude" aria-label="Altitude" hidden>
+              <div class="ibSum" data-part="summary">
+                <div class="lbl">Altitude</div>
+                <div class="ibBigV mono"><span id="ib_alt_v"></span><span class="unit" id="ib_alt_u"></span></div>
+                <div class="ibVs mono" id="ib_alt_vs" hidden></div>
+              </div>
+              <div class="ibDetail" data-part="detail">
+                <div class="ibTapeSlot" id="ib_alt_tape"></div>
+                <div class="lbl ibSmall" id="ib_alt_geom" hidden></div>
+              </div>
             </section>
-            <section class="ibCard ibInst ibSpeedCard" id="ib_spd_card" aria-label="Speed" hidden>
-              <div class="lbl">Speed</div>
-              <div class="ibBigV mono"><span id="ib_spd_v"></span><span class="unit" id="ib_spd_u"></span></div>
-              <div class="ibBars" id="ib_spd_bars">
+            <section class="ibCard ibInst ibSpeedCard" id="ib_spd_card" data-component="speed" aria-label="Speed" hidden>
+              <div class="ibSum" data-part="summary">
+                <div class="lbl">Speed</div>
+                <div class="ibBigV mono"><span id="ib_spd_v"></span><span class="unit" id="ib_spd_u"></span></div>
+                <div class="ibVs mono" id="ib_spd_sub" hidden></div>
+              </div>
+              <div class="ibDetail" data-part="detail">
+                <div class="ibBars" id="ib_spd_bars">
                 <div class="ibBar" data-bar="ias" hidden><span class="lbl">IAS</span><div class="ibBarTrack"><div class="ibBarFill"></div></div><span class="mono ibBarV"></span></div>
                 <div class="ibBar" data-bar="tas" hidden><span class="lbl">TAS</span><div class="ibBarTrack"><div class="ibBarFill"></div></div><span class="mono ibBarV"></span></div>
                 <div class="ibBar" data-bar="gs" hidden><span class="lbl">GS</span><div class="ibBarTrack"><div class="ibBarFill"></div></div><span class="mono ibBarV"></span></div>
+                </div>
+                <div class="ibPills" id="ib_spd_pills"></div>
+                <div class="ibSparkWrap" id="ib_gs_spark_wrap" hidden><div class="lbl ibSmall" id="ib_gs_spark_l"></div><div class="ibSparkSlot" id="ib_gs_spark"></div></div>
               </div>
-              <div class="ibPills" id="ib_spd_pills"></div>
-              <div class="ibSparkWrap" id="ib_gs_spark_wrap" hidden><div class="lbl ibSmall" id="ib_gs_spark_l"></div><div class="ibSparkSlot" id="ib_gs_spark"></div></div>
+            </section>
+            <section class="ibCard ibInst ibDirCard" id="ib_dir_card" data-component="direction" aria-label="Direction and wind" hidden>
+              <div class="ibSum" data-part="summary">
+                <div class="lbl">Direction</div>
+                <div class="ibBigV mono"><span id="ib_dir_v"></span></div>
+                <div class="ibVs mono" id="ib_dir_sub" hidden></div>
+              </div>
+              <div class="ibDetail" data-part="detail">
+                <div class="ibCardTop"><div class="mono ibTiny">TRUE · NORTH UP</div></div>
+                <div class="ibCompassSlot" id="ib_compass"></div>
+                <div class="ibMinis" id="ib_dir_minis">
+                <div class="ibMini" id="ib_m_tail" hidden><div class="lbl">Tailwind</div><div class="v mono"><span id="ib_m_tail_v"></span><span class="unit" id="ib_m_tail_u"></span></div></div>
+                <div class="ibMini" id="ib_m_cross" hidden><div class="lbl">Crosswind</div><div class="v mono"><span id="ib_m_cross_v"></span><span class="unit" id="ib_m_cross_u"></span></div></div>
+                <div class="ibMini" id="ib_m_drift" hidden><div class="lbl">Drift</div><div class="v mono"><span id="ib_m_drift_v"></span><span class="unit" id="ib_m_drift_u"></span></div></div>
+            </div>
+                <div class="ibLegendChips" id="ib_dir_legend"></div>
+              </div>
             </section>
           </div>
-
-          <section class="ibCard ibInst ibDirCard compactOnly" id="ib_dir_card" aria-label="Direction and wind" hidden>
-            <div class="ibCardTop"><div class="lbl">Direction &amp; wind</div><div class="mono ibTiny">TRUE · NORTH UP</div></div>
-            <div class="ibCompassSlot" id="ib_compass"></div>
-            <div class="ibMinis" id="ib_dir_minis">
-              <div class="ibMini" id="ib_m_tail" hidden><div class="lbl">Tailwind</div><div class="v mono"><span id="ib_m_tail_v"></span><span class="unit" id="ib_m_tail_u"></span></div></div>
-              <div class="ibMini" id="ib_m_cross" hidden><div class="lbl">Crosswind</div><div class="v mono"><span id="ib_m_cross_v"></span><span class="unit" id="ib_m_cross_u"></span></div></div>
-              <div class="ibMini" id="ib_m_drift" hidden><div class="lbl">Drift</div><div class="v mono"><span id="ib_m_drift_v"></span><span class="unit" id="ib_m_drift_u"></span></div></div>
-            </div>
-            <div class="ibLegendChips" id="ib_dir_legend"></div>
-          </section>
 
           <div class="ibTiles3 compactOnly" id="ib_tiles3">
             <div class="ibTile3" id="ib_t_trk"><div class="lbl">Track</div><div class="v mono" id="ib_trk"></div><div class="lbl ibSmall" id="ib_trk_sub"></div></div>
@@ -217,7 +213,7 @@
             <div class="ibTile3" id="ib_t_dist"><div class="lbl">Distance</div><div class="v mono"><span id="ib_dist"></span><span class="unit" id="ib_dist_u"></span></div><div class="lbl ibSmall" id="ib_dist_sub"></div></div>
           </div>
 
-          <div class="ibChips compactOnly" id="selected_showTrace_hide"></div>
+          <div class="ibChips compactOnly" id="selected_showTrace_hide" data-component="chips"></div>
 
           <section class="ibCard ibInst compactOnly" id="ib_ap_card" aria-label="Autopilot" hidden>
             <div class="ibCardTop"><div class="lbl">Autopilot</div><div class="ibPills" id="ib_ap_pills"></div></div>
@@ -229,10 +225,9 @@
             <div class="ibTargetBar" id="ib_ap_bar" hidden><div class="ibBarTrack"><div class="ibBarFill"></div></div><span class="mono" id="ib_ap_togo"></span></div>
           </section>
 
-          <section class="ibCard compactOnly" id="ib_aircraft" aria-label="Aircraft">
+          <section class="ibCard compactOnly" id="ib_aircraft" data-component="aircraft" aria-label="Aircraft">
             <div class="ibCardHead">
-              <span class="ibTypeName" id="ib_type_name"></span>
-              <span class="ibTypeChips"><span class="chip mono" id="ib_typedesc" title="ICAO type description: L/S/H landplane/seaplane/helicopter, engine count, P/T/J piston/turboprop/jet"></span><span class="chip mono" id="ib_icaotype" title="ICAO type code"></span></span>
+              <span class="ibTypeName">Aircraft</span>
             </div>
             <div class="ibPhotoSlot" id="ib_photo_compact">
               <div id="photo_container" class="ibPhoto">
@@ -240,19 +235,25 @@
                 <div id="copyrightInfo"></div>
               </div>
             </div>
-            <div class="ibFacts">
+            <div class="ibFacts" id="ib_facts">
+              <div data-row id="ib_type_row"><div class="lbl">Type</div><div class="ibFact" id="ib_type_name"></div></div>
+              <div data-row id="ib_icaotype_row"><div class="lbl">Type code</div><div class="ibFact mono" id="ib_icaotype"></div></div>
               <div id="reg_info" data-row><div class="lbl">Registration</div><div class="ibFact mono" id="selected_registration"></div></div>
               <div data-row><div class="lbl">Country</div><div class="ibFact" id="ib_country"></div></div>
-              <div data-row id="ib_operator_row" class="ibFactEnd"><div class="lbl">Operator</div><div class="ibFact" id="ib_operator"></div></div>
+              <div data-row id="ib_operator_row"><div class="lbl">Operator</div><div class="ibFact" id="ib_operator"></div></div>
+              <div data-row id="ib_category_row"><div class="lbl">Category</div><div class="ibFact" id="ib_category"></div></div>
+              <div data-row id="ib_built_row"><div class="lbl">Built</div><div class="ibFact mono" id="ib_built"></div></div>
+              <div data-row id="ib_age_row"><div class="lbl">Age</div><div class="ibFact mono" id="ib_age"></div></div>
+              <div data-row id="ib_typedesc_row"><div class="lbl">Description</div><div class="ibFact mono" id="ib_typedesc" title="ICAO type description: L/S/H landplane/seaplane/helicopter, engine count, P/T/J piston/turboprop/jet"></div></div>
               <div hidden><span id="ib_messages_l"></span><span id="ib_messages"></span></div>
-            </div>
-            <div class="ibFacts ibFacts2" id="ib_facts2">
-              <div data-row><div class="lbl">Built</div><div class="ibFact mono" id="ib_built"></div></div>
-              <div data-row><div class="lbl">Age</div><div class="ibFact mono" id="ib_age"></div></div>
-              <div data-row class="ibFactEnd"><div class="lbl">Category</div><div class="ibFact" id="ib_category"></div></div>
             </div>
             <div class="ibLinks" id="photoLinkRow" hidden><span id="selected_photo_link"></span></div>
           </section>
+
+          <details class="ibCard ibDetailsCard compactOnly" id="ib_details_card" data-component="details">
+            <summary>Details</summary>
+            <div class="ibKv" id="ib_details_kv"></div>
+          </details>
 
           <button type="button" class="ibDetailsBtn compactOnly" id="ib_details_btn">
             <svg aria-hidden="true" class="ico" width="18" height="18" viewBox="0 0 24 24"><path d="M3 11l18-8-8 18-2-8z"/></svg>
@@ -407,26 +408,16 @@
           </div>
         </div>
 
-        <div id="infoActions" class="actionBar compactOnly" role="toolbar" aria-label="Aircraft actions">
-          <button type="button" class="act inActiveButton" id="F" title="Follow (F)" onclick="toggleFollow();">
-            <svg aria-hidden="true" class="ico" width="20" height="20" viewBox="0 0 24 24"><path d="M12 3l6 17-6-4-6 4z"/></svg>Follow
-          </button>
-          <button type="button" class="act" id="act_3d" aria-pressed="false" title="Toggle 3D view">
-            <svg aria-hidden="true" class="ico" width="20" height="20" viewBox="0 0 24 24"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9zM4 7.5l8 4.5 8-4.5M12 12v9"/></svg>3D
-          </button>
-          <button type="button" class="act" id="history_action" aria-pressed="false" hidden>
-            <svg aria-hidden="true" class="ico" width="20" height="20" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5M12 8v4l3 2"/></svg>Replay
-          </button>
-          <button type="button" class="act inActiveButton" id="I" title="Isolate: only show this aircraft (I)" onclick="toggleIsolation();">
-            <svg aria-hidden="true" class="ico" width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>Isolate
-          </button>
-        </div>
-        <div class="ibPhoneActions phoneOnly" role="toolbar" aria-label="Aircraft actions">
-          <button type="button" class="ibPBtn ibPrimary" id="ib_p_follow" onclick="toggleFollow();">Follow</button>
-          <button type="button" class="ibPBtn" id="ib_p_second"></button>
-          <button type="button" class="btn ibPExpand" id="ib_p_expand" aria-label="Show all details" aria-expanded="false">
-            <svg aria-hidden="true" class="ico" width="18" height="18" viewBox="0 0 24 24"><path d="m6 15 6-6 6 6"/></svg>
-          </button>
+        <div id="infoActions" class="actionBar compactOnly" data-component="actions" role="toolbar" aria-label="Aircraft actions">
+          <button type="button" class="act inActiveButton" id="F" title="Follow (F)" onclick="toggleFollow();"><span id="F_label">Follow</span></button>
+          <button type="button" class="act inActiveButton" id="I" title="Isolate: only show this aircraft (I)" onclick="toggleIsolation();"><span id="I_label">Isolate</span></button>
+          <button type="button" class="act" id="act_more" aria-haspopup="menu" aria-expanded="false" title="More actions"><span>More</span></button>
+          <div class="actMenu" id="act_menu" role="menu" hidden>
+            <button type="button" class="actItem" id="act_3d" role="menuitem" aria-pressed="false" title="Toggle 3D view">3D view</button>
+            <button type="button" class="actItem" id="history_action" role="menuitem" aria-pressed="false" hidden>Replay</button>
+            <button type="button" class="actItem" id="act_track" role="menuitem" hidden>Show track</button>
+            <button type="button" class="actItem" id="act_share" role="menuitem">Share</button>
+          </div>
         </div>
       </div> <!-- selected_infoblock -->
 
@@ -488,7 +479,7 @@
           <div class="setMain">
             <div class="setHead">
               <h2 id="setSecTitle">Map &amp; layers</h2>
-              <button type="button" class="btn setClose" id="settings_close" aria-label="Close settings" title="Close (Esc)"><svg aria-hidden="true" class="ico" width="16" height="16" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+              <button type="button" class="btn sk-x" id="settings_close" aria-label="Close settings" title="Close (Esc)"><svg aria-hidden="true" class="ico" width="16" height="16" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
             </div>
             <div class="setBody">
               <section class="setSec" data-sec="map">
@@ -640,7 +631,6 @@
                 title="Callsign, hex, registration, type or squawk. An airport code (EGLL, LHR) or lat, lon jumps the map there.">
               <kbd aria-hidden="true" id="search_hint">Ctrl K</kbd>
             </form>
-            <div class="warning glass" id="search_warning" role="status" style="display:none"></div>
           </div>
           <button type="button" id="settingsCog" class="glass btn" aria-label="Settings" title="Settings">
             <svg aria-hidden="true" class="ico" width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -691,7 +681,7 @@
         <div id="filterPopover" class="glass shell popover" role="dialog" aria-label="Filters" hidden>
           <div class="popoverHead">
             <span>Filters</span>
-            <button type="button" class="btn popoverClose" aria-label="Close filters">
+            <button type="button" class="btn sk-x" aria-label="Close filters">
               <svg aria-hidden="true" class="ico" width="16" height="16" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>
             </button>
           </div>
@@ -844,7 +834,7 @@
             <div id="columnsPopover" class="glass popover" role="dialog" aria-label="Table columns" hidden>
               <div class="popoverHead">
                 <span>Columns</span>
-                <button type="button" class="btn popoverClose" aria-label="Close columns">
+                <button type="button" class="btn sk-x" aria-label="Close columns">
                   <svg aria-hidden="true" class="ico" width="16" height="16" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>
                 </button>
               </div>
@@ -924,8 +914,11 @@
     <script src="ui/airline-codes.js"></script>
     <script src="ui/airlines.js"></script>
     <script src="ui/maplibre-layers.js"></script>
+    <script src="ui/label-sprite.js"></script>
     <script src="ui/maplibre.js"></script>
+    <script src="ui/airport-tiers.js"></script>
     <script src="ui/maplibre-airports.js"></script>
+    <script src="ui/maplibre-airport-pins.js"></script>
     <script src="ui/maplibre-route.js"></script>
     <script src="ui/maplibre-motion.js"></script>
     <script src="ui/maplibre-lift.js"></script>
@@ -936,6 +929,7 @@
     <script src="ui/altlegend.js"></script>
     <script src="ui/graphs.js"></script>
     <script src="ui/shell.js"></script>
+    <script src="ui/instrument-summary.js"></script>
     <script src="ui/instruments.js"></script>
     <script src="ui/infoblock.js"></script>
     <script src="ui/airport-geom.js"></script>
@@ -958,7 +952,7 @@
   <div class="gHead"><h2>Receiver graphs</h2>
     <div class="gTabs" role="tablist" aria-label="Period"></div>
     <a class="gFull" href="/graphs1090/" target="_blank" rel="noopener">Classic graphs</a>
-    <button type="button" class="gClose" aria-label="Close graphs">&times;</button></div>
+    <button type="button" class="btn sk-x" aria-label="Close graphs">&times;</button></div>
   <div class="gGrid"></div>
 </div>
 </body>

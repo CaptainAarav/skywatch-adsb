@@ -156,7 +156,7 @@ Options added or changed by this fork:
 | `airportWeather`, `airportLinks` | `true` | Weather cards and external link buttons in the airport panel. |
 | `airportPinWx` | `true` | Flight-category rings on airport pins and the hover card (needs the weather feed). |
 | `aircraftColor` | `white` | Map aircraft icon colour: `white` or `altitude`. Settings > Aircraft & labels. Tracks always use the altitude gradient. |
-| `liftMapOnSelect` | `true` on phones, `false` on desktop | Lightens the map land to #2c2c2c while an aircraft is selected. |
+| `brightenMapOnSelect` | `false` | Lightens the map land to #2c2c2c while an aircraft is selected. Off everywhere by default; the map never changes colour on selection unless you switch it on (Settings, Appearance). |
 | `dimOthers` | `false` | Draw the other aircraft at about 60% while one is selected. |
 | `SiteShow`, `actual_range_show` | `false` | Show the receiver marker and range outline. |
 

@@ -9,7 +9,7 @@
 //  * Privacy: Receiver view, distance and bearing need the receiver position AND the "show site position" setting.
 //    The receiver's coordinates are never printed.
 //
-// infoblock.js calls IBI.renderCompact / renderWide / renderPhone from ibRender().
+// infoblock.js calls IBI.renderCompact / renderWide from ibRender().
 
 const IBI = {
     NS: 'http://www.w3.org/2000/svg',
@@ -203,43 +203,43 @@ IBI.makeTape = function (slot) {
 };
 
 // ---------------------------------------------------------------- compass (Direction & wind)
-IBI.makeCompass = function (slot, phone) {
-    const size = phone ? 156 : 264;
-    const svg = IBI.svg('svg', {role: 'img', width: size, height: size, viewBox: '-24 -24 288 288'}, slot);
+IBI.makeCompass = function (slot) {
+    const size = '100%';
+    const svg = IBI.svg('svg', {role: 'img', width: size, height: size, viewBox: '-24 -24 288 288', preserveAspectRatio: 'xMidYMid meet'}, slot);
     const C = (a, parent) => IBI.svg('circle', Object.assign({cx: 120, cy: 120}, a), parent || svg);
-    C({r: 101, fill: phone ? 'rgba(255,255,255,.04)' : 'rgba(255,255,255,.035)'});
-    C({r: 96, fill: 'none', stroke: phone ? 'rgba(255,255,255,.4)' : 'rgba(255,255,255,.38)', 'stroke-width': phone ? 7 : 6,
-        'stroke-dasharray': phone ? '2.4 14.355' : '2 14.755', 'stroke-dashoffset': phone ? 1.2 : 1, transform: 'rotate(-90 120 120)'});
-    C({r: 94, fill: 'none', stroke: '#f7f7f7', 'stroke-width': phone ? 11 : 10,
-        'stroke-dasharray': phone ? '3.6 45.618' : '3 46.218', 'stroke-dashoffset': phone ? 1.8 : 1.5, transform: 'rotate(-90 120 120)'});
-    if (!phone) C({r: 58, fill: 'none', stroke: 'rgba(255,255,255,.12)'});
-    const R = phone ? 70 : 76;
-    const cardinals = IBI.svg('g', {'font-family': 'Inter,sans-serif', 'font-size': phone ? 22 : 14, 'font-weight': 700, fill: '#f7f7f7', 'text-anchor': 'middle', 'dominant-baseline': 'central'}, svg);
+    C({r: 101, fill: 'rgba(255,255,255,.035)'});
+    C({r: 96, fill: 'none', stroke: 'rgba(255,255,255,.38)', 'stroke-width': 6,
+        'stroke-dasharray': '2 14.755', 'stroke-dashoffset': 1, transform: 'rotate(-90 120 120)'});
+    C({r: 94, fill: 'none', stroke: '#f7f7f7', 'stroke-width': 10,
+        'stroke-dasharray': '3 46.218', 'stroke-dashoffset': 1.5, transform: 'rotate(-90 120 120)'});
+    C({r: 58, fill: 'none', stroke: 'rgba(255,255,255,.12)'});
+    const R = 76;
+    const cardinals = IBI.svg('g', {'font-family': 'Inter,sans-serif', 'font-size': 14, 'font-weight': 700, fill: '#f7f7f7', 'text-anchor': 'middle', 'dominant-baseline': 'central'}, svg);
     [['N', 0], ['E', 90], ['S', 180], ['W', 270]].forEach(([t, a]) => IBI.svg('text',
         {x: 120 + R * Math.sin(a * Math.PI / 180), y: 120 - R * Math.cos(a * Math.PI / 180)}, cardinals, t));
-    if (!phone) {
+    {
         const nums = IBI.svg('g', {'font-family': 'JetBrains Mono,monospace', 'font-size': 10, fill: '#B8B8B8', 'text-anchor': 'middle', 'dominant-baseline': 'central'}, svg);
         [[3, 30], [6, 60], [12, 120], [15, 150], [21, 210], [24, 240], [30, 300], [33, 330]].forEach(([t, a]) => IBI.svg('text',
             {x: 120 + 76 * Math.sin(a * Math.PI / 180), y: 120 - 76 * Math.cos(a * Math.PI / 180)}, nums, String(t)));
     }
     // wind: arrow at the direction the wind comes FROM, pointing inward
     const wind = IBI.svg('g', null, svg);
-    IBI.svg('line', {x1: 120, y1: phone ? -16 : -14, x2: 120, y2: 8, stroke: IBI.cold, 'stroke-width': phone ? 4 : 3, 'stroke-linecap': 'round'}, wind);
-    IBI.svg('path', {d: phone ? 'M110 3L120 20L130 3Z' : 'M112 4L120 19L128 4Z', fill: IBI.cold}, wind);
+    IBI.svg('line', {x1: 120, y1: -14, x2: 120, y2: 8, stroke: IBI.cold, 'stroke-width': 3, 'stroke-linecap': 'round'}, wind);
+    IBI.svg('path', {d: 'M112 4L120 19L128 4Z', fill: IBI.cold}, wind);
     const windTxt = IBI.svg('text', {'font-family': 'JetBrains Mono,monospace', 'font-size': 11, 'font-weight': 600, fill: IBI.cold, 'text-anchor': 'middle', 'dominant-baseline': 'central'}, svg);
     // selected heading: hollow circle on the ring
     const sel = IBI.svg('g', null, svg);
-    IBI.svg('circle', {cx: 120, cy: 12, r: phone ? 5 : 4.5, fill: 'none', stroke: '#fff', 'stroke-width': phone ? 2.4 : 1.8}, sel);
-    if (!phone) IBI.svg('line', {x1: 120, y1: 62, x2: 120, y2: 89, stroke: '#fff', 'stroke-opacity': '.5', 'stroke-width': 1.5, 'stroke-dasharray': '3 4'}, sel);
+    IBI.svg('circle', {cx: 120, cy: 12, r: 4.5, fill: 'none', stroke: '#fff', 'stroke-width': 1.8}, sel);
+    IBI.svg('line', {x1: 120, y1: 62, x2: 120, y2: 89, stroke: '#fff', 'stroke-opacity': '.5', 'stroke-width': 1.5, 'stroke-dasharray': '3 4'}, sel);
     // track: filled triangle on the outer ring
     const trk = IBI.svg('g', null, svg);
-    IBI.svg('path', {d: phone ? 'M120 21L111 3H129Z' : 'M120 21L112.5 5H127.5Z', fill: '#fff'}, trk);
-    IBI.svg('line', {x1: 120, y1: phone ? 66 : 64, x2: 120, y2: 89, stroke: '#fff', 'stroke-width': phone ? 3 : 2.4, 'stroke-linecap': 'round'}, trk);
+    IBI.svg('path', {d: 'M120 21L112.5 5H127.5Z', fill: '#fff'}, trk);
+    IBI.svg('line', {x1: 120, y1: 64, x2: 120, y2: 89, stroke: '#fff', 'stroke-width': 2.4, 'stroke-linecap': 'round'}, trk);
     // true heading: hollow triangle on the inner ring
     const hdg = IBI.svg('g', null, svg);
-    IBI.svg('path', {d: phone ? 'M120 58L112.5 73H127.5Z' : 'M120 57L113.5 70H126.5Z', fill: 'none', stroke: '#fff', 'stroke-width': phone ? 2.4 : 1.8, 'stroke-linejoin': 'round'}, hdg);
-    const big = IBI.svg('text', {x: 120, y: phone ? 132 : 118, 'text-anchor': 'middle', 'font-family': 'JetBrains Mono,monospace', 'font-size': phone ? 52 : 38, 'font-weight': 600, fill: '#f7f7f7'}, svg);
-    const sub = phone ? null : IBI.svg('text', {x: 120, y: 138, 'text-anchor': 'middle', 'font-family': 'Inter,sans-serif', 'font-size': 11, fill: '#B8B8B8'}, svg);
+    IBI.svg('path', {d: 'M120 57L113.5 70H126.5Z', fill: 'none', stroke: '#fff', 'stroke-width': 1.8, 'stroke-linejoin': 'round'}, hdg);
+    const big = IBI.svg('text', {x: 120, y: 118, 'text-anchor': 'middle', 'font-family': 'JetBrains Mono,monospace', 'font-size': 38, 'font-weight': 600, fill: '#f7f7f7'}, svg);
+    const sub = IBI.svg('text', {x: 120, y: 138, 'text-anchor': 'middle', 'font-family': 'Inter,sans-serif', 'font-size': 11, fill: '#B8B8B8'}, svg);
 
     return {svg, update(d, windLabel) {
         const rot = (g, a) => g.setAttribute('transform', `rotate(${a.toFixed(1)} 120 120)`);
@@ -422,8 +422,7 @@ IBI.ensure = function () {
     if (!I.built) {
         I.built = true;
         I.tape = IBI.makeTape(ibEl('ib_alt_tape'));
-        I.compass = IBI.makeCompass(ibEl('ib_compass'), false);
-        I.compassPhone = IBI.makeCompass(ibEl('ib_compass_phone'), true);
+        I.compass = IBI.makeCompass(ibEl('ib_compass'));
         I.gsSpark = IBI.makeSpark(ibEl('ib_gs_spark'), 130, 44);
         I.att = IBI.makeAttitude(ibEl('ib_att'));
         I.turn = IBI.makeTurnBar(ibEl('ib_turn'));
@@ -440,40 +439,38 @@ IBI.renderCompact = function (p, d, sitedist) {
     const u = {alt: ibUnit('altitude'), spd: ibUnit('speed'), vr: ibUnit('verticalRate')};
     let any = false;
 
-    // ---- Altitude
+    // ---- Altitude: summary (headline + trend) and detail (tape). A missing value is a muted dash, the card stays.
     const altOn = d.onGround || d.altFt != null;
-    IBI.show('ib_alt_card', altOn); any = any || altOn;
-    if (altOn) {
-        IBI.set('ib_alt_v', d.onGround ? 'Ground' : ibAlt(d.altFt));
-        IBI.set('ib_alt_u', d.onGround ? '' : u.alt);
-        IBI.show(I.tape.svg.parentNode, d.altFt != null);
-        if (d.altFt != null) {
-            const selFt = d.selAlt;
-            I.tape.update(d.altFt, selFt, ibAlt(d.altFt) + ' ' + u.alt, selFt != null ? ibAlt(selFt) : '');
-        }
-        const vs = ibEl('ib_alt_vs');
-        if (d.rate != null && !d.onGround) {
-            const up = d.rate > 300, down = d.rate < -300;
-            const metric = units_for('verticalRate', DisplayUnits) === 'metric';
-            const num = ibNum(Math.abs(convert_vert_rate(d.rate, DisplayUnits)), metric ? 1 : 0);
-            vs.textContent = up || down ? (up ? '▲ ' : '▼ ') + num + ' ' + u.vr : 'Level';
-            vs.className = 'ibVs mono ' + (up ? 'climb' : down ? 'descend' : 'level');
-            vs.hidden = false;
-        } else vs.hidden = true;
-        const gl = ibEl('ib_alt_geom');
-        if (d.geomFt != null && d.altFt != null) {
-            const diff = convert_altitude(d.geomFt, DisplayUnits) - convert_altitude(d.altFt, DisplayUnits);
-            gl.textContent = 'Geometric ' + ibSigned(Math.round(diff)) + ' ' + u.alt; gl.hidden = false;
-        } else gl.hidden = true;
-    }
+    IBI.show('ib_alt_card', true);
+    const A = INSTSUM.altitude(d.altFt, d.onGround, ibAlt, u.alt);
+    IBI.set('ib_alt_v', A.value); IBI.set('ib_alt_u', A.unit);
+    ibEl('ib_alt_v').classList.toggle('na', A.value === INSTSUM.DASH);
+    const vs = ibEl('ib_alt_vs');
+    const T = INSTSUM.trend(d.onGround ? null : d.rate, '');
+    if (T.cls) {
+        const metric = units_for('verticalRate', DisplayUnits) === 'metric';
+        const num = ibNum(Math.abs(convert_vert_rate(d.rate, DisplayUnits)), metric ? 1 : 0);
+        vs.textContent = T.cls === 'level' ? T.text : T.glyph + ' ' + num + ' ' + u.vr;
+        vs.className = 'ibVs mono ' + T.cls; vs.hidden = false;
+    } else vs.hidden = true;
+    IBI.show(I.tape.svg.parentNode, d.altFt != null);
+    if (d.altFt != null) I.tape.update(d.altFt, d.selAlt, ibAlt(d.altFt) + ' ' + u.alt, d.selAlt != null ? ibAlt(d.selAlt) : '');
+    const gl = ibEl('ib_alt_geom');
+    if (d.geomFt != null && d.altFt != null) {
+        const diff = convert_altitude(d.geomFt, DisplayUnits) - convert_altitude(d.altFt, DisplayUnits);
+        gl.textContent = 'Geometric ' + ibSigned(Math.round(diff)) + ' ' + u.alt; gl.hidden = false;
+    } else gl.hidden = true;
+    any = any || altOn;
 
-    // ---- Speed
-    const spdVal = d.gs != null ? d.gs : d.tas != null ? d.tas : d.ias;
-    const spdOn = spdVal != null;
-    IBI.show('ib_spd_card', spdOn); any = any || spdOn;
+    // ---- Speed: summary (headline + Mach or IAS) and detail (bars, wind pill, sparkline)
+    const S = INSTSUM.speed({gs: d.gs, tas: d.tas, ias: d.ias, mach: d.mach}, ibSpeed, u.spd);
+    const spdOn = S.value !== INSTSUM.DASH;
+    IBI.show('ib_spd_card', true); any = any || spdOn;
+    IBI.set('ib_spd_v', S.value); IBI.set('ib_spd_u', S.unit ? S.unit + ' ' + S.kind : '');
+    ibEl('ib_spd_v').classList.toggle('na', !spdOn);
+    const ss = ibEl('ib_spd_sub'); ss.textContent = S.sub; ss.hidden = !S.sub; ss.className = 'ibVs mono level';
+    IBI.show('ib_spd_bars', spdOn);
     if (spdOn) {
-        IBI.set('ib_spd_v', ibSpeed(spdVal));
-        IBI.set('ib_spd_u', u.spd + (d.gs != null ? ' GS' : d.tas != null ? ' TAS' : ' IAS'));
         for (const [k, v] of [['ias', d.ias], ['tas', d.tas], ['gs', d.gs]]) {
             const row = document.querySelector('#ib_spd_bars [data-bar="' + k + '"]');
             row.hidden = v == null;
@@ -485,7 +482,6 @@ IBI.renderCompact = function (p, d, sitedist) {
         }
         const pills = ibEl('ib_spd_pills');
         IBI.clear(pills);
-        if (d.mach != null) IBI.h('span', 'chip ibChipS', pills, 'Mach ' + d.mach.toFixed(2));
         let wind = d.head != null ? -d.head : (d.gs != null && d.tas != null ? d.gs - d.tas : null);
         if (wind != null && Math.abs(wind) >= 0.5) {
             const w = IBI.h('span', 'chip ibChipS ibWindChip', pills, ibSigned(Math.round(convert_speed(wind, DisplayUnits))) + ' ' + u.spd + ' wind');
@@ -506,10 +502,14 @@ IBI.renderCompact = function (p, d, sitedist) {
 
     // ---- Direction & wind
     const dirOn = d.track != null;
-    IBI.show('ib_dir_card', dirOn); any = any || dirOn;
+    IBI.show('ib_dir_card', true); any = any || dirOn;
+    const D = INSTSUM.direction(d.track);
+    IBI.set('ib_dir_v', D.value); ibEl('ib_dir_v').classList.toggle('na', !dirOn);
+    const ds = ibEl('ib_dir_sub'); ds.textContent = d.ws != null && dirOn ? D.sub + ' · wind ' + ibDeg(d.wd) : D.sub; ds.hidden = !D.sub; ds.className = 'ibVs mono level';
+    IBI.show(document.querySelector('#ib_dir_card .ibDetail'), dirOn);
     if (dirOn) {
         const windLabel = d.ws != null ? ibSpeed(d.ws) + ' ' + u.spd : '';
-        if (!ibIsPhone()) I.compass.update(d, windLabel);
+        I.compass.update(d, windLabel);
         const minis = (id, on, label, val, unit, cls) => {
             IBI.show(id, on);
             if (!on) return;
@@ -577,28 +577,6 @@ IBI.renderCompact = function (p, d, sitedist) {
     }
     IBI.show('ib_limited_c', !any);
     return any;
-};
-
-// phone sheet
-IBI.renderPhone = function (p, d, sitedist) {
-    const I = IBI.ensure();
-    const u = ibUnit('speed');
-    const windLabel = d.ws != null ? ibSpeed(d.ws) + ' ' + u : '';
-    const compassOn = d.track != null;
-    IBI.show('ib_compass_phone', compassOn);
-    if (compassOn) I.compassPhone.update(d, windLabel);
-    IBI.set('ib_p_wind', d.ws != null ? ibDeg(d.wd) : null);
-    IBI.set('ib_p_wind_u', d.ws != null ? windLabel : '');
-    ibEl('ib_p_wind').closest('[data-row]').hidden = d.ws == null;
-    // chips: phase, tailwind, selected altitude
-    const ch = ibEl('ib_p_chips');
-    IBI.clear(ch);
-    if (d.phase && d.phase != 'Level') { const c = IBI.h('span', 'chip ibPhase', ch, d.phase); }
-    if (d.head != null) IBI.h('span', 'chip', ch, (d.head < 0 ? 'Tailwind ' : 'Headwind ') + ibSpeed(Math.abs(d.head)) + ' ' + u);
-    if (d.selAlt != null) IBI.h('span', 'chip mono', ch, 'Sel ' + ibAlt(d.selAlt));
-    ch.hidden = !ch.firstChild;
-    ibEl('ib_p_sq_t').hidden = !d.sq;
-    ibEl('ib_p_sq_t').classList.toggle('emergency', !!d.emerg);
 };
 
 // ---------------------------------------------------------------- wide grid
@@ -781,7 +759,7 @@ IBI.renderWide = function (p, d) {
 // panel-wide emergency outline; throttled to 4 Hz except when the aircraft changes
 IBI.due = function (p, force) {
     const now = performance.now();
-    const k = p.icao + (ibIsPhone() ? 'p' : 'd') + (document.body.classList.contains('infoWide') ? 'w' : 'c');
+    const k = p.icao + (document.body.classList.contains('infoWide') ? 'w' : 'c');
     if (!force && k === IBI.key && now - IBI.lastT < 1000 / IBI.HZ) return false;
     IBI.key = k; IBI.lastT = now;
     return true;

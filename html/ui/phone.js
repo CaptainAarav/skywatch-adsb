@@ -44,13 +44,25 @@ const PHONE = (function () {
         const hi = h > vh() * 0.55;
         document.body.classList.toggle('sheetHigh', hi);
         handle.setAttribute('aria-valuenow', String(idx));
+        if (snaps.length) document.body.dataset.snap = SHEETSNAP.snapName(h, snaps);
+    }
+    // peek height for a selected aircraft: measured with the peek layout applied, so it always fits header + summaries + actions
+    function measureInfoPeek() {
+        const b = document.body, prev = b.dataset.snap; b.dataset.snap = 'peek';
+        const q = (s) => document.querySelector('#selected_infoblock ' + s);
+        const hh = (e) => e ? e.getBoundingClientRect().height : 0;
+        const scroll = q('.ibScroll'), cs = scroll ? getComputedStyle(scroll) : null;
+        const v = SHEETSNAP.peekHeight({handle: 28, blocks: [hh(q('.ibHead')), hh(scroll), hh(q('#infoActions'))], pad: 0}, vh());
+        if (prev) b.dataset.snap = prev; else delete b.dataset.snap;
+        void cs;
+        return v;
     }
     function recompute(keepSnap) {
         if (!built) return;
         const header = body.querySelector('#selected_infoblock .ibHead, #airport_panel .apHead');
         const showHead = (document.body.classList.contains('infoOpen') && document.querySelector('#selected_infoblock .ibHead')) || null;
         peekExtra = showHead ? Math.min(150, showHead.getBoundingClientRect().height + 20) : 0;
-        const peek = 28 + foot.offsetHeight + peekExtra;
+        const peek = document.body.classList.contains('infoOpen') ? measureInfoPeek() : 28 + foot.offsetHeight + peekExtra;
         snaps = SHEETSNAP.points(vh(), peek, safe('top'));
         snaps[0] = peek;
         if (!keepSnap) idx = Math.min(idx, 2);
@@ -79,9 +91,17 @@ const PHONE = (function () {
         if (!drag || e.pointerId !== drag.id) return;
         const d = drag; drag = null;
         if (!d.moved) { if (e.currentTarget === handle) goto((idx + 1) % 3); return; }
-        const target = SHEETSNAP.snap(h, performance.now() - d.lt > 80 ? 0 : d.v, snaps);
+        const vel = performance.now() - d.lt > 80 ? 0 : d.v;
+        if ((document.body.classList.contains('infoOpen') || document.body.classList.contains('airportOpen')) && SHEETSNAP.shouldDismiss(d.h0, h, vel, snaps[0])) { dismissSelection(); return; }
+        const target = SHEETSNAP.snap(h, vel, snaps);
         goto(snaps.indexOf(target));
-        if (idx === 0 && target === snaps[0] && document.body.classList.contains('infoOpen') && d.v < -0.6) { /* swiping a selection fully down keeps it open at peek */ }
+        void target;
+    }
+    function dismissSelection() {
+        const b = document.body;
+        if (b.classList.contains('infoOpen')) { const c = document.getElementById('infoblock_close'); c && c.click(); }
+        else if (b.classList.contains('airportOpen') && typeof AIRPT != 'undefined' && AIRPT.close) AIRPT.close();
+        idx = 0; recompute(true);
     }
     function wireDrag(node) {
         node.addEventListener('pointerdown', dragStart); node.addEventListener('pointermove', dragMove);
@@ -190,15 +210,15 @@ const PHONE = (function () {
         for (const id of ['sidebar_container', 'selected_infoblock', 'airport_panel']) { const n = document.getElementById(id); if (n) body.appendChild(n); }
         document.body.appendChild(sheet);
         wireDrag(handle); wireDrag(foot);
-        body.addEventListener('pointerdown', (e) => { const hd = e.target.closest('.ibHead, .apHead'); if (hd && !e.target.closest('button, a')) dragStart(Object.assign(e, {currentTarget: body})); });
-        body.addEventListener('pointermove', (e) => { if (drag) dragMove(e); }); body.addEventListener('pointerup', (e) => { if (drag) dragEnd(Object.assign(e, {currentTarget: body})); });
+        body.addEventListener('pointerdown', (e) => { const hd = e.target.closest('.ibHead, .apHead'); if (hd && !e.target.closest('button, a')) dragStart({button: e.button, target: e.target, currentTarget: body, pointerId: e.pointerId, clientY: e.clientY}); });
+        body.addEventListener('pointermove', (e) => { if (drag) dragMove(e); }); body.addEventListener('pointerup', (e) => { if (drag) dragEnd({pointerId: e.pointerId, currentTarget: body}); });
         buildCtl();
         document.body.classList.add('phone');
         const sync = () => {
             const b = document.body;
             const wantIdx = b.classList.contains('airportOpen') ? Math.max(idx, 1) : null;
             markTabs(); syncCtl();
-            if (b.dataset.lastMode !== modeKey()) { b.dataset.lastMode = modeKey(); if (modeKey() === 'airport') idx = 1; else if (modeKey() === 'info') idx = 0; else if (modeKey() === 'list') idx = 1; else idx = 0; }
+            if (b.dataset.lastMode !== modeKey()) { b.dataset.lastMode = modeKey(); body.scrollTop = 0; if (modeKey() === 'airport') idx = 1; else if (modeKey() === 'info') idx = 0; else if (modeKey() === 'list') idx = 1; else idx = 0; }
             void wantIdx;
             recompute(true);
         };
@@ -240,7 +260,47 @@ const PHONE = (function () {
         new MutationObserver(markTabs).observe(document.body, {attributes: true, attributeFilter: ['class']});
     }
 
-    function init() { initSettingsPhone(); apply(); mq.addEventListener ? mq.addEventListener('change', apply) : mq.addListener(apply); }
+    // ---- history-backed layers: every full-screen or modal surface pushes one history entry, so system back closes it ----
+    const layerStack = []; let ignorePops = 0;
+    const $i = (id) => document.getElementById(id);
+    const bodyHas = (c) => document.body.classList.contains(c);
+    const surfaces = [
+        {name: 'airport', open: () => bodyHas('airportOpen'), close: () => { if (typeof AIRPT != 'undefined' && AIRPT.close) AIRPT.close(); }},
+        {name: 'info', open: () => bodyHas('infoOpen'), close: () => { const c = $i('infoblock_close'); c && c.click(); }},
+        {name: 'settings', open: () => bodyHas('settingsOpen'), close: () => { if (typeof closeSettings == 'function') closeSettings(); }},
+        {name: 'graphs', open: () => { const o = $i('graphsOverlay'); return !!o && !o.hidden; }, close: () => { const c = document.querySelector('#graphsOverlay .sk-x'); c && c.click(); }},
+        {name: 'palette', open: () => typeof PALETTE != 'undefined' && PALETTE.isOpen(), close: () => PALETTE.close()},
+        {name: 'dialog', open: () => !!document.querySelector('.sk-backdrop'), close: () => document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true, cancelable: true}))},
+        {name: 'replay', open: () => { const r = $i('replayBar'); return !!r && getComputedStyle(r).display !== 'none'; }, close: () => { const c = $i('replayStop'); c && c.click(); }},
+    ];
+    function syncLayers() {
+        if (!built || !mq.matches) return;
+        for (const s of surfaces) {
+            let o = false; try { o = !!s.open(); } catch (e) { /* ignore */ }
+            const i = layerStack.indexOf(s);
+            if (o && i < 0) { layerStack.push(s); try { history.pushState({skyLayer: s.name}, ''); } catch (e) { /* ignore */ } }
+            else if (!o && i >= 0) { layerStack.splice(i, 1); ignorePops++; try { history.back(); } catch (e) { ignorePops--; } }
+        }
+    }
+    window.addEventListener('popstate', () => {
+        if (ignorePops > 0) { ignorePops--; return; }
+        const top = layerStack.pop();
+        if (top) { try { top.close(); } catch (e) { /* ignore */ } setTimeout(syncLayers, 0); }
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key !== 'Escape' || !built || e.defaultPrevented) return;
+        const top = layerStack[layerStack.length - 1];
+        if (top && (top.name === 'graphs' || top.name === 'replay' || top.name === 'airport' || top.name === 'info')) { e.preventDefault(); top.close(); }
+    });
+    function watchLayers() {
+        const mo = new MutationObserver(() => setTimeout(syncLayers, 0));
+        mo.observe(document.body, {attributes: true, attributeFilter: ['class'], childList: true});
+        const g = $i('graphsOverlay'); if (g) mo.observe(g, {attributes: true, attributeFilter: ['hidden']});
+        const r = $i('replayBar'); if (r) mo.observe(r, {attributes: true, attributeFilter: ['style', 'class']});
+        setInterval(syncLayers, 700);
+    }
+
+    function init() { initSettingsPhone(); watchLayers(); apply(); mq.addEventListener ? mq.addEventListener('change', apply) : mq.addListener(apply); }
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(init, 0)); else setTimeout(init, 0);
-    return {settingsPage, recompute, goto: (i) => goto(i), isPhone: () => mq.matches, snaps: () => snaps.slice(), height: () => h};
+    return {settingsPage, recompute, layers: () => layerStack.map(l => l.name), syncLayers, dismiss: dismissSelection, goto: (i) => goto(i), isPhone: () => mq.matches, snaps: () => snaps.slice(), height: () => h};
 })();

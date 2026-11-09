@@ -98,7 +98,7 @@ function openPopover(id, anchor) {
     pop.hidden = false;
     if (anchor) anchor.setAttribute('aria-expanded', 'true');
     pop._anchor = anchor || null;
-    const first = pop.querySelector('input, button:not(.popoverClose), [tabindex="0"]');
+    const first = pop.querySelector('input, button:not(.sk-x), [tabindex="0"]');
     first && first.focus({preventScroll: true});
 }
 function closePopovers(except) {
@@ -220,7 +220,7 @@ function initGraphsLink() {
     if (!a) return;
     GRAPHS.available().then(ok => { if (ok) a.hidden = false; });
     a.addEventListener('click', () => graphsToggle());
-    document.querySelector('#graphsOverlay .gClose').addEventListener('click', () => graphsToggle(false));
+    document.querySelector('#graphsOverlay .sk-x').addEventListener('click', () => graphsToggle(false));
     document.addEventListener('keydown', e => { if (e.key === 'Escape' && !document.getElementById('graphsOverlay').hidden) graphsToggle(false); });
     for (const id of ['view_map', 'view_list']) document.getElementById(id)?.addEventListener('click', () => graphsToggle(false));
 }
@@ -304,7 +304,7 @@ function initShell() {
         setInterval(sync3, 500);
     }
     jQuery('#history_action').on('click', () => { jQuery('#show_trace').click(); shellSync(); });
-    jQuery('.popoverClose').on('click', () => closePopovers());
+    jQuery('.popover .sk-x').on('click', () => closePopovers());
     document.addEventListener('pointerdown', function (e) {
         if (e.target.closest('.popover, #filters_button, .chipPopover, .ui-datepicker')) return;
         closePopovers();

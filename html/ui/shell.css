@@ -202,17 +202,7 @@ button.chip:hover { color: var(--text); background: rgba(255,255,255,.12); }
     color: var(--muted);
 }
 #search_form:focus-within kbd { visibility: hidden; }
-#search_warning {
-    position: absolute;
-    top: 52px;
-    right: 0;
-    width: 280px;
-    border-radius: 16px;
-    padding: 10px 14px;
-    font-size: 13px;
-    color: var(--text);
-    margin: 0;
-}
+
 #settingsCog {
     position: absolute;
     right: 28px;
@@ -616,7 +606,6 @@ body.infoOpen #selected_infoblock { display: flex; }
 #graphsOverlay .gTabs button.on { background: rgba(255,255,255,.14); color: var(--text); }
 #graphsOverlay .gFull { color: var(--text2); font: 500 13px Inter, system-ui, sans-serif; text-decoration: none; }
 #graphsOverlay .gFull:hover { color: var(--text); }
-#graphsOverlay .gClose { width: 40px; height: 40px; border-radius: 50%; border: 0; background: rgba(255,255,255,.08); color: var(--text); font-size: 22px; cursor: pointer; }
 #graphsOverlay .gGrid { flex: 1; min-height: 0; overflow: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 16px; align-content: start; }
 #graphsOverlay .gCard { margin: 0; padding: 14px 14px 10px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.08); border-radius: 24px; }
 #graphsOverlay .gCard figcaption { font: 600 14px Inter, system-ui, sans-serif; margin: 2px 6px 10px; }

@@ -30,8 +30,8 @@
     .infoblock_row:not(.hidden), #columnsPopover #sortableColumns li, .apTile, .apEnd, .apPill { background: var(--bg-row); }
 
     /* the panel's own chips and small buttons */
-    #selected_infoblock .chip, #selected_infoblock .ibBtn, .apChip, .apX { background: var(--bg-segment); border: 1px solid var(--line); }
-    #selected_infoblock .ibBtn:hover, .apX:hover { background: var(--bg-control-hover); }
+    #selected_infoblock .chip, #selected_infoblock .ibBtn, .apChip { background: var(--bg-segment); border: 1px solid var(--line); }
+    #selected_infoblock .ibBtn:hover { background: var(--bg-control-hover); }
 
     /* action bar (Follow, 3D, Replay, Isolate) */
     .actionBar, #infoActions.actionBar { background: var(--bg-action); border: 1px solid var(--line); }
@@ -111,7 +111,6 @@
     .segmented { background: var(--bg-segment); }
     .segmented .on, .segmented button.on { background: var(--bg-segment-on); color: var(--text); }
     .popover, #filterPopover { background: var(--bg-panel) !important; border: 1px solid var(--line); border-radius: var(--r-card); }
-    #search_warning { background: var(--bg-panel) !important; border: 1px solid var(--border-ctl); }
 }
 
 /* ---------- hover card (the old tar1090 popup, restyled with the shared surfaces) ---------- */

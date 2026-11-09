@@ -818,7 +818,7 @@ PlaneObject.prototype.updateIcon = function() {
         if (!emerg) fillColor = stale ? '#8f8f8f' : '#ffffff';
     }
     let svgKey  = (whiteIcons ? 'w' : '') + fillColor + '!' + this.shape.name + '!' + this.strokeWidth;
-    let labelText = null;
+    let labelSpec = null;
 
     // Skywatch ADS-B: the selected aircraft always shows its label pill
     if ( (g.enableLabels || (this.selected && !SelectedAllPlanes)) && (!multiSelect || (multiSelect && this.selected)) &&
@@ -831,23 +831,8 @@ PlaneObject.prototype.updateIcon = function() {
             || this.selected
         )
     ) {
-        let callsign = "";
-        if (this.flight && this.flight.trim())
-            callsign =  this.flight.trim();
-        else if (this.registration)
-            callsign =  this.registration;
-        else
-            callsign =   this.icao.toUpperCase();
-        // Skywatch ADS-B: the route is only part of the label in the extended label modes (default: logo + callsign)
-        if (useRouteAPI && this.dataSource != "ais" && this.routeString && g.extendedLabels) {
-            if (0 && g.extendedLabels) {
-                callsign += ' - ' + this.routeString;
-            } else {
-                callsign += '\n' + this.routeString;
-            }
-        }
-
         const unknown = NBSP+NBSP+"?"+NBSP+NBSP;
+        const isSel = !!(this.selected && !SelectedAllPlanes);
 
         let alt;
         if (labelsGeom) {
@@ -857,61 +842,51 @@ PlaneObject.prototype.updateIcon = function() {
         }
         let altString = (alt == null) ? unknown : format_altitude_brief(alt, this.vert_rate, DisplayUnits, showLabelUnits);
         let speedString = (this.speed == null) ? (NBSP+'?'+NBSP) : format_speed_brief(this.speed, DisplayUnits, showLabelUnits).padStart(3, NBSP);
+        let callsign = "";
+        if (this.flight && this.flight.trim())
+            callsign =  this.flight.trim();
+        else if (this.registration)
+            callsign =  this.registration;
+        else
+            callsign =   this.icao.toUpperCase();
+        const moving = (!this.onGround || (this.speed && this.speed > 18) || isSel);
 
-        labelText = "";
         if (atcStyle) {
-            labelText += callsign + '\n';
-            labelText += altString + '\n';
-            labelText += 'x' + this.squawk;
-            if (this.squawk == '7700' || this.squawk == '7600' || this.squawk == '7500') {
-                if (this.squawk == '7700') {
-                    labelText += '\nEMERGENCY';
-                } else if (this.squawk == '7600') {
-                    labelText += '\nNORDO';
-                } else if (this.squawk == '7500') {
-                    labelText += '\nHIJACK';
-                }
-            }
+            // ATC style: callsign, altitude, squawk (and a status word for the emergency codes), one muted line each
+            let t = callsign + '\n' + altString + '\n' + 'x' + this.squawk;
+            if (this.squawk == '7700') t += '\nEMERGENCY';
+            else if (this.squawk == '7600') t += '\nNORDO';
+            else if (this.squawk == '7500') t += '\nHIJACK';
+            labelSpec = LABELS.fromText(t, {logo: true, selected: isSel});
         } else if (g.extendedLabels == 3) {
-            if (!windLabelsSlim) {
-                labelText += 'Wind' + NBSP;
-            }
+            let t = '';
+            if (!windLabelsSlim) t += 'Wind' + NBSP;
             if (this.wd != null) {
-                if (showLabelUnits) {
-                    labelText += format_track_arrow((this.wd + 180 % 360)) + NBSP + this.wd + '°' + NBSP;
-                    labelText += format_speed_long(this.ws, DisplayUnits);
-                } else {
-                    labelText += format_track_arrow((this.wd + 180 % 360)) + NBSP + this.wd + NBSP;
-                    labelText += format_speed_brief(this.ws, DisplayUnits);
-                }
+                if (showLabelUnits) t += format_track_arrow((this.wd + 180 % 360)) + NBSP + this.wd + '\u00b0' + NBSP + format_speed_long(this.ws, DisplayUnits);
+                else t += format_track_arrow((this.wd + 180 % 360)) + NBSP + this.wd + NBSP + format_speed_brief(this.ws, DisplayUnits);
             } else {
-                labelText += 'n/a';
+                t += 'n/a';
             }
-            if (windLabelsSlim) {
-                labelText += '\n' + altString;
-            } else {
-                if ((!this.onGround || (this.speed && this.speed > 18) || (this.selected && !SelectedAllPlanes))) {
-                    labelText += '\n' + speedString + NBSP + NNBSP + altString.padStart(6, NBSP);
-                }
-                labelText += '\n' + callsign;
+            if (windLabelsSlim) t += '\n' + altString;
+            else {
+                if (moving) t += '\n' + speedString + NBSP + NNBSP + altString.padStart(6, NBSP);
+                t += '\n' + callsign;
             }
-
-            if (windLabelsSlim && this.wd == null) {
-                labelText = '';
+            if (windLabelsSlim && this.wd == null) t = '';
+            labelSpec = LABELS.fromText(t, {logo: true, selected: isSel});
+        } else {
+            // default: logo + callsign. Extended modes add ONE muted second line, and only with values the receiver has.
+            const o = {flight: this.flight, registration: this.registration, hex: this.icao, logo: true, selected: isSel};
+            if (g.extendedLabels == 1 || g.extendedLabels == 2) {
+                o.extended = true;
+                if (useRouteAPI && this.dataSource != "ais" && this.routeString) o.route = this.routeString;
+                else if (g.extendedLabels == 2) o.route = [this.registration, this.icaoType].filter(Boolean).join(' ');
+                if (moving) { if (alt != null) o.alt = altString; if (this.speed != null) o.speed = speedString; }
             }
-        } else if (g.extendedLabels == 2) {
-            labelText += (this.registration ? this.registration : unknown) + NBSP + (this.icaoType ? this.icaoType : unknown) + '\n';
-        }
-        if (g.extendedLabels == 1 || g.extendedLabels == 2) {
-            if ((!this.onGround || (this.speed && this.speed > 18) || (this.selected && !SelectedAllPlanes))) {
-                labelText += speedString + NBSP + NNBSP + altString.padStart(6, NBSP) + '\n';
-            }
-        }
-        if (g.extendedLabels < 3 && !atcStyle) {
-            labelText += callsign;
+            labelSpec = LABELS.build(o);
         }
     }
-        MLR.setPlane(this, fillColor, svgKey, labelText, whiteIcons ? '#0b0b0d' : null);
+        MLR.setPlane(this, fillColor, svgKey, labelSpec, whiteIcons ? '#0b0b0d' : null);
     return;
 };
 

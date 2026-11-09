@@ -25,7 +25,7 @@ const SET_ROWS = {
     lastLeg:         ['set_aircraft', 'History: last leg only'],
     smoothMove:      ['set_aircraft', 'Smooth movement'],
     terrain3d:       ['set_appearance', 'Terrain in 3D view'],
-    liftMapOnSelect: ['set_appearance', 'Lift map when an aircraft is selected'],
+    brightenMapOnSelect: ['set_appearance', 'Brighten map when an aircraft is selected'],
     dimOthers: ['set_appearance', 'Dim other aircraft when one is selected'],
     airportDetail:   ['set_appearance', 'Airport detail (OpenFreeMap tiles)'],
     airportFx:       ['set_appearance', 'Airport detail effects (decorative)'],

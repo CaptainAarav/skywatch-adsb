@@ -59,9 +59,39 @@ body.phone #phoneSheetBody > #airport_panel { display: flex; padding: 0 !importa
 body.phone #phoneSheetBody > #airport_panel[hidden] { display: none !important; }
 body.phone #airport_panel .apScroll { overflow: visible; padding: 0 14px 12px; }
 body.phone #airport_panel .apBar { position: sticky; bottom: 0; background: var(--bg-sheet); padding: 10px 14px 12px; }
-body.phone #selected_infoblock .ibScroll { overflow: visible; }
-body.phone #selected_infoblock .sheetHandle { display: none !important; }
-body.phone.sheetFull #selected_infoblock { top: auto; }
+/* selection replaces the chrome: the sheet owns the full height */
+body.phone.infoOpen .psFoot, body.phone.airportOpen .psFoot { display: none; }
+
+/* selected aircraft: the SAME components as the desktop panel (ui/instruments.css); only density and layout change here.
+   body[data-snap] is peek | half | full (set by ui/phone.js). */
+body.phone.infoOpen #phoneSheetBody > #selected_infoblock { display: flex !important; flex-direction: column; padding: 0 14px !important; min-height: 100%; }
+body.phone #selected_infoblock .ibHead { min-height: 0; padding: 0 0 6px; }
+body.phone #selected_infoblock .ibHeadMain { padding: 0; }
+body.phone #selected_infoblock .ibTitleRow { gap: 10px; }
+body.phone #selected_infoblock .ibCallsign { font-size: 26px; line-height: 1.1; }
+body.phone #selected_infoblock .ibHeadBtns { margin-left: auto; display: flex; gap: 4px; flex: none; }
+body.phone #selected_infoblock .ibBtn#ib_p_share { display: inline-flex; width: 44px; height: 44px; }
+body.phone #selected_infoblock .ibSub { margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+body.phone #selected_infoblock .ibScroll { overflow: visible; flex: none; gap: 10px; padding: 6px 0 14px; }
+body.phone #selected_infoblock .ibScroll > .ibInstGrid { order: 1; }
+body.phone #selected_infoblock .ibScroll > .ibChips { order: 2; }
+body.phone #selected_infoblock .ibScroll > #ib_aircraft { order: 3; }
+body.phone #selected_infoblock .ibScroll > .ibRoute { order: 4; }
+body.phone #selected_infoblock .ibScroll > .ibTiles3 { order: 5; }
+body.phone #selected_infoblock .ibScroll > #ib_details_card { order: 6; }
+body.phone #selected_infoblock #infoActions {
+    position: sticky; bottom: 0; z-index: 3; margin: auto -14px 0; padding: 8px 14px calc(env(safe-area-inset-bottom, 0px) + 8px);
+    border: 0; border-radius: 0; background: var(--bg-sheet); box-shadow: 0 -1px 0 var(--line);
+}
+body.phone #selected_infoblock #infoActions .act { background: var(--bg-control); border: 1px solid var(--line); border-radius: 24px; }
+body.phone #selected_infoblock .actMenu { right: 14px; bottom: calc(100% + 4px); }
+/* peek: header, status, the three summaries in one row, the action bar. Nothing else. */
+body.phone[data-snap="peek"] #selected_infoblock .ibScroll > :not(.ibInstGrid) { display: none !important; }
+body.phone[data-snap="peek"] #selected_infoblock .ibDetail { display: none !important; }
+body.phone[data-snap="peek"] #selected_infoblock .ibInstGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+body.phone[data-snap="peek"] #selected_infoblock .ibInstGrid > .ibCard { padding: 10px 8px; grid-column: auto; }
+body.phone[data-snap="peek"] #selected_infoblock .ibScroll { padding-bottom: 8px; }
+body.phone[data-snap="peek"] #phoneSheetBody { overflow: hidden; }
 
 /* ---------- round glass controls ---------- */
 .pcCol, .pcLeft { position: fixed; z-index: 44; display: flex; gap: 10px; transition: opacity .2s; }
@@ -86,12 +116,11 @@ body.phone.settingsOpen .pcCol, body.phone.settingsOpen .pcLeft, body.phone.sett
 /* map-side overlays that would collide with the sheet */
 body.phone #filterPopover { left: 8px; right: 8px; top: auto; bottom: calc(var(--sheet-h, 140px) + 8px); width: auto; max-height: 60dvh; z-index: 47; }
 body.phone .rdBar { bottom: calc(var(--sheet-h, 140px) + 76px); }
-body.phone #search_warning { display: none; }
 
 /* ---------- settings: grouped list that drills into pages ---------- */
 body.phone #settings_infoblock {
     left: 0; right: 0; top: 0; bottom: 0; width: 100%; height: 100dvh; max-height: none; transform: none; border-radius: 0; flex-direction: column;
-    background: var(--bg-sheet); z-index: 80; padding-top: env(safe-area-inset-top, 0px);
+    background: #000 !important; z-index: 80; padding-top: env(safe-area-inset-top, 0px); border: 0;
 }
 body.phone #settings_infoblock .setNav { width: auto; flex: 1; flex-direction: column; flex-wrap: nowrap; overflow-y: auto; overflow-x: hidden; padding: 12px 16px calc(env(safe-area-inset-bottom, 0px) + 16px); gap: 0; border: 0; }
 body.phone #settings_infoblock .setTitle { display: block; font: 700 28px Inter, system-ui, sans-serif; padding: 12px 4px 14px; }
@@ -107,7 +136,7 @@ body.phone #settings_infoblock[data-phone-page="page"] .setNav { display: none; 
 body.phone #settings_infoblock .setHead { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--divider); }
 body.phone #settings_infoblock .setHead h2 { flex: 1; margin: 0; font: 600 18px Inter, system-ui, sans-serif; }
 body.phone #settings_infoblock .setBody { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; padding: 16px 16px calc(env(safe-area-inset-bottom, 0px) + 24px); }
-body.phone #settings_infoblock .setBack, body.phone #settings_infoblock .setClose { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 50%; background: var(--bg-control); border: 1px solid var(--line); color: var(--text); }
+body.phone #settings_infoblock .setBack { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 50%; background: var(--bg-control); border: 1px solid var(--line); color: var(--text); }
 body.phone #settings_infoblock[data-phone-page="root"] .setBack { display: none; }
 body.phone #settings_infoblock .setCols { grid-template-columns: 1fr; gap: 18px; }
 body.phone #settings_infoblock .setRow, body.phone #settings_infoblock .settingsOptionContainer { min-height: 48px; }
@@ -133,8 +162,28 @@ body.phone :is(#phoneSheet, #settings_infoblock, #filterPopover) :is(button, .ch
 body.phone :is(#phoneSheet, #settings_infoblock, #filterPopover) input[type=range] { height: 44px; margin: 0; }
 body.phone :is(#phoneSheet, #settings_infoblock) a { display: inline-block; padding: 14px 6px; margin: -14px -6px; min-width: 44px; box-sizing: border-box; text-align: center; }
 body.phone :is(#phoneSheet, #settings_infoblock) a.apLink, body.phone #airport_panel a { text-align: left; }
-body.phone .apX, body.phone #selected_infoblock .ibBtn { width: 44px; height: 44px; }
+body.phone #selected_infoblock .ibBtn { width: 44px; height: 44px; }
 body.phone .chip { display: inline-flex; align-items: center; }
 
 /* the callsign stays the headline on phones (elevation.css sets the desktop size) */
 @media (max-width: 768px), (pointer: coarse) { #selected_infoblock .ibCallsign { font-size: 22px; font-weight: 700; } }
+
+/* ---------- exits: every full-screen or modal surface has a visible 44x44 close control, top-right inside the safe area ---------- */
+body.phone #settings_close { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 10px); right: calc(env(safe-area-inset-right, 0px) + 12px); z-index: 3; display: inline-flex !important; }
+body.phone #settings_infoblock .setTitle { padding-right: 56px; }
+body.phone #settings_infoblock .setHead h2 { padding-right: 52px; }
+body.phone .sk-x, body.phone .histBar #replayStop { min-width: 44px; min-height: 44px; width: 44px; height: 44px; }
+body.phone .sk-dialog, body.phone .palBox { position: relative; }
+body.phone .sk-dialog .sk-x, body.phone .palBox .sk-x { position: absolute; top: 6px; right: 6px; font-size: 24px; }
+body.phone .sk-dialog .sk-dtitle { padding-right: 40px; }
+body.phone .palBox .palInput { padding-right: 56px; }
+body.phone .palBack { padding-top: calc(env(safe-area-inset-top, 0px) + 12px); }
+body.phone #graphsOverlay { padding-top: env(safe-area-inset-top, 0px); }
+body.phone #graphsOverlay .gHead { padding-right: calc(env(safe-area-inset-right, 0px) + 8px); }
+/* settings root page: the list only, but the close X stays reachable */
+body.phone #settings_infoblock[data-phone-page="root"] .setMain { display: block; flex: none; height: 0; overflow: visible; }
+body.phone #settings_infoblock[data-phone-page="root"] .setMain > :not(.setHead) { display: none; }
+body.phone #settings_infoblock[data-phone-page="root"] .setHead { padding: 0; border: 0; height: 0; margin: 0; }
+body.phone #settings_infoblock[data-phone-page="root"] .setHead > :not(#settings_close) { display: none; }
+/* one search field per tab: the Aircraft tab has its own filter, so the pill steps aside there */
+body.phone.listOpen:not(.infoOpen):not(.airportOpen) .psSearch { display: none; }

@@ -84,7 +84,7 @@ const PALETTE = (function () {
             row.addEventListener('click', () => choose(idx));
             list.appendChild(row);
         }
-        if (!rows.length) list.appendChild(el('div', 'palEmpty', 'Nothing matches "' + input.value.trim() + '".'));
+        if (!rows.length) list.appendChild(el('div', 'sk-empty', 'Nothing matches "' + input.value.trim() + '".'));
         input.setAttribute('aria-activedescendant', rows.length ? 'palopt' + sel : '');
         live.textContent = rows.length ? rows.length + ' results' : 'No results';
     }
@@ -105,7 +105,8 @@ const PALETTE = (function () {
         input.setAttribute('role', 'combobox'); input.setAttribute('aria-expanded', 'true'); input.setAttribute('aria-controls', 'palList'); input.setAttribute('aria-label', 'Search');
         list = el('div', 'palList'); list.id = 'palList'; list.setAttribute('role', 'listbox');
         live = el('div', 'palLive'); live.setAttribute('aria-live', 'polite');
-        box.append(input, list, live); root.appendChild(box); document.body.appendChild(root);
+        const x = el('button', 'sk-x', '\u00d7'); x.type = 'button'; x.setAttribute('aria-label', 'Close search'); x.addEventListener('click', () => close());
+        box.append(input, x, list, live); root.appendChild(box); document.body.appendChild(root);
         input.addEventListener('input', () => { sel = 0; render(); });
         root.addEventListener('mousedown', (e) => { if (e.target === root) close(); });
         root.addEventListener('keydown', (e) => {

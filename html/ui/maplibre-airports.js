@@ -28,7 +28,6 @@ const AIRPORT = {
     stopZoom: 14.5,
     haloZoom: 15,           // glow around the lights
     taxiWidth: 20,          // metres: drawn width of a taxiway (the tiles carry only centre lines)
-    chipZoom: 8,            // airport chip with flag and name
     color: {
         ground: '#000000',       // airfield ground: black, darker than the map around it
         apron: '#6d6d6d',
@@ -54,29 +53,7 @@ const AIRPORT = {
 };
 
 // ICAO prefix to ISO country (for the flag in the airport chip). Two letters first, then the first letter.
-const AIRPORT_PREFIX = {
-    EG: 'GB', EI: 'IE', EH: 'NL', EB: 'BE', EL: 'LU', LF: 'FR', ED: 'DE', ET: 'DE', EK: 'DK', EN: 'NO', ES: 'SE', EF: 'FI',
-    EE: 'EE', EV: 'LV', EY: 'LT', EP: 'PL', LK: 'CZ', LZ: 'SK', LO: 'AT', LS: 'CH', LI: 'IT', LE: 'ES', LP: 'PT', LG: 'GR',
-    LT: 'TR', LH: 'HU', LR: 'RO', LB: 'BG', LY: 'RS', LD: 'HR', LJ: 'SI', LQ: 'BA', LW: 'MK', LA: 'AL', LM: 'MT', LC: 'CY',
-    LL: 'IL', BI: 'IS', BG: 'GL', OJ: 'JO', OL: 'LB', OE: 'SA', OM: 'AE', OT: 'QA', OB: 'BH', OK: 'KW', OO: 'OM', OI: 'IR',
-    OP: 'PK', OA: 'AF', VI: 'IN', VA: 'IN', VO: 'IN', VE: 'IN', VT: 'TH', VV: 'VN', VH: 'HK', VM: 'MO', WS: 'SG', WM: 'MY',
-    WI: 'ID', WA: 'ID', RJ: 'JP', RO: 'JP', RK: 'KR', RC: 'TW', RP: 'PH', ZK: 'KP', ZM: 'MN', UK: 'UA', UM: 'BY', UA: 'KZ',
-    UT: 'UZ', UD: 'AM', UG: 'GE', UB: 'AZ', FA: 'ZA', HE: 'EG', HK: 'KE', HA: 'ET', DT: 'TN', DA: 'DZ', GM: 'MA', DN: 'NG',
-    SB: 'BR', SC: 'CL', SA: 'AR', SK: 'CO', SP: 'PE', SE: 'EC', SV: 'VE', SU: 'UY', MM: 'MX', MP: 'PA', MK: 'JM', MY: 'BS',
-    MU: 'CU', NZ: 'NZ', NF: 'FJ', PH: 'US', PA: 'US', PG: 'US', CY: 'CA', CZ: 'CA',
-};
 const AIRPORT_CAT_COLOR = {VFR: '#3DDC97', MVFR: '#F5B94A', IFR: '#FF6B6B', LIFR: '#B07BFF'};
-const AIRPORT_LETTER = {K: 'US', C: 'CA', Y: 'AU', U: 'RU', Z: 'CN', P: 'US'};
-
-function airportFlagExpr(prefix) {
-    prefix = prefix || 'flag-';
-    const m = ['match', ['slice', ['coalesce', ['get', 'icao'], 'XX'], 0, 2]];
-    for (const k in AIRPORT_PREFIX) m.push(k, prefix + AIRPORT_PREFIX[k]);
-    m.push(['match', ['slice', ['coalesce', ['get', 'icao'], 'XX'], 0, 1],
-        ...Object.entries(AIRPORT_LETTER).flatMap(([k, v]) => [k, prefix + v]), prefix + 'XX']);
-    return m;
-}
-
 // small rounded rectangle used behind stand refs and the airport chip (9-slice, stretched by icon-text-fit)
 function airportChipImage(fill, line) {
     const s = 32, c = document.createElement('canvas');
@@ -291,123 +268,9 @@ MLR.installAirports = function () {
             'text-rotate': ['get', 'rot'], 'text-rotation-alignment': 'map', 'text-pitch-alignment': 'map',
             'text-allow-overlap': true, 'text-ignore-placement': true, 'text-letter-spacing': 0.06},
         paint: {'text-color': C.number, 'text-opacity': ramp(AIRPORT.numberZoom, 0.92)}});
-    // airport pin: a round flag with the code (medium zoom) and the airport name below (higher zoom).
-    // Only airports that have an IATA or ICAO code in the data are shown.
-    const code = ['coalesce', ['get', 'iata'], ['get', 'icao']];
-    const pin = (id, minz, maxz, withName) => m.addLayer({id, type: 'symbol', source: src, 'source-layer': 'aerodrome_label', minzoom: minz, maxzoom: maxz,
-        filter: ['all', ['any', ['has', 'iata'], ['has', 'icao']], ['in', ['get', 'class'], ['literal', ['international', 'public', 'regional', 'military']]]],
-        layout: {
-            'icon-image': airportFlagExpr('flagc-'), 'icon-size': 1, 'icon-allow-overlap': false,
-            'text-field': withName
-                ? ['format', code, {'font-scale': 0.95}, '\n', {}, ['coalesce', ['get', 'name:latin'], ['get', 'name']], {'font-scale': 0.85, 'text-color': '#aaaaaa'}]
-                : code,
-            'text-font': font, 'text-size': 11 * gs, 'text-anchor': 'top', 'text-offset': [0, 1.0], 'text-optional': true, 'text-max-width': 12,
-            'symbol-sort-key': ['match', ['get', 'class'], 'international', 0, 'public', 1, 'regional', 2, 3],
-            'icon-padding': 6, 'text-padding': 3},
-        paint: {'text-color': '#8f8f8f', 'text-halo-color': 'rgba(0,0,0,0.6)', 'text-halo-width': 0.8}});
-    pin('tar-ap-pin', AIRPORT.chipZoom, 10, false);
-    pin('tar-ap-pin-name', 10, 15.5, true);
-    this._pinWxKey = null;
-    this.applyPinWeather();
-    this.installPinCard();
-
-    // flag images are created on demand from the bundled SVGs: flag-XX (rectangle) and flagc-XX (round pin)
-    if (!this._flagHook) {
-        this._flagHook = true;
-        m.on('styleimagemissing', (e) => {
-            const id = e.id, mm = /^(flagc?)-([A-Z]{2})(?:-(VFR|MVFR|IFR|LIFR))?$/.exec(id);
-            if (!mm || m.hasImage(id)) return;
-            const round = mm[1] === 'flagc';
-            const blank = {width: 1, height: 1, data: new Uint8Array(4)};
-            m.addImage(id, blank);
-            const img = new Image();
-            const draw = (withFlag) => {
-                const W = round ? 48 : 30, H = round ? 48 : 20, c = document.createElement('canvas'); c.width = W; c.height = H;
-                const x = c.getContext('2d');
-                x.save(); x.beginPath();
-                if (round) x.arc(W / 2, H / 2, W / 2 - 2, 0, Math.PI * 2); else x.roundRect ? x.roundRect(0, 0, W, H, 3) : x.rect(0, 0, W, H);
-                x.fillStyle = '#1c1c1c'; x.fill(); x.clip();
-                if (withFlag) { const r = img.width / img.height, h = round ? H : H, w = h * r; x.drawImage(img, (W - w) / 2, 0, w, h); }
-                x.restore();
-                if (round && mm[3]) { x.beginPath(); x.arc(W / 2, H / 2, W / 2 - 2.5, 0, Math.PI * 2); x.lineWidth = 5; x.strokeStyle = AIRPORT_CAT_COLOR[mm[3]]; x.stroke(); }     // ring only with fresh weather
-                try { m.removeImage(id); m.addImage(id, x.getImageData(0, 0, W, H), {pixelRatio: 2}); } catch (er) {}
-            };
-            if (mm[2] === 'XX') { if (round) draw(false); return; }
-            img.onload = () => draw(true);
-            img.onerror = () => { if (round) draw(false); };
-            img.src = 'flags/3x2/' + mm[2] + '.svg';
-        });
-    }
     this.applyAirportFx();
     this.applyAirportMetres(true);
     this.scheduleRunwayNumbers();
-};
-
-// ----- weather rings on the airport pins -----
-// One data-driven expression per wx.json refresh (never per frame): the pin icon is the flag plus a category suffix looked up by ICAO.
-MLR.applyPinWeather = function () {
-    const m = this.map;
-    if (!m || !m.getLayer('tar-ap-pin')) return;
-    const on = typeof airportPinWx == 'undefined' || airportPinWx;
-    const cats = on && typeof AIRPT != 'undefined' && AIPRT_OK() ? AIRPT.weatherCats() : {};
-    const keys = Object.keys(cats).sort();
-    const key = keys.map(k => k + cats[k]).join(',');
-    if (key === this._pinWxKey) return;
-    this._pinWxKey = key;
-    let expr = airportFlagExpr('flagc-');
-    if (keys.length) {
-        const match = ['match', ['coalesce', ['get', 'icao'], '']];
-        for (const k of keys) match.push(k, '-' + cats[k]);
-        match.push('');
-        expr = ['concat', expr, match];
-    }
-    for (const id of ['tar-ap-pin', 'tar-ap-pin-name']) if (m.getLayer(id)) m.setLayoutProperty(id, 'icon-image', expr);
-};
-function AIPRT_OK() { return typeof AIRPT.weatherCats == 'function'; }
-
-// Hover (long-press on touch) card on a pin with fresh weather. textContent only.
-MLR.installPinCard = function () {
-    const m = this.map;
-    if (this._pinCard) return;
-    this._pinCard = true;
-    let card = null, lp = null;
-    const close = () => { if (card) { card.remove(); card = null; } };
-    const show = (f, pt) => {
-        close();
-        if (typeof airportPinWx != 'undefined' && !airportPinWx) return;
-        const pr = f.properties || {}, icao = pr.icao && String(pr.icao).toUpperCase();
-        if (!icao || typeof AIRPT == 'undefined' || !AIRPT.wxFor) return;
-        const wx = AIRPT.wxFor(icao), met = wx && wx.m;
-        if (!met) return;
-        const A = AIRCALC, cat = A.metarCategory(met);
-        const el = document.createElement('div'); el.className = 'apPinCard';
-        const top = document.createElement('div'); top.className = 'apPinTop';
-        const code = document.createElement('b'); code.textContent = icao; top.appendChild(code);
-        if (cat) top.appendChild(AIRPT.catChip(cat));
-        el.appendChild(top);
-        const row = (k, v) => { if (!v) return; const d = document.createElement('div'); d.className = 'apPinRow'; const a = document.createElement('span'); a.textContent = k; const b = document.createElement('span'); b.textContent = v; d.append(a, b); el.appendChild(d); };
-        if (typeof met.wspd === 'number') row('Wind', met.wspd === 0 ? 'Calm' : (typeof met.wdir === 'number' ? String(met.wdir).padStart(3, '0') + '\u00b0' : 'VRB') + ' / ' + met.wspd + (typeof met.wgst === 'number' ? 'G' + met.wgst : '') + ' kt');
-        row('Visibility', AIRPT.visText(met.vis)); row('Cloud', AIRPT.cloudText(met.clouds));
-        const tq = [typeof met.temp === 'number' ? met.temp + '\u00b0C' : null, typeof met.qnh === 'number' ? 'QNH ' + met.qnh : null].filter(Boolean).join(' · ');
-        row('Temp / QNH', tq);
-        if (typeof met.obs === 'number') row('Observed', AIRPT.ageText(Date.now() / 1000 - met.obs));
-        const hint = document.createElement('div'); hint.className = 'apPinHint'; hint.textContent = 'Click for the full airport panel'; el.appendChild(hint);
-        m.getContainer().appendChild(el);
-        const w = el.offsetWidth, hh = el.offsetHeight, cw = m.getContainer().clientWidth;
-        el.style.left = Math.min(Math.max(8, pt.x + 14), cw - w - 8) + 'px';
-        el.style.top = Math.max(8, pt.y - hh - 14) + 'px';
-        card = el;
-    };
-    for (const id of ['tar-ap-pin', 'tar-ap-pin-name']) {
-        m.on('mousemove', id, (e) => { m.getCanvas().style.cursor = 'pointer'; if (e.features && e.features[0]) show(e.features[0], e.point); });
-        m.on('mouseleave', id, () => { m.getCanvas().style.cursor = ''; close(); });
-        m.on('touchstart', id, (e) => { clearTimeout(lp); const f = e.features && e.features[0], pt = e.point; lp = setTimeout(() => f && show(f, pt), 500); });
-        m.on('touchend', () => clearTimeout(lp)); m.on('touchmove', () => clearTimeout(lp));
-    }
-    m.on('click', () => { if (card) setTimeout(close, 0); });
-    m.on('movestart', close);
-    document.addEventListener('touchstart', (e) => { if (card && !card.contains(e.target) && !(e.target.closest && e.target.closest('.maplibregl-canvas'))) close(); }, true);
-    if (typeof AIRPT != 'undefined' && AIRPT.onWx) AIRPT.onWx(() => MLR.applyPinWeather());
 };
 
 // ----- runway numbers -----

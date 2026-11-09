@@ -33,10 +33,20 @@
 .ibTiny { font-size: 10px; color: var(--muted); }
 
 /* ---- Altitude + Speed row ---- */
-.ibRow2 { flex: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-.ibRow2 > .ibCard { padding: 14px; min-width: 0; }
-.ibRow2 > .ibCard[hidden] { display: none; }
-.ibRow2:has(> [hidden]:first-child):has(> :not([hidden])), .ibRow2:has(> :last-child[hidden]) { grid-template-columns: 1fr; }
+.ibInstGrid { flex: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.ibInstGrid > .ibCard { padding: 14px; min-width: 0; container: ibcard / inline-size; }
+.ibInstGrid > #ib_dir_card { grid-column: 1 / -1; }
+.ibSum { display: flex; flex-direction: column; min-width: 0; }
+.ibDetail { margin-top: 8px; min-width: 0; }
+.ibDetail[hidden] { display: none; }
+.ibBigV .na { color: var(--text-2); font-weight: 400; }
+.ibBigV > span:first-child { min-width: 0; }
+@container ibcard (max-width: 150px) {
+    .ibBigV { font-size: 18px; }
+    .ibBigV .unit { display: block; margin: 0; font-size: 10px; line-height: 1.2; white-space: nowrap; }
+    .ibVs { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ibSum .lbl { font-size: 11px; white-space: nowrap; }
+}
 .ibBigV { font-size: 24px; font-weight: 600; margin-top: 2px; line-height: 1.2; white-space: nowrap; }
 .ibTapeSlot { margin-top: 6px; line-height: 0; }
 .ibTapeSlot svg { max-width: 100%; height: auto; }
@@ -63,9 +73,9 @@
 .ibSpeedCard { display: flex; flex-direction: column; }
 
 /* ---- Direction & wind ---- */
-.ibDirCard { padding: 16px 16px 14px; }
+.ibInstGrid > .ibDirCard { padding: 14px 16px 14px; }
 .ibCompassSlot { display: flex; justify-content: center; margin-top: 4px; line-height: 0; }
-.ibCompassSlot svg { max-width: 100%; height: auto; }
+.ibCompassSlot svg { width: 100%; max-width: 264px; min-width: 150px; height: auto; aspect-ratio: 1; }
 .ibMinis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 6px; }
 .ibMinis:not(:has(.ibMini:not([hidden]))) { display: none; }
 .ibMini { background: var(--mini); border-radius: 16px; padding: 10px 12px; min-width: 0; }
@@ -84,8 +94,8 @@
 .ibTile3 .lbl { font-size: 11px; }
 .ibTile3 .v { font-size: 20px; margin-top: 3px; white-space: nowrap; }
 .ibTile3 .ibSmall { margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ibTile3.emergency, .ibT6.emergency { border-color: var(--bad); background: rgba(255,107,107,.12); box-shadow: inset 0 0 0 1px var(--bad); }
-.ibTile3.emergency .v, .ibT6.emergency .v { color: var(--bad); }
+.ibTile3.emergency { border-color: var(--bad); background: rgba(255,107,107,.12); box-shadow: inset 0 0 0 1px var(--bad); }
+.ibTile3.emergency .v .v { color: var(--bad); }
 
 /* ---- chip row (left-aligned pills, wrapping) ---- */
 #selected_infoblock .ibChips { display: flex; flex-wrap: wrap; justify-content: flex-start; align-items: center; gap: 6px; }
@@ -107,8 +117,8 @@
 .ibPillsWrap { gap: 6px; }
 
 /* ---- aircraft card: second facts row, wrapped operator ---- */
-.ibFacts2 { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--card-line); }
-.ibFacts { display: grid; grid-template-columns: 1fr 1fr 1.3fr; gap: 10px; }
+.ibFacts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; margin-top: 12px; }
+.ibFacts > div[hidden] { display: none; }
 .ibFacts > div { min-width: 0; }
 .ibFactEnd { text-align: left; margin-left: 0; }
 #selected_infoblock .ibFact { font-size: 14px; font-weight: 600; white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.25; margin-top: 3px; }
@@ -119,9 +129,28 @@
 
 .ibLimited { text-align: center; padding: 18px 12px; border-radius: 20px; background: var(--mini); }
 
-/* ---- action bar: Replay / Follow / Isolate ---- */
-#infoActions.actionBar { background: #1c1c1c; border: 1px solid rgba(255,255,255,.12); border-radius: 24px; padding: 6px; display: flex; gap: 6px; }
-#infoActions .act { flex: 1; }
+/* ---- action bar: Follow, Isolate, More (3D, Replay, Show track, Share) ---- */
+#infoActions.actionBar { position: relative; display: flex; gap: 6px; padding: 6px; border-radius: 24px; }
+#infoActions .act { flex: 1; min-width: 0; height: 48px; flex-direction: row; justify-content: center; padding: 0 6px; font: 600 14px var(--font-ui); white-space: nowrap; }
+#infoActions .act span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.actMenu { position: absolute; right: 6px; bottom: calc(100% + 8px); display: flex; flex-direction: column; min-width: 160px; padding: 6px; border-radius: 18px; background: var(--bg-card); border: 1px solid var(--line); box-shadow: 0 12px 32px rgba(0,0,0,.55); z-index: 5; }
+.actMenu[hidden] { display: none; }
+.actItem { min-height: 44px; padding: 0 14px; border: 0; border-radius: 12px; background: none; color: var(--text); font: 600 14px var(--font-ui); text-align: left; cursor: pointer; white-space: nowrap; }
+.actItem:hover, .actItem[aria-pressed="true"] { background: var(--bg-control-hover); }
+.actItem[hidden] { display: none; }
+
+/* ---- status sentence and Details card ---- */
+.ibStatusLine { margin: 2px 0 0; font-size: 14px; font-weight: 500; color: var(--text-2); }
+.ibStatusLine[hidden] { display: none; }
+.ibDetailsCard { padding: 0; }
+.ibDetailsCard > summary { display: flex; align-items: center; justify-content: space-between; min-height: 48px; padding: 0 16px; font-weight: 600; cursor: pointer; list-style: none; }
+.ibDetailsCard > summary::-webkit-details-marker { display: none; }
+.ibDetailsCard > summary::after { content: ''; width: 8px; height: 8px; border-right: 2px solid var(--text-2); border-bottom: 2px solid var(--text-2); transform: rotate(45deg); margin-top: -4px; }
+.ibDetailsCard[open] > summary::after { transform: rotate(-135deg); margin-top: 4px; }
+.ibDetailsCard .ibKv { padding: 0 16px 12px; }
+.ibDetailsCard .kv { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 13px; }
+.ibDetailsCard .kv .k { color: var(--text-2); }
+.ibDetailsCard .kv .v { font-weight: 600; text-align: right; }
 
 /* ---- wide grid (mockup 08) ---- */
 #ib_wide { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-content: start; }
@@ -193,26 +222,3 @@
     #selected_infoblock .ibBarFill, #selected_infoblock * { transition: none !important; }
 }
 
-/* ---- phone sheet (mockup 09) ---- */
-.ibPhoneInst, .ibTiles3.phoneOnly { display: none; }
-@media (max-width: 768px), (pointer: coarse) {
-    .ibPhoneInst.phoneOnly { display: flex !important; gap: 12px; align-items: center; flex: none; }
-    .ibCompassPhone { flex: none; margin: 0; }
-    .ibPhoneTiles { flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
-    .ibPhoneTiles .ibT6 { background: rgba(255,255,255,.07); border-radius: 16px; padding: 9px 12px; }
-    .ibPhoneTiles .ibT6 .v { font-size: 18px; margin-top: 2px; white-space: nowrap; }
-    .ibPhoneTiles .ibT6 .lbl { font-size: 11px; }
-    .ibWindTile .v { color: var(--cold); }
-    .ibTiles3.phoneOnly { display: grid !important; gap: 8px; }
-    .ibTiles3.phoneOnly .ibT6 { background: rgba(255,255,255,.07); border-radius: 16px; padding: 9px 12px; min-width: 0; }
-    .ibTiles3.phoneOnly .ibT6 .v { font-size: 18px; margin-top: 2px; white-space: nowrap; }
-    .ibTiles3.phoneOnly .ibT6 .lbl { font-size: 11px; }
-    #selected_infoblock .ibRow2, #selected_infoblock .ibDirCard, #selected_infoblock #ib_tiles3, #selected_infoblock #ib_ap_card, #selected_infoblock #ib_limited_c { display: none !important; }
-    body:not(.sheetFull) #selected_infoblock #ib_p_chips:not([hidden]) { display: flex !important; }
-    body.sheetFull #selected_infoblock .ibPhoneInst, body.sheetFull #selected_infoblock .ibTiles3.phoneOnly { display: none !important; }
-    #ib_wide { grid-template-columns: 1fr; gap: 12px; }
-    #ib_wide .ibSpan2, #ib_wide .ibLimited { grid-column: auto; }
-    .ibAttRow, .ibRxRow, .ibTmpRow { flex-wrap: wrap; }
-    .ibIdGrid, .ibAllGrid { grid-template-columns: 1fr; gap: 14px; }
-    .ibAccV { width: 100px; }
-}

@@ -9,8 +9,11 @@ ui/mapstyle.js
 ui/mapgeo.js
 ui/map-adapter.js
 ui/maplibre-layers.js
+ui/label-sprite.js
 ui/maplibre.js
+ui/airport-tiers.js
 ui/maplibre-airports.js
+ui/maplibre-airport-pins.js
 ui/maplibre-route.js
 ui/maplibre-motion.js
 ui/maplibre-lift.js
@@ -38,6 +41,7 @@ ui/shell.css
 ui/list.css
 ui/infoblock.css
 ui/instruments.css
+ui/instrument-summary.js
 ui/instruments.js
 ui/infoblock.js
 ui/banner-state.js

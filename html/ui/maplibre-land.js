@@ -22,11 +22,11 @@
         }
         lifted = on;
     }
-    const want = () => !!(typeof liftMapOnSelect != 'undefined' && liftMapOnSelect) && document.body.classList.contains('infoOpen');
+    const want = () => !!(typeof brightenMapOnSelect != 'undefined' && brightenMapOnSelect) && document.body.classList.contains('infoOpen');
     function sync() { const w = want(); if (w !== lifted) apply(w); }
     jQuery(function () {
-        new Toggle({key: 'liftMapOnSelect', display: 'Lift map when an aircraft is selected', container: '#set_appearance', init: typeof liftMapOnSelect == 'undefined' ? true : liftMapOnSelect,
-            setState: function (s) { liftMapOnSelect = s; sync(); }});
+        new Toggle({key: 'brightenMapOnSelect', display: 'Brighten map when an aircraft is selected', container: '#set_appearance', init: typeof brightenMapOnSelect == 'undefined' ? true : brightenMapOnSelect,
+            setState: function (s) { brightenMapOnSelect = s; sync(); }});
         new MutationObserver(sync).observe(document.body, {attributes: true, attributeFilter: ['class']});
     });
     // a new style (provider switch) drops our changes: forget the cache and re-apply

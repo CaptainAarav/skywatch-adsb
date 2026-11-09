@@ -388,7 +388,7 @@ let airportDetail = true;
 // 3D terrain from AWS Open Data elevation tiles. The default (on only for desktop with a hardware GPU) is chosen in ui/maplibre-terrain.js
 let terrain3d = false;
 // lighten the map land while an aircraft is selected (fades over about 300 ms; off under reduced motion)
-let liftMapOnSelect = !!(window.matchMedia && window.matchMedia('(max-width: 768px), (pointer: coarse)').matches);   // phones only; off on desktop (the map stays its own colour)
+let brightenMapOnSelect = false;   // off everywhere: the map never changes colour on selection (opt in under Settings > Appearance)
 // dim the other aircraft to about 60% while one is selected (off by default)
 let dimOthers = false;
 // aircraft icon colour on the map: 'white' (default) or 'altitude'. Tracks are always coloured by altitude.

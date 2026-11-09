@@ -29,6 +29,20 @@ const SHEETSNAP = (function () {
         const full = Math.round(viewportH - (safeTop || 0) - 12), half = Math.round(viewportH * 0.52);
         return [Math.min(peek, half - 40), Math.max(half, peek + 80), Math.max(full, half + 120)];
     }
-    return {snap, rubber, points, nearestIndex};
+    // peek height measured from content: the net handle height plus the heights of the blocks that stay visible at peek
+    // (header, instrument summaries, action bar), clamped so the map always keeps at least 38% of the viewport
+    function peekHeight(parts, viewportH) {
+        const sum = (parts.blocks || []).reduce((a, b) => a + (isFinite(b) && b > 0 ? b : 0), 0);
+        const total = Math.ceil((parts.handle || 0) + sum + (parts.pad || 0));
+        return Math.max(parts.min || 96, Math.min(total, Math.floor(viewportH * 0.62)));
+    }
+    // 'peek' | 'half' | 'full' for a sheet height among the snap points
+    function snapName(h, pts) { return ['peek', 'half', 'full'][nearestIndex(h, pts)] || 'peek'; }
+    // swiping the sheet down from peek by more than `slop` px, or flicking down faster than 0.4 px/ms, dismisses the selection
+    function shouldDismiss(startH, h, velocity, peek, slop) {
+        if (Math.abs(startH - peek) > 2) return false;
+        return h < peek - (slop == null ? 14 : slop) || (velocity || 0) < -0.4;
+    }
+    return {snap, rubber, points, nearestIndex, peekHeight, snapName, shouldDismiss};
 })();
 if (typeof module !== 'undefined') module.exports = SHEETSNAP;

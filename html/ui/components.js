@@ -71,6 +71,7 @@ const SKYUI = (function () {
             box.setAttribute('aria-labelledby', tid);
             const title = h('h2', 'sk-dtitle', o.title || ''); title.id = tid;
             box.appendChild(title);
+            const xb = h('button', 'sk-x', '\u00d7'); xb.type = 'button'; xb.setAttribute('aria-label', 'Close'); xb.addEventListener('click', () => done(input ? null : false)); box.appendChild(xb);
             if (o.body) box.appendChild(h('p', 'sk-dbody', o.body));
             let input = null;
             if (o.input) { input = h('input', 'sk-input'); input.type = 'text'; input.value = o.input.value || ''; if (o.input.placeholder) input.placeholder = o.input.placeholder; box.appendChild(input); }

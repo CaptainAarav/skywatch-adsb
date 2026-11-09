@@ -139,67 +139,9 @@ function ibAirportName(a) {
     return (a.name || a.location || '').replace(/ International Airport$| Airport$/, '');
 }
 
-function ibIsPhone() {
-    return window.matchMedia('(max-width: 768px), (pointer: coarse)').matches;
-}
-
-// phone sheet (mockup 05): six tiles, Follow / Show track / expand
-function ibRenderPhone(p, airline, sq, sitedist) {
-    const parts = [airline, p.icaoType, p.registration].filter(Boolean);
-    ibSub('ib_sub_phone', parts.length ? parts.join(' \u00b7 ') : p.icao.toUpperCase());
-    ibHtml('ib_head_src', ibSourceChip(p));
-
-    const onGround = p.altitude === 'ground';
-    const altFt = adjust_baro_alt(p.altitude);
-    // second header row: full type name left, speed and altitude (with a climb/descend glyph) right
-    ibText('ib_p_type', p.typeLong || p.icaoType || '');
-    const spd = [];
-    if (p.gs != null) spd.push(Math.round(convert_speed(p.gs, DisplayUnits)) + ' ' + get_unit_label('speed', DisplayUnits));
-    if (onGround) spd.push('Ground'); else if (altFt != null) spd.push(ibAlt(altFt) + ' ' + ibUnit('altitude'));
-    const vr0 = onGround ? null : p.vert_rate;
-    const glyph = (vr0 != null && Math.abs(vr0) > 192) ? (vr0 > 0 ? ' \u2191' : ' \u2193') : '';
-    ibEl('ib_p_spd').textContent = spd.join(' \u00b7 ') + glyph;
-    // flight status: one sentence built only from received data
-    const fsEl = ibEl('ib_p_status');
-    const fs = FLIGHTSTATUS.sentence(onGround ? 'ground' : altFt, vr0, p.gs, units_for('altitude', DisplayUnits) === 'metric');
-    fsEl.textContent = fs; fsEl.hidden = !fs;
-    ibText('ib_p_alt', onGround ? 'Ground' : ibAlt(altFt));
-    ibSub('ib_p_alt_u', (altFt != null && !onGround) ? ibUnit('altitude') : '');
-    const vr = p.vert_rate;
-    let vs = null, vsu = '';
-    if (vr != null && !onGround) {
-        if (units_for('verticalRate', DisplayUnits) === 'metric') {
-            vs = ibSigned(convert_vert_rate(vr, DisplayUnits), 1); vsu = 'm/s';
-        } else if (Math.abs(vr) >= 1000) {
-            vs = ibSigned(vr / 1000, 1); vsu = 'k';
-        } else {
-            vs = ibSigned(Math.round(vr / 10) * 10, 0); vsu = 'fpm';
-        }
-    }
-    ibText('ib_p_vs', vs);
-    ibSub('ib_p_vs_u', vsu);
-    const vsv = ibEl('ib_p_vs_v');
-    vsv.classList.toggle('climb', vr != null && vr > 192 && !onGround);
-    vsv.classList.toggle('descend', vr != null && vr < -192 && !onGround);
-    ibText('ib_p_trk', ibDeg(p.track));
-    ibText('ib_p_sq', sq);
-    ibText('ib_p_dist', sitedist != null ? ibDist(sitedist) : null);
-    ibSub('ib_p_dist_u', sitedist != null ? ibUnit('distance') : '');
-
-    const fb = ibEl('ib_p_follow');
-    fb.classList.toggle('on', !!FollowSelected);
-    fb.setAttribute('aria-pressed', FollowSelected ? 'true' : 'false');
-    fb.textContent = FollowSelected ? 'Following' : 'Follow';
-    // "Show track" needs traces; without them the second button isolates the aircraft
-    const b2 = ibEl('ib_p_second');
-    const traces = !!(haveTraces || globeIndex);
-    const label = traces ? (showTrace ? 'Hide track' : 'Show track') : (onlySelected ? 'Show all' : 'Isolate');
-    if (b2.textContent != label) b2.textContent = label;
-    b2.dataset.mode = traces ? 'trace' : 'isolate';
-}
 
 function ibRender(p) {
-    const wide = document.body.classList.contains('infoWide') || document.body.classList.contains('sheetFull');
+    const wide = document.body.classList.contains('infoWide');   // desktop only; the phone sheet uses the compact components
     const airline = ibAirline(p);
     const hex = p.icao.toUpperCase();
     const onGround = p.altitude === 'ground';
@@ -217,7 +159,9 @@ function ibRender(p) {
     if (p.pia) flags += '<a class="chip ibFlagChip" target="_blank" rel="noreferrer" href="https://www.faa.gov/air_traffic/technology/equipadsb/privacy/" title="Privacy ICAO Address">PIA</a>';
     ibHtml('ib_dbflags', flags);
 
-    ibHtml('ib_sub', (airline ? ibEsc(airline) + ' · ' : (hasCallsign ? '' : 'No callsign · ')) + `<span class="mono">${hex}</span>`);
+    // one muted line: Operator · Aircraft type name (whatever of the two the receiver data has)
+    const subParts = [airline || p.ownOp || '', p.typeLong || p.icaoType || ''].filter(Boolean);
+    ibSub('ib_sub', subParts.length ? subParts.join(' \u00b7 ') : (hasCallsign ? '' : 'No callsign \u00b7 ' + hex));
     ibSub('ib_hex_w', hex);
 
     let typeLong = (p.year ? p.year + ' ' : '') + (p.typeLong || '');
@@ -265,53 +209,42 @@ function ibRender(p) {
     const d = IBI.derive(p);
     const sitedist = d.dist;                 // null unless the receiver location is set AND shown (privacy)
     IBI.sample(p, d);
-    const phone = ibIsPhone();
     const panel = ibEl('selected_infoblock');
     panel.classList.toggle('emergency', !!(d.emerg || d.emergState));
     if (IBI.due(p, ibCache.force)) {
         ibCache.force = false;
-        if (phone) IBI.renderPhone(p, d, sitedist);
         if (wide) IBI.renderWide(p, d);
-        else if (!phone) IBI.renderCompact(p, d, sitedist);
+        else IBI.renderCompact(p, d, sitedist);
     }
-    if (phone)
-        ibRenderPhone(p, airline, sq, sitedist);
+    // one plain sentence under the header (from real data only)
+    const st = ibEl('ib_status');
+    const stText = FLIGHTSTATUS.sentence(onGround ? 'ground' : altFt, onGround ? null : (d.rate != null ? d.rate : null), p.gs, units_for('altitude', DisplayUnits) === 'metric');
+    st.textContent = stText; st.hidden = !stText;
+    ibActionState(p);
 
-    // ---- chips: phase, source, signal (hidden in trace view) ----
-    let chips = '';
-    if (d.phase) {
-        const arrow = d.phase == 'Descending' ? '<path d="M12 4v16M6 14l6 6 6-6"/>' : d.phase == 'Climbing' ? '<path d="M12 20V4M6 10l6-6 6 6"/>' : d.phase == 'Level' ? '<path d="M4 12h16"/>' : '<path d="M4 20h16M7 16l5-10 5 10"/>';
-        chips += `<span class="chip ibPhase"><svg aria-hidden="true" class="ico" width="12" height="12" viewBox="0 0 24 24">${arrow}</svg>${d.phase}</span>`;   // d.phase is one of four fixed words
-    }
-    chips += ibSourceChip(p);
-    if (!showTrace) {
-        if (p.rssi != null) chips += `<span class="chip mono">${ibNum(p.rssi, 1)} dBFS</span>`;
-        if (p.messageRate != null) chips += `<span class="chip mono">${ibNum(p.messageRate, p.messageRate < 10 ? 1 : 0)} msg/s</span>`;
-        if (p.seen != null && p.seen < 1e6) chips += `<span class="chip mono">seen ${format_duration(p.seen)}</span>`;
-        const rxMode = ((p.messages == undefined && p.receiverCount) || (globeIndex && binCraft));
-        const mc = rxMode ? (p.receiverCount >= 5 && p.dataSource != 'mlat' ? '> ' + p.receiverCount : p.receiverCount) : ibNum(p.messages);
-        if (mc != null && mc !== '') chips += `<span class="chip mono">${mc}${rxMode ? ' receivers' : ' msgs'}</span>`;
-    }
+    // ---- chips: ONE compact row (source, signal); everything else is in the collapsed Details card ----
+    let chips = ibSourceChip(p);
+    if (!showTrace && p.rssi != null) chips += `<span class="chip mono">${ibNum(p.rssi, 1)} dBFS</span>`;
     ibHtml('selected_showTrace_hide', chips);
+    ibDetails(p, d);
 
     // ---- aircraft card ----
     let typeName = p.typeLong || '';
     if (!typeName && p.icaoType) typeName = p.icaoType;
-    ibSub('ib_type_name', typeName ? (p.year ? typeName + ' (' + p.year + ')' : typeName) : '');
-    ibSub('ib_icaotype', p.typeLong ? (p.icaoType || '') : '');
-    ibSub('ib_typedesc', p.typeDescription || '');
+    const row = (id, v) => { const e = ibEl(id); if (e) { e.textContent = v || ''; const r = e.closest('[data-row]'); if (r) r.hidden = !v; } };
+    row('ib_type_name', typeName ? (p.year ? typeName + ' (' + p.year + ')' : typeName) : '');
+    row('ib_icaotype', p.typeLong ? (p.icaoType || '') : '');
+    row('ib_typedesc', p.typeDescription || '');
     ibHtml('ib_country', ibFlag(p));
-    ibText('ib_operator', airline || p.ownOp || '');
-    ibEl('ib_operator_row').hidden = !(airline || p.ownOp);
-    const yr = p.year ? Number(p.year) : null;
-    ibText('ib_built', yr || '');
-    ibText('ib_age', yr ? Math.max(0, new Date().getUTCFullYear() - yr) + ' yrs' : '');
-    const cat = p.category ? p.category.toUpperCase() : '';
-    ibText('ib_category', cat ? cat + (IBI.CATEGORY[cat] ? ' · ' + IBI.CATEGORY[cat] : '') : '');
-    ibEl('ib_facts2').hidden = !(yr || cat);
     ibEl('ib_country').closest('[data-row]').hidden = !p.country;
+    row('ib_operator', airline || p.ownOp || '');
+    const yr = p.year ? Number(p.year) : null;
+    row('ib_built', yr ? String(yr) : '');
+    row('ib_age', yr ? Math.max(0, new Date().getUTCFullYear() - yr) + ' yrs' : '');
+    const cat = p.category ? p.category.toUpperCase() : '';
+    row('ib_category', cat ? cat + (IBI.CATEGORY[cat] ? ' · ' + IBI.CATEGORY[cat] : '') : '');
     if (!reg) ibText('selected_registration', '');
-    else ibEl('reg_info').hidden = p.isNonIcao();
+    ibEl('reg_info').hidden = !reg || p.isNonIcao();
 
     const receivers = ((p.messages == undefined && p.receiverCount) || (globeIndex && binCraft)) && !showTrace;
     let msgs;
@@ -375,24 +308,57 @@ function ibExportVisible(p) {
         ibEl(id).hidden = !p.position;
 }
 
-function ibSetSheetFull(on) {
-    ibCache.force = true;
-    on = !!on && ibIsPhone() && document.body.classList.contains('infoOpen');
-    document.body.classList.toggle('sheetFull', on);
-    for (const id of ['sheetHandle', 'ib_p_expand']) {
-        const e = document.getElementById(id);
-        if (!e) continue;
-        e.setAttribute('aria-expanded', on ? 'true' : 'false');
-        e.setAttribute('aria-label', on ? 'Show less' : 'Show all details');
+// Details card: the secondary numbers, collapsed by default (same card on desktop and phone). Rebuilt only when the text changes.
+function ibDetails(p, d) {
+    const rows = [];
+    const add = (k, v) => { if (v != null && v !== '') rows.push([k, v]); };
+    const u = {alt: ibUnit('altitude'), spd: ibUnit('speed')};
+    if (d.selAlt != null) add('Selected altitude', ibAlt(d.selAlt) + ' ' + u.alt);
+    if (d.selHdg != null) add('Selected heading', ibDeg(d.selHdg));
+    if (d.qnh != null) add('Pressure setting', Math.round(d.qnh) + ' hPa');
+    if (d.head != null) add(d.head < 0 ? 'Tailwind' : 'Headwind', ibSpeed(Math.abs(d.head)) + ' ' + u.spd);
+    if (!showTrace) {
+        if (p.seen != null && p.seen < 1e6) add('Last heard', format_duration(p.seen) + ' ago');
+        if (p.messageRate != null) add('Message rate', ibNum(p.messageRate, p.messageRate < 10 ? 1 : 0) + ' msg/s');
+        const rxMode = ((p.messages == undefined && p.receiverCount) || (globeIndex && binCraft));
+        const mc = rxMode ? (p.receiverCount >= 5 && p.dataSource != 'mlat' ? '> ' + p.receiverCount : p.receiverCount) : ibNum(p.messages);
+        if (mc != null && mc !== '') add(rxMode ? 'Receivers' : 'Messages', String(mc));
     }
-    const sc = document.getElementById('infoblock-container');
-    if (sc) sc.scrollTop = 0;
-    if (on && SelectedPlane) refreshSelected();
+    const key = rows.map(r => r.join('=')).join('|');
+    const kv = ibEl('ib_details_kv');
+    if (kv._key === key) return;
+    kv._key = key;
+    kv.replaceChildren(...rows.map(([k, v]) => {
+        const r = document.createElement('div'); r.className = 'kv';
+        const a = document.createElement('span'); a.className = 'k'; a.textContent = k;
+        const b = document.createElement('span'); b.className = 'v'; b.textContent = v;
+        r.append(a, b); return r;
+    }));
+    ibEl('ib_details_card').hidden = rows.length === 0;
 }
 
+// action bar state: Follow / Following, Show track availability
+function ibActionState(p) {
+    const f = ibEl('F_label'), want = FollowSelected ? 'Following' : 'Follow';
+    if (f && f.textContent !== want) f.textContent = want;
+    const fb = ibEl('F'); if (fb) { fb.classList.toggle('on', !!FollowSelected); fb.setAttribute('aria-pressed', FollowSelected ? 'true' : 'false'); }
+    const il = ibEl('I_label'), wantI = onlySelected ? 'Show all' : 'Isolate';
+    if (il && il.textContent !== wantI) il.textContent = wantI;
+    const t = ibEl('act_track');
+    if (t) { const traces = !!(haveTraces || globeIndex); t.hidden = !traces; t.textContent = showTrace ? 'Hide track' : 'Show track'; }
+}
+
+function ibShare() {
+    const p = SelectedPlane; if (!p) return;
+    const url = location.origin + location.pathname + '?icao=' + p.icao;
+    const title = (p.flight && p.flight.trim()) || p.registration || p.icao.toUpperCase();
+    if (navigator.share) navigator.share({title: title, url: url}).catch(() => {});
+    else if (navigator.clipboard) navigator.clipboard.writeText(url).then(() => { if (typeof SKYUI != 'undefined') SKYUI.toast('Link copied'); }).catch(() => {});
+}
+
+function ibCloseMenu() { const m = document.getElementById('act_menu'); if (m && !m.hidden) { m.hidden = true; const b = document.getElementById('act_more'); b && b.setAttribute('aria-expanded', 'false'); } }
+
 function ibLayout() {
-    if (!document.body.classList.contains('infoOpen') || !ibIsPhone())
-        document.body.classList.remove('sheetFull');
     const wide = document.body.classList.contains('infoWide');
     const photo = document.getElementById('photo_container');
     const slot = document.getElementById(wide ? 'ib_photo_wide' : 'ib_photo_compact');
@@ -409,35 +375,15 @@ function initInfoblock() {
     jQuery('#ib_collapse').on('click', function () {
         toggles['wideInfoblock'].toggle(false);
     });
-    jQuery('#ib_p_share').on('click', function () {
-        const p = SelectedPlane; if (!p) return;
-        const url = location.origin + location.pathname + '?icao=' + p.icao;
-        const title = (p.flight && p.flight.trim()) || p.registration || p.icao.toUpperCase();
-        if (navigator.share) navigator.share({title: title, url: url}).catch(() => {});
-        else if (navigator.clipboard) navigator.clipboard.writeText(url).catch(() => {});
+    jQuery('#ib_p_share, #act_share').on('click', function () { ibShare(); ibCloseMenu(); });
+    jQuery('#act_track').on('click', function () { jQuery('#show_trace').trigger('click'); ibCloseMenu(); if (SelectedPlane) refreshSelected(); });
+    jQuery('#act_more').on('click', function (e) {
+        e.stopPropagation();
+        const m = ibEl('act_menu'), open = m.hidden;
+        m.hidden = !open; this.setAttribute('aria-expanded', open ? 'true' : 'false');
     });
-    jQuery('#ib_p_expand').on('click', () => ibSetSheetFull(!document.body.classList.contains('sheetFull')));
-    jQuery('#ib_p_second').on('click', function () {
-        if (this.dataset.mode == 'trace') jQuery('#show_trace').trigger('click');
-        else toggleIsolation();
-        if (SelectedPlane) refreshSelected();
-    });
-    // drag handle: tap toggles; swipe up expands; swipe down collapses, then closes
-    const h = document.getElementById('sheetHandle');
-    let y0 = null;
-    h.addEventListener('pointerdown', (e) => { y0 = e.clientY; h.setPointerCapture(e.pointerId); });
-    h.addEventListener('pointerup', (e) => {
-        if (y0 == null) return;
-        const dy = e.clientY - y0;
-        y0 = null;
-        const full = document.body.classList.contains('sheetFull');
-        if (dy < -30) ibSetSheetFull(true);
-        else if (dy > 40) {
-            if (full) ibSetSheetFull(false);
-            else jQuery('#infoblock_close').trigger('click');
-        } else ibSetSheetFull(!full);
-    });
-    h.addEventListener('pointercancel', () => { y0 = null; });
+    jQuery(document).on('click', function (e) { if (!e.target.closest('#act_menu, #act_more')) ibCloseMenu(); });
+    jQuery('#act_menu').on('keydown', function (e) { if (e.key === 'Escape') { ibCloseMenu(); ibEl('act_more').focus(); e.stopPropagation(); } });
     const mq = window.matchMedia('(max-width: 768px), (pointer: coarse)');
     const onMq = () => { if (typeof adjustInfoBlock == 'function') adjustInfoBlock(); };
     if (mq.addEventListener) mq.addEventListener('change', onMq);
