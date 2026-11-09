@@ -1,0 +1,50 @@
+/* Skywatch ADS-B shared components (ui/components.js). White is the only accent; status colours only for status. */
+.sk-host { position: fixed; inset: 0; pointer-events: none; z-index: 10050; font-family: Inter, system-ui, sans-serif; }
+.sk-banners { position: absolute; top: 76px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 8px; width: min(520px, calc(100vw - 32px)); }
+.sk-toasts { position: absolute; right: 16px; bottom: 80px; display: flex; flex-direction: column; gap: 8px; width: min(360px, calc(100vw - 32px)); }
+.sk-banner, .sk-toast { pointer-events: auto; display: flex; align-items: center; gap: 12px; padding: 10px 12px 10px 14px; background: #1d1e22; color: #fff;
+    border: 1px solid rgba(255,255,255,.08); border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,.45); font-size: 13px; line-height: 1.35;
+    animation: sk-in .2s ease-out; }
+.sk-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: #fff; }
+.sk-success .sk-dot { background: #3DDC97; } .sk-warn .sk-dot { background: #F5B94A; } .sk-error .sk-dot { background: #FF6B6B; }
+.sk-btxt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.sk-msg { flex: 1; overflow-wrap: anywhere; font-weight: 500; }
+.sk-sub { color: #b8b9bd; font-size: 12px; }
+.sk-x { flex: none; background: none; border: 0; color: #b8b9bd; font-size: 18px; line-height: 1; cursor: pointer; border-radius: 8px; padding: 2px 6px; }
+.sk-x:hover { color: #fff; background: rgba(255,255,255,.08); }
+.sk-btn { font: inherit; font-size: 13px; font-weight: 600; border-radius: 999px; padding: 7px 14px; cursor: pointer; border: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.06); color: #fff; }
+.sk-btn:hover { background: rgba(255,255,255,.12); }
+.sk-btn.sk-pri { background: #fff; color: #000; border-color: #fff; }
+.sk-btn.sk-pri:hover { background: #e8e8ea; }
+.sk-btn.sk-danger { background: transparent; color: #FF6B6B; border-color: #FF6B6B; }
+.sk-btn.sk-danger:hover { background: rgba(255,107,107,.12); }
+.sk-btn:focus-visible, .sk-x:focus-visible, .sk-input:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.sk-backdrop { position: fixed; inset: 0; z-index: 10060; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.5);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); animation: sk-fade .2s ease-out; font-family: Inter, system-ui, sans-serif; }
+.sk-dialog { width: min(420px, calc(100vw - 32px)); background: #1d1e22; color: #fff; border: 1px solid rgba(255,255,255,.08); border-radius: 22px; padding: 22px; box-shadow: 0 20px 60px rgba(0,0,0,.6); }
+.sk-dtitle { margin: 0 0 8px; font-size: 17px; font-weight: 600; }
+.sk-dbody { margin: 0 0 16px; color: #cfcfd4; font-size: 14px; line-height: 1.45; overflow-wrap: anywhere; }
+.sk-input { width: 100%; box-sizing: border-box; margin: 0 0 16px; padding: 9px 12px; font: inherit; color: #fff; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12); border-radius: 12px; }
+.sk-drow { display: flex; justify-content: flex-end; gap: 8px; }
+.sk-empty { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; padding: 28px 20px; color: #b8b9bd; }
+.sk-eicon { font-size: 28px; opacity: .8; } .sk-etitle { color: #fff; font-weight: 600; font-size: 15px; } .sk-ehelp { font-size: 13px; max-width: 28em; margin-bottom: 6px; }
+.sk-ring { display: inline-block; width: 18px; height: 18px; border-radius: 50%; border: 2px solid rgba(255,255,255,.18); border-top-color: #fff; animation: sk-spin .8s linear infinite; }
+.sk-tip { position: fixed; z-index: 10070; pointer-events: none; max-width: 260px; padding: 6px 10px; background: #1d1e22; color: #fff; font: 500 12px/1.35 Inter, system-ui, sans-serif;
+    border: 1px solid rgba(255,255,255,.12); border-radius: 10px; box-shadow: 0 6px 20px rgba(0,0,0,.5); animation: sk-fade .15s ease-out; }
+@keyframes sk-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes sk-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes sk-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .sk-banner, .sk-toast, .sk-backdrop, .sk-tip { animation: none; } .sk-ring { animation-duration: 2.4s; } }
+/* thin dark scrollbars everywhere */
+* { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.25) transparent; }
+*::-webkit-scrollbar { width: 8px; height: 8px; } *::-webkit-scrollbar-thumb { background: rgba(255,255,255,.22); border-radius: 8px; } *::-webkit-scrollbar-track { background: transparent; }
+@media print {
+    .sk-host, .sk-backdrop, #loader { display: none !important; }
+    html, body { background: #fff !important; color: #000 !important; }
+    body * { box-shadow: none !important; backdrop-filter: none !important; }
+    #layout_container, #map_container, .maplibregl-map { display: none !important; }
+}
+
+#loader { display: flex; align-items: center; justify-content: center; width: auto; height: auto; left: 50%; transform: translateX(-50%); }
+#loader_progress { width: 28px; height: 28px; border-width: 3px; position: static; }
+.sk-noscript { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: #000; color: #fff; font: 500 15px Inter, system-ui, sans-serif; z-index: 99999; }

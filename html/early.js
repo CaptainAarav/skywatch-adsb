@@ -502,8 +502,7 @@ if (uuid != null) {
 
         setTimeout(function() {
             jQuery("#loader").addClass("hidden");
-            jQuery("#update_error_detail").text("Seems the decoder / receiver / backend isn't working correctly!");
-            jQuery("#update_error").css('display','block');
+            SKYUI.conn.fail("The decoder, receiver or backend does not seem to be working");
         }, 2000);
 
         setTimeout(function() {

@@ -343,8 +343,7 @@ function fetchFail(jqxhr, status, error) {
         console.log(jqxhr);
         console.log(error);
         if (status != 429 && status != '429') {
-            jQuery("#update_error_detail").text(errText);
-            jQuery("#update_error").css('display','block');
+            SKYUI.conn.fail(errText);
             StaleReceiverCount++;
         } else {
             if (C429++ > 16) {
@@ -372,8 +371,7 @@ function fetchDone(data) {
             } catch (e) {
                 let errText = e.message;
                 console.log(errText);
-                jQuery("#update_error_detail").text(errText);
-                jQuery("#update_error").css('display','block');
+                SKYUI.conn.fail(errText);
                 return;
             }
             let arrayBuffer = res.buffer
@@ -390,8 +388,7 @@ function fetchDone(data) {
         if (!data.aircraft || !data.now) {
             let error = data.error;
             if (error) {
-                jQuery("#update_error_detail").text(error);
-                jQuery("#update_error").css('display','block');
+                SKYUI.conn.fail(error);
                 StaleReceiverCount++;
             }
             return;
@@ -444,13 +441,10 @@ function fetchDone(data) {
         // Check for stale receiver data
         if (last == now && !globeIndex) {
             StaleReceiverCount++;
-            if (StaleReceiverCount > 5) {
-                jQuery("#update_error_detail").text("The data from the server hasn't been updated in a while.");
-                jQuery("#update_error").css('display','block');
-            }
-        } else if (StaleReceiverCount > 0){
+            SKYUI.conn.ok(false);       // answering, but the receiver time did not advance (the banner turns "stale" after 30 s)
+        } else {
             StaleReceiverCount = 0;
-            jQuery("#update_error").css('display','none');
+            SKYUI.conn.ok(true);
         }
     } catch (e) {
         console.error(e);
@@ -6618,9 +6612,7 @@ function loadReplay(ts) {
                 //console.log(`aborted: ${rKey}`);
                 return;
             }
-            jQuery("#update_error_detail").text(error.message + ' --> No data for this timestamp!');
-            jQuery("#update_error").css('display','block');
-            replay.errorTimeout = setTimeout(() => { jQuery("#update_error").css('display','none'); }, 5000);
+            SKYUI.toast('No data for this timestamp', {kind: 'warn'});
         };
 
         fetch(chunk.url, { signal: replay.abortController.signal })

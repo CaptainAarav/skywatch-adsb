@@ -21,12 +21,14 @@
     <link rel="stylesheet" href="ui/infoblock.css" type="text/css" />
     <link rel="stylesheet" href="ui/instruments.css" type="text/css" />
     <link rel="stylesheet" href="ui/airport.css" type="text/css" />
+    <link rel="stylesheet" href="ui/components.css" type="text/css" />
     <link rel="stylesheet" href="ui/history.css" type="text/css" />
     <link rel="stylesheet" href="ui/settings.css" type="text/css" />
     <link rel="stylesheet" href="ui/maplibre.css" type="text/css" />
     <link rel="stylesheet" href="ui/airlines.css" type="text/css" />
     <link rel="stylesheet" href="ui/phone.css" type="text/css" />
 
+    <meta name="theme-color" content="#000000">
     <link rel="icon" type="image/png" href="images/tar1090-favicon.png">
 
     <title>Skywatch ADS-B</title>
@@ -441,8 +443,9 @@
         </div>
       </div>
 
+      <noscript><div class="sk-noscript">Skywatch ADS-B needs JavaScript to show the live map.</div></noscript>
       <div id="loader">
-          <progress id="loader_progress"></progress>
+          <span class="sk-ring" id="loader_progress" role="progressbar" aria-label="Loading"></span>
       </div>
 
       <div id="map_container">
@@ -875,6 +878,8 @@
     <script src="ui/map-adapter.js"></script>
 
     <!-- JS_ANCHOR2 -->
+    <script src="ui/banner-state.js"></script>
+    <script src="ui/components.js"></script>
     <script src="project.js"></script>
     <script src="early.js"></script>
 
