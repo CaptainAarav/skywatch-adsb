@@ -5,6 +5,8 @@
  * or inside the phone media query.
  */
 .phoneOnly { display: none !important; }
+/* phone surfaces: black sheet, #161616 cards (desktop: #0d0d0d panel, #1e1e1e cards, see theme.css and elevation.css) */
+@media (max-width: 768px), (pointer: coarse) { :root { --bg-card: #161616; --bg-panel: #000000; } }
 @media (max-width: 768px), (pointer: coarse) { .phoneOnly { display: inline-flex !important; } }
 
 html, body { overscroll-behavior: none; }

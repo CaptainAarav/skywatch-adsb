@@ -29,6 +29,7 @@
     <link rel="stylesheet" href="ui/settings.css" type="text/css" />
     <link rel="stylesheet" href="ui/maplibre.css" type="text/css" />
     <link rel="stylesheet" href="ui/airlines.css" type="text/css" />
+    <link rel="stylesheet" href="ui/elevation.css" type="text/css" />
     <link rel="stylesheet" href="ui/phone.css" type="text/css" />
 
     <meta name="theme-color" content="#000000">
@@ -629,7 +630,7 @@
               <label for="search_input" class="visuallyHidden">Search aircraft, airport or coordinates</label>
               <input id="search_input" name="searchBox" type="search" placeholder="Search" maxlength="128" spellcheck="false"
                 title="Callsign, hex, registration, type or squawk. An airport code (EGLL, LHR) or lat, lon jumps the map there.">
-              <kbd aria-hidden="true">/</kbd>
+              <kbd aria-hidden="true" id="search_hint">Ctrl K</kbd>
             </form>
             <div class="warning glass" id="search_warning" role="status" style="display:none"></div>
           </div>

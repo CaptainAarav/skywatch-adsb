@@ -1,0 +1,106 @@
+/*
+ * Skywatch ADS-B: elevation layer (desktop). Loaded after the component sheets, so it has the last word on surface colours.
+ *   map #181818 / sea #020202  <  control #131313, input #111111, panel #0d0d0d  <  card #1e1e1e (row #161616)
+ * Text: #fff values, #939393 labels, #7a7a7a inactive nav and hints. White is the only accent.
+ * The phone keeps its own flatter sheet (phone.css, #000 sheet and #161616 cards): everything here is scoped to desktop.
+ */
+@media (min-width: 769px) and (not (pointer: coarse)) {
+
+    /* ---------- panels ---------- */
+    #sidebar_container, #selected_infoblock, #airport_panel, #settings_infoblock, #graphsOverlay, #highlighted_infoblock {
+        background: var(--bg-panel) !important;
+        border: 1px solid var(--line);
+        border-radius: var(--r-panel);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, .55);
+        -webkit-backdrop-filter: none; backdrop-filter: none;
+    }
+    #highlighted_infoblock { border-radius: var(--r-card); }
+    #selected_infoblock, #airport_panel .apScroll { gap: 12px; }
+
+    /* ---------- cards: 20px radius, 1px line, 12px apart ---------- */
+    #selected_infoblock { --card: var(--bg-card); --card-line: var(--line); --mini: var(--bg-row); }
+    #selected_infoblock .ibRoute, #selected_infoblock .ibCard, #selected_infoblock .ibCard2, #selected_infoblock .ibDetailsBtn,
+    #selected_infoblock .ibTile, #selected_infoblock .ibNote,
+    .apCard, #graphsOverlay .gCard, .alRule, .statTile, .altimeterTile:not(.hidden) {
+        background: var(--bg-card);
+        border: 1px solid var(--line);
+        border-radius: var(--r-card);
+    }
+    #selected_infoblock .ibDetailsBtn:hover { background: var(--bg-action-hover); }
+    #selected_infoblock .ibScroll, #airport_panel .apScroll { gap: 12px; }
+    .infoblock_row:not(.hidden), #columnsPopover #sortableColumns li, .apTile, .apEnd, .apPill { background: var(--bg-row); }
+
+    /* the panel's own chips and small buttons */
+    #selected_infoblock .chip, #selected_infoblock .ibBtn, .apChip, .apX { background: var(--bg-segment); border: 1px solid var(--line); }
+    #selected_infoblock .ibBtn:hover, .apX:hover { background: var(--bg-control-hover); }
+
+    /* action bar (Follow, 3D, Replay, Isolate) */
+    .actionBar, #infoActions.actionBar { background: var(--bg-action); border: 1px solid var(--line); }
+    .act { background: none; color: var(--text-2); }
+    .act:hover { background: var(--bg-action-hover); color: var(--text); }
+    .act.on, .act.activeButton { background: #fff; color: #000; }
+    #infoActions.actionBar { border-radius: var(--r-card); }
+
+    /* ---------- text ---------- */
+    body, .infoblock_heading { color: var(--text); }
+    .ibTiny, .unit, #selected_infoblock .unit, .setNote, .filterHint, .mut, .lbl { color: var(--text-2); }
+
+    /* ---------- top bar: nav as text links ---------- */
+    #viewPill { background: none !important; border: 0; box-shadow: none; padding: 0; gap: 4px; }
+    #viewPill .tb { height: 34px; padding: 0 14px; border-radius: 10px; background: none; color: var(--text-3); font-size: 14px; font-weight: 500; position: relative; }
+    #viewPill .tb:not(.on):hover { color: var(--text); background: rgba(255, 255, 255, .06); }
+    #viewPill .tb[aria-pressed="true"], #viewPill .tb.on { color: var(--text); background: none; }
+    #viewPill .tb[aria-pressed="true"]::after, #viewPill .tb.on::after { content: ''; position: absolute; left: 14px; right: 14px; bottom: 2px; height: 1px; background: var(--text); }
+    #viewPill .tb:focus-visible { outline: 2px solid #fff; outline-offset: 1px; }
+
+    /* ---------- search ---------- */
+    #searchWrap { width: 236px; }
+    #search_form { background: var(--bg-input) !important; border: 1px solid var(--border-ctl); color: var(--text-input); box-shadow: none; }
+    #search_form:focus-within { border-color: rgba(255, 255, 255, .28); }
+    #search_input { color: var(--text-input); }
+    #search_input::placeholder { color: var(--text-2); }
+    #search_form kbd { font-family: var(--font-ui); font-size: 11px; font-weight: 500; color: var(--text-2); background: var(--bg-segment-on); border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; line-height: 16px; white-space: nowrap; }
+    #search_form svg { color: var(--icon); }
+
+    /* ---------- control column, gear, zoom, 2D/3D/Globe ---------- */
+    #controlStack, .ol-zoom.ol-control, #dimSwitch, #toolbar, #settingsCog {
+        background: var(--bg-control) !important;
+        border: 1px solid var(--border-ctl);
+        box-shadow: none;
+        -webkit-backdrop-filter: none; backdrop-filter: none;
+    }
+    #controlStack { padding: 4px; gap: 4px; }
+    #controlStack .btn, .ol-zoom.ol-control button, #settingsCog { color: var(--icon); }
+    #controlStack .btn { width: 40px; height: 40px; border-radius: 50%; }
+    #settingsCog { width: 40px; height: 40px; top: 16px; border-radius: 50%; }
+    #controlStack .btn:hover, .ol-zoom.ol-control button:hover, #settingsCog:hover { background: var(--bg-control-hover) !important; color: var(--text); }
+    #controlStack .btn[aria-pressed="true"], #controlStack .btn[aria-expanded="true"] { background: var(--bg-segment-on); color: var(--text); }
+    #north_up .northN { fill: var(--compass-n); }
+    #north_up .northS { fill: var(--compass-n); fill-opacity: .45; }
+    #north_up .northRing { stroke: var(--icon); }
+    .ol-zoom.ol-control { padding: 4px; }
+    #dimSwitch { background: var(--bg-segment) !important; }
+    #dimSwitch .on, #dimSwitch button.on { background: var(--bg-segment-on); color: var(--text); }
+    #dimSwitch button { color: var(--text-2); }
+    #dimSwitch button:hover { color: var(--text); }
+
+    /* toggles in the bottom toolbar and filter chips: active = soft segment, white text */
+    .tb.on, .tb.activeButton, .chip.on, .chip.activeButton { background: var(--bg-segment-on); color: var(--text); border-color: var(--line); }
+    #toolbar .tb { color: var(--text-2); }
+    #toolbar .tb:hover { color: var(--text); background: var(--bg-control-hover); }
+    .tb kbd, .chip kbd { color: var(--text-3); }
+
+    /* the old translucent button/chip fills */
+    .chip { background: var(--bg-segment); border-color: var(--line); color: var(--text-2); }
+    button.chip:hover { background: var(--bg-control-hover); color: var(--text); }
+    #altitude_chart.ol-control { border-radius: var(--r-card); }
+
+    /* settings and inputs */
+    #settings_infoblock input:not([type=range]):not([type=checkbox]):not([type=radio]), #settings_infoblock select, .sk-input, .textFilter input, .filterRow input {
+        background: var(--bg-input); border: 1px solid var(--border-ctl); color: var(--text-input);
+    }
+    .segmented { background: var(--bg-segment); }
+    .segmented .on, .segmented button.on { background: var(--bg-segment-on); color: var(--text); }
+    .popover, #filterPopover { background: var(--bg-panel) !important; border: 1px solid var(--line); border-radius: var(--r-card); }
+    #search_warning { background: var(--bg-panel) !important; border: 1px solid var(--border-ctl); }
+}

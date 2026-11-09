@@ -454,7 +454,7 @@ body.infoWide .ibScroll { display: block; }
 
 
 /* ---------- audit fixes against the mockups (desktop) ---------- */
-@media (min-width: 769px) and (pointer: fine) {
+@media (min-width: 769px) and (not (pointer: coarse)) {
     /* the panel fits its content: Follow / Isolate sit right under the cards, long content scrolls */
     #selected_infoblock { bottom: auto !important; max-height: calc(100% - 100px); }
     .ibScroll { flex: 0 1 auto; }

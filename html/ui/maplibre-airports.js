@@ -30,24 +30,24 @@ const AIRPORT = {
     taxiWidth: 20,          // metres: drawn width of a taxiway (the tiles carry only centre lines)
     chipZoom: 8,            // airport chip with flag and name
     color: {
-        ground: '#0f0f10',       // airfield ground: darker than the map around it
-        apron: '#6d6b68',
+        ground: '#000000',       // airfield ground: black, darker than the map around it
+        apron: '#6d6d6d',
         apronOpacity: 1,
-        apronLine: '#6d6b68',
-        buildingLow: '#4f4e4a',  // flat warm grey, lighter for the bigger buildings
-        buildingHigh: '#7d7b77',
+        apronLine: '#6d6d6d',
+        buildingLow: '#4f4f4f',  // flat neutral grey, lighter for the bigger buildings
+        buildingHigh: '#7d7d7d',
         runway: '#151515',
         runwayLine: '#bababa',
         zebra: '#f2f2f2',
         taxi: '#151515',
         taxiLow: '#3c3c3c',      // taxiway fill at low zoom (reads as a line), settles to `taxi` by zoom 14
-        taxiCase: '#3d3d30',     // thin olive-grey edge lines
+        taxiCase: '#3d3d3d',     // thin grey edge lines
         taxiCl: '#8c7a2c',       // thin yellow centre line
         stop: '#e04040',
-        halo: '#0a0a0c',
+        halo: '#0a0a0a',
         taxiLabel: '#e6c84a',
         number: '#f2f2f2',
-        gateText: '#1b1306',
+        gateText: '#141414',
         gateFill: '#e0a22f',
         gateLine: '#f3c25e',
     },
@@ -304,7 +304,7 @@ MLR.installAirports = function () {
             'text-font': font, 'text-size': 11 * gs, 'text-anchor': 'top', 'text-offset': [0, 1.0], 'text-optional': true, 'text-max-width': 12,
             'symbol-sort-key': ['match', ['get', 'class'], 'international', 0, 'public', 1, 'regional', 2, 3],
             'icon-padding': 6, 'text-padding': 3},
-        paint: {'text-color': '#ffffff', 'text-halo-color': 'rgba(0,0,0,0.85)', 'text-halo-width': 1.4}});
+        paint: {'text-color': '#8f8f8f', 'text-halo-color': 'rgba(0,0,0,0.6)', 'text-halo-width': 0.8}});
     pin('tar-ap-pin', AIRPORT.chipZoom, 10, false);
     pin('tar-ap-pin-name', 10, 15.5, true);
     this._pinWxKey = null;

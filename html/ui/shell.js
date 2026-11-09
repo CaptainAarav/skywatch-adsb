@@ -250,6 +250,9 @@ function initShell() {
         }).observe(tb);
     }
     document.getElementById('search_form').addEventListener('submit', onUnifiedSearch);
+    // the palette hint: Ctrl K, or Cmd K on macOS ('/' still focuses the search box)
+    const hint = document.getElementById('search_hint');
+    if (hint && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent || '')) hint.textContent = '\u2318 K';
 
     // '/' focuses search (no clash: script.js has no '/' hotkey). Escape leaves the field.
     window.addEventListener('keydown', function (e) {

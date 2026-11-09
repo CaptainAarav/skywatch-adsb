@@ -49,24 +49,36 @@
 
 :root {
     --bg:         #000;
-    --glass:      rgba(0, 0, 0, 0.72);   /* level 1: panels, toolbars, pills */
+    --glass:      rgba(0, 0, 0, 0.72);   /* map overlays that must show the map through (label pills, scrims) */
     --glass-solid: #000000;
-    --panel:      #000000;               /* docked panels (sidebar, infoblock) until Phase 4 */
-    --tile:       #151515;   /* level 2: tiles, chips, inputs */
-    --tile-hover: #1c1c1c;
-    --bg-sheet:   #000000;   /* sheets, panels, dialogs, settings pages */
-    --bg-card:    #161616;   /* cards inside panels, table row base */
-    --bg-control: #151515;   /* search pill, buttons, tab bar, round map buttons, chips */
+    /* surfaces, darkest to lightest. Desktop: panel #0d0d0d, card #1e1e1e, row #161616. Phone overrides below. */
+    --bg-panel:   #0d0d0d;   /* floating desktop panels */
+    --panel:      var(--bg-panel);
+    --bg-sheet:   #000000;   /* phone sheet, settings pages, dialogs */
+    --bg-card:    #1e1e1e;   /* cards inside panels (phone: #161616) */
+    --bg-row:     #161616;   /* secondary rows: message and summary rows */
+    --bg-control: #131313;   /* control column, round map buttons, settings gear */
     --bg-control-hover: #1c1c1c;
+    --bg-input:   #111111;   /* search box and inputs */
+    --bg-segment: #151515;   /* track of segmented controls and tab bars */
+    --bg-segment-on: #2c2c2c; /* active segment, white text */
+    --bg-action:  #1e1e1e;   /* action bar */
+    --bg-action-hover: #292929;
+    --tile:       var(--bg-segment);   /* chips, tiles */
+    --tile-hover: #1c1c1c;
+    --border-ctl: rgba(255, 255, 255, 0.08);
     --divider:    #1c1c1c;
-    --text-2:     #878787;   /* neutral grey (R=G=B) */
-    --text-3:     #5c5c5c;   /* decorative only: 3.1:1 on black, never for text that must be read */
+    --text-2:     #939393;   /* labels: 6.2:1 on #1e1e1e */
+    --text-3:     #7a7a7a;   /* inactive nav, hints, credits */
+    --text-input: #cfcfcf;   /* text typed into the search box */
+    --icon:       #d2d2d2;
+    --compass-n:  #bebebe;
     --handle:     #dbdbdb;
     --line:       rgba(255, 255, 255, 0.06);
     --line-strong: rgba(255, 255, 255, 0.20);
     --text:       #FFFFFF;
     --text2:      #CCCCCC;
-    --muted:      #878787;   /* = --text-2 */
+    --muted:      #939393;   /* = --text-2 */
     --accent:     #FFFFFF;
     --accent-bg:  rgba(255, 255, 255, 0.16);
     --on-accent:  #000;
@@ -82,10 +94,10 @@
 
     --blur:       28px;
     --shadow:     0 8px 32px rgba(0, 0, 0, 0.5);
-    --map-land:   #1a1a1a;   /* land colour of the map (ocean stays pure black); read by ui/mapstyle.js at load */
+    --map-land:   #181818;   /* land colour of the map (ocean stays pure black); read by ui/mapstyle.js at load */
 
-    --r-panel:    32px;
-    --r-card:     22px;
+    --r-panel:    28px;
+    --r-card:     20px;
     --r-input:    14px;
     --r-pill:     999px;
 
@@ -114,33 +126,21 @@
     --ol-brand-color:              var(--accent);
 }
 
-/* ---------- Glass surface ---------- */
+/* ---------- Surfaces ---------- */
+/* Solid, neutral and elevated: map < control #131313 / panel #0d0d0d < card #1e1e1e. No blur: the greys are the design. */
 
-.glass,
+.glass {
+    background: var(--bg-control) !important;
+    border: 1px solid var(--border-ctl);
+}
 #sidebar_container,
 #selected_infoblock,
 #highlighted_infoblock,
-#altitude_chart,
-.ol-attribution {
-    background: var(--glass) !important;
-    -webkit-backdrop-filter: blur(var(--blur)) saturate(1.2);
-    backdrop-filter: blur(var(--blur)) saturate(1.2);
+#altitude_chart {
+    background: var(--bg-panel) !important;
     border: 1px solid var(--line);
 }
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-    .glass, #sidebar_container, #selected_infoblock, #highlighted_infoblock, #altitude_chart,
-    .ol-attribution {
-        background: var(--glass-solid) !important;
-    }
-}
-@media (prefers-reduced-transparency: reduce) {
-    .glass, #sidebar_container, #selected_infoblock, #highlighted_infoblock, #altitude_chart,
-    .ol-attribution {
-        background: var(--glass-solid) !important;
-        -webkit-backdrop-filter: none;
-        backdrop-filter: none;
-    }
-}
+.ol-attribution { background: none !important; }
 
 /* ---------- Base ---------- */
 

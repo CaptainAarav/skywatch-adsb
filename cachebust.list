@@ -60,6 +60,7 @@ ui/history.css
 ui/history.js
 ui/settings.css
 ui/settings.js
+ui/elevation.css
 ui/phone.css
 geomag2020.js
 libs/elm-pep-01.js

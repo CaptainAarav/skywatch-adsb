@@ -13,14 +13,14 @@
 // ---------------------------------------------------------------------------------------------
 const ML_STYLE = {
     land: (function () { try { return getComputedStyle(document.documentElement).getPropertyValue('--map-land').trim() || '#1a1a1a'; } catch (e) { return '#1a1a1a'; } })(),   // --map-land in theme.css;             // dark charcoal land; the ocean is pure black, so coastlines read through contrast alone
-    water: '#000000',
-    label: {country: '#878787', state: '#878787', city: '#ffffff', town: '#ffffff', small: '#878787', water: '#878787', halo: 'rgba(0,0,0,0.9)'},   // white for big places, grey for the rest; neutral greys only
+    water: '#020202',
+    label: {country: '#747474', state: '#747474', city: '#7e7e7e', town: '#7e7e7e', small: '#6a6a6a', water: '#6a6a6a', halo: 'rgba(0,0,0,0.6)'},   // city #7e7e7e, country/region #747474, small places #6a6a6a: no white map labels, subtle halo
     // roads: white at low alpha so a dense network reads at UK zoom without getting loud
-    road: {motorway: '#313131', trunk: '#313131', primary: '#313131', secondary: '#242424', minor: '#242424'},   // major #313131, minor #242424
+    road: {motorway: '#3f3f3f', trunk: '#363636', primary: '#363636', secondary: '#2c2c2c', minor: '#242424'},   // motorway #3f3f3f, major #363636, minor #242424
     // line width (px) of each road class at MapLibre zoom 5 / 9 / 14
     roadWidth: {motorway: [0.7, 1.0, 3], trunk: [0.6, 0.9, 2.6], primary: [0.5, 0.8, 2.2], secondary: [0.5, 0.7, 1.8], minor: [0.5, 0.6, 1.4]},
     urbanLift: 0.04,            // built-up areas: land + this fraction toward white
-    boundary: {country: '#3a3a3a', state: '#2a2a2a'},
+    boundary: {country: '#3f3f3f', state: '#2c2c2c'},
     widthScale: 0.8,
 };
 
@@ -49,7 +49,7 @@ function mlLabelStyle(l, role, size, minzoom) {
     const f = ML_FONTS[ML_CUR_KIND];
     paint['text-color'] = ML_STYLE.label[role];
     paint['text-halo-color'] = ML_STYLE.label.halo;
-    paint['text-halo-width'] = 1.2;
+    paint['text-halo-width'] = 0.8;
     delete paint['icon-color']; delete paint['icon-opacity'];
     const lay = l.layout || (l.layout = {});
     delete lay['icon-image']; delete lay['text-transform']; delete lay['text-letter-spacing'];
