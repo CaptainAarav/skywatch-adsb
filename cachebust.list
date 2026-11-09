@@ -35,6 +35,7 @@ ui/infoblock.css
 ui/instruments.css
 ui/instruments.js
 ui/infoblock.js
+ui/airport-geom.js
 ui/airport-calc.js
 ui/airport-panel.js
 ui/airport.css
