@@ -387,3 +387,7 @@ html/ui/*_[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]*.js
 html/ui/*_[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]*.css
 .private/
 skywatch-alerts.json
+
+# logo pack as downloaded (installed copies live in html/brand and docs/logo)
+skywatch-logo-pack*.zip
+skywatch-logo-pack*/

@@ -156,3 +156,11 @@
 #selected_infoblock .ibBigV { font-size: 22px; font-weight: 600; }
 #selected_infoblock .ibRouteCodes .mono { font-weight: 700; }
 #airport_panel .apIcao { font-weight: 700; letter-spacing: -.01em; }
+
+/* ---------- brand ---------- */
+.wordmarkTitle { display: flex; align-items: center; gap: 8px; }
+.wordmarkMark { width: 28px; height: 28px; flex: none; }
+.wordmarkCredit { margin-left: 0; }
+.aboutLogo { display: block; height: 64px; width: auto; max-width: 100%; margin-bottom: 4px; }
+#loader { flex-direction: column; gap: 14px; }
+.loaderMark { width: 44px; height: 44px; }

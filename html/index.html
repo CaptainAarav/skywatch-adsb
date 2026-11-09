@@ -33,7 +33,10 @@
     <link rel="stylesheet" href="ui/phone.css" type="text/css" />
 
     <meta name="theme-color" content="#000000">
-    <link rel="icon" type="image/png" href="images/tar1090-favicon.png">
+    <link rel="icon" href="favicon.ico" sizes="48x48">
+    <link rel="icon" href="brand/skywatch-favicon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="brand/skywatch-apple-touch-icon-180.png">
+    <link rel="manifest" href="manifest.json">
 
     <title>Skywatch ADS-B</title>
   </head>
@@ -457,6 +460,7 @@
 
       <noscript><div class="sk-noscript">Skywatch ADS-B needs JavaScript to show the live map.</div></noscript>
       <div id="loader">
+          <img class="loaderMark" src="brand/skywatch-mark-white.svg" width="44" height="44" alt="">
           <span class="sk-ring" id="loader_progress" role="progressbar" aria-label="Loading"></span>
       </div>
 
@@ -593,7 +597,8 @@
               </section>
               <section class="setSec" data-sec="about" hidden>
                 <div class="about">
-                  <div class="aboutName" data-project="name">Skywatch ADS-B</div>
+                  <img class="aboutLogo" src="brand/skywatch-lockup-dark.svg" height="64" alt="">
+                  <div class="aboutName visuallyHidden" data-project="name">Skywatch ADS-B</div>
                   <div class="lbl" data-project="credit">Created by Aarav Sahni · Based on tar1090 by wiedehopf</div>
                   <p><span data-project="about">Skywatch ADS-B is a fork of tar1090 by wiedehopf.</span> Upstream: <a class="link" data-project="upstream" href="https://github.com/wiedehopf/tar1090" target="_blank" rel="noopener">github.com/wiedehopf/tar1090</a>. Released under the <a class="link" href="https://www.gnu.org/licenses/gpl-2.0.html" target="_blank" rel="noopener">GNU GPL v2 or later</a>, like tar1090 itself.</p>
                   <div class="setList setHalf">
@@ -618,7 +623,7 @@
         <!-- Skywatch ADS-B shell (ui/shell.js, ui/shell.css) -->
         <header id="topbar" class="shell">
           <div id="wordmark">
-            <div class="wordmarkTitle" data-project="name">Skywatch ADS-B</div>
+            <div class="wordmarkTitle"><img class="wordmarkMark" src="brand/skywatch-mark-white.svg" width="28" height="28" alt=""><span data-project="short">Skywatch</span><small>ADS-B</small></div>
             <div class="wordmarkCredit" data-project="credit">Created by Aarav Sahni · Based on tar1090 by wiedehopf</div>
           </div>
           <nav id="viewPill" class="glass" aria-label="Views">

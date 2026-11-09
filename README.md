@@ -1,4 +1,8 @@
-# Skywatch ADS-B
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/logo/skywatch-lockup-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="docs/logo/skywatch-lockup-light.svg">
+  <img alt="Skywatch ADS-B" src="docs/logo/skywatch-lockup-dark.svg" height="96">
+</picture>
 
 **A map-first web interface for your own ADS-B receiver: airports with live weather, a command palette, alerts, 3D with real terrain, and nothing that leaves your receiver you did not choose.**
 
@@ -236,3 +240,7 @@ GNU GPL v2 or later, as tar1090 (see [LICENSE](LICENSE), identical to upstream).
 - [wiedehopf](https://github.com/wiedehopf) and the tar1090 contributors: this project exists because of that work.
 - Services this relies on for free, which you can support: [OpenFreeMap](https://openfreemap.org) (donations through their site and GitHub Sponsors), [VersaTiles](https://versatiles.org), [OpenStreetMap contributors](https://www.openstreetmap.org/fixthemap), [OurAirports](https://ourairports.com), [planespotters.net](https://www.planespotters.net), [RainViewer](https://www.rainviewer.com), AWS Open Data and the elevation sources named in [THIRD_PARTY.md](THIRD_PARTY.md).
 - MapLibre GL JS, Inter, JetBrains Mono, Wikidata: see [THIRD_PARTY.md](THIRD_PARTY.md).
+
+## Logo
+
+The mark is a control tower sending and receiving radio, original artwork for this project. Installed copies: `html/brand/` (the app: favicon, touch icon, manifest icons, header mark) and `docs/logo/` (README lockups, mark, social banner). Use white on black or black on white only, with clear space of at least the width of the tower base. The text in the logo is outlined from Inter Bold and SemiBold (SIL OFL). `docs/logo/skywatch-social-banner.png` (1280x640) is the GitHub social preview image; uploading it under Settings > Social preview is a manual step.

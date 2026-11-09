@@ -19,15 +19,6 @@ const PROJECT_UPSTREAM = "https://github.com/wiedehopf/tar1090";
         meta('application-name', PROJECT_NAME);
         meta('apple-mobile-web-app-title', PROJECT_SHORT);
         meta('mobile-web-app-capable', 'yes');
-        // web app manifest generated from the constants (install / "add to home screen" name)
-        try {
-            const mf = {name: PROJECT_NAME, short_name: PROJECT_SHORT, start_url: location.href.split('#')[0], display: 'standalone',
-                background_color: '#000000', theme_color: '#000000',
-                icons: [{src: new URL('images/tar1090-favicon.png', location.href).href, type: 'image/png'}]};
-            const l = document.createElement('link');
-            l.rel = 'manifest';
-            l.href = URL.createObjectURL(new Blob([JSON.stringify(mf)], {type: 'application/manifest+json'}));
-            document.head.appendChild(l);
-        } catch (e) {}
+        // the web app manifest is the static manifest.json (linked in index.html); keep its name fields in step with the constants above
     });
 })();
