@@ -76,3 +76,11 @@ body.panelsHidden #airport_panel { display: none !important; }
 .apPinTop b { font-family: 'JetBrains Mono', monospace; font-size: 14px; }
 .apPinRow { display: flex; justify-content: space-between; gap: 12px; padding: 2px 0; } .apPinRow span:first-child { color: #b8b9bd; } .apPinRow span:last-child { text-align: right; font-family: 'JetBrains Mono', monospace; }
 .apPinHint { margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,.08); color: #b8b9bd; font-size: 11px; }
+
+/* recent movements card */
+.apMoves > summary { cursor: pointer; list-style: none; }
+.apMoves > summary::-webkit-details-marker { display: none; }
+.apMoves > summary h3 { display: inline-block; margin: 0; }
+.apMoves > summary:focus-visible { outline: 2px solid #fff; outline-offset: 3px; border-radius: 6px; }
+.apMoves .apRow:disabled { cursor: default; opacity: .85; }
+.apMoves .apRow:disabled:hover { background: none; }

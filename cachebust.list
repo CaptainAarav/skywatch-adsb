@@ -14,6 +14,7 @@ ui/maplibre-airports.js
 ui/maplibre-route.js
 ui/maplibre-motion.js
 ui/maplibre-lift.js
+ui/maplibre-terrain.js
 ui/maplibre.css
 ui/airline-codes.js
 ui/airlines.js

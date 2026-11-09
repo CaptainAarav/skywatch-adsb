@@ -24,6 +24,7 @@ const SET_ROWS = {
     enableMouseover: ['set_aircraft', 'Hover card on mouse-over'],
     lastLeg:         ['set_aircraft', 'History: last leg only'],
     smoothMove:      ['set_aircraft', 'Smooth movement'],
+    terrain3d:       ['set_appearance', 'Terrain in 3D view'],
     airportDetail:   ['set_appearance', 'Airport detail (OpenFreeMap tiles)'],
     airportFx:       ['set_appearance', 'Airport detail effects (decorative)'],
     airlineLogos:    ['set_photos', 'Airline logos'],

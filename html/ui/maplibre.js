@@ -216,6 +216,7 @@ MLR.install = function () {
     const m = this.map;
     if (this.viewMode === 'globe') this.applyProjection();
     this.applyDim();
+    try { this.installTerrain && this.installTerrain(); } catch (e) { console.warn('terrain:', e); }
     m.addLayer({id: 'tar-dim', type: 'background', paint: {'background-color': '#000', 'background-opacity': this.dim}});
 
     const fc = (f) => ({type: 'FeatureCollection', features: f || []});

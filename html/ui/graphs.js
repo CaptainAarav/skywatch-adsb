@@ -198,7 +198,7 @@ const GRAPHS = (function () {
     // ---- polar plot: max range per bearing over the selected period (relative to the receiver; no position involved) ----
     function makePolar(grid) {
         const card = el('figure', 'gCard gLive gPolarCard', grid);
-        el('div', 'gCardHead', card).appendChild(el('figcaption', null, null, 'Range by bearing'));
+        el('div', 'gCardHead', card).appendChild(el('figcaption', null, null, 'Coverage'));
         const sub = el('div', 'gSub', card);
         const wrap = el('div', 'gPlot', card), cvs = el('canvas', null, wrap);
         cvs.setAttribute('role', 'img');
@@ -228,10 +228,14 @@ const GRAPHS = (function () {
         const pt = (i, v) => { const a = (i + 0.5) / bins * 2 * Math.PI; return [cx + Math.sin(a) * v / rmax * R, cy - Math.cos(a) * v / rmax * R]; };
         ctx.beginPath();
         mx.forEach((v, i) => { const p = pt(i, f(v)); i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); });
-        ctx.closePath(); ctx.fillStyle = hexA('#B07BFF', .25); ctx.fill(); ctx.strokeStyle = '#B07BFF'; ctx.lineWidth = 2; ctx.lineJoin = 'round'; ctx.stroke();
-        const bi = mx.indexOf(top);
-        ch.sub.textContent = `Last ${period}: longest ${Math.round(f(top))} ${lab} towards ${Math.round((bi + 0.5) * 360 / bins)}°`;
-        ch.cv.setAttribute('aria-label', `Range by bearing, last ${period}. ${ch.sub.textContent}`);
+        ctx.closePath(); ctx.fillStyle = 'rgba(255,255,255,.14)'; ctx.fill(); ctx.strokeStyle = '#F2F2F3'; ctx.lineWidth = 2; ctx.lineJoin = 'round'; ctx.stroke();
+        const bi = mx.indexOf(top), compass = (i) => ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'][Math.round(((i + 0.5) * 360 / bins) / 45) % 8];
+        // weakest direction: the quietest 45 degree sector (a run of bins), only meaningful once most bins have been heard
+        const run = Math.max(1, Math.round(bins / 8)); let wi = 0, wv = Infinity;
+        for (let i = 0; i < bins; i++) { let t = 0; for (let k = 0; k < run; k++) t += mx[(i + k) % bins]; if (t < wv) { wv = t; wi = (i + (run - 1) / 2) % bins; } }
+        const weak = f(wv / run);
+        ch.sub.textContent = `Last ${period}: longest ${Math.round(f(top))} ${lab} towards ${compass(bi)} (${Math.round((bi + 0.5) * 360 / bins)}°); shortest around ${compass(Math.floor(wi))}, about ${Math.round(weak)} ${lab}. Relative to your antenna, no map or coordinates.`;
+        ch.cv.setAttribute('aria-label', `Coverage by bearing, last ${period}. ${ch.sub.textContent}`);
     }
 
     // ---- overlay ----

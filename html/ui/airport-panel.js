@@ -9,7 +9,7 @@
 
 const AIRPT = (function () {
     const A = AIRCALC, SVGNS = 'http://www.w3.org/2000/svg';
-    const DB_URL = 'airport-db/airports.json', WX_URL = 'globe_history/skywatch/wx.json';
+    const DB_URL = 'airport-db/airports.json', WX_URL = 'globe_history/skywatch/wx.json', MV_URL = 'globe_history/skywatch/movements.json';
     const WX_MAX_AGE = 3 * 3600, WX_REFRESH = 5 * 60 * 1000;
     const TYPE_NAME = ['Large airport', 'Medium airport', 'Small airport', 'Seaplane base', 'Balloon port'];
     const CAT_CLASS = {VFR: 'ok', MVFR: 'mv', IFR: 'bad', LIFR: 'lf'};
@@ -99,6 +99,39 @@ const AIRPT = (function () {
         return fetch(WX_URL, {cache: 'no-cache'}).then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
             .then(d => { st.wx = d; st.wxAt = Date.now(); st.wxFail = false; return d; })
             .catch(() => { st.wx = null; st.wxFail = true; return null; });
+    }
+    // inferred movements written by the recorder (rolling 24 h); a missing or old file just means no card
+    function fetchMv() {
+        return fetch(MV_URL, {cache: 'no-cache'}).then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+            .then(d => { st.mv = d && Array.isArray(d.movements) ? d : null; return st.mv; })
+            .catch(() => { st.mv = null; return null; });
+    }
+    function movementsCard(r) {
+        const all = st.mv && st.mv.movements ? st.mv.movements.filter(m => m && m.airport === r.icao && typeof m.t === 'number') : [];
+        if (!all.length) return null;
+        const list = all.slice(-12).reverse();
+        const c = h('section', 'apCard'), d = h('details', 'apMoves');
+        d.open = st.mvOpen !== false;
+        d.addEventListener('toggle', () => { st.mvOpen = d.open; });
+        const sum = h('summary'); sum.appendChild(h('h3', null, 'Recent movements (' + all.length + ' in 24 h)'));
+        d.appendChild(sum);
+        d.appendChild(h('div', 'apNote', 'Inferred from receiver data: only aircraft this receiver heard.'));
+        const rows = h('div', 'apList');
+        for (const m of list) {
+            const row = h('button', 'apRow'); row.type = 'button';
+            const left = h('span');
+            left.appendChild(h('b', 'mono', m.callsign || m.reg || '?'));
+            left.appendChild(h('span', 'mut', ' ' + [m.type, m.dir === 'landing' ? 'landed' : 'departed', m.rwy ? 'runway ' + m.rwy : ''].filter(Boolean).join(' · ')));
+            row.appendChild(left);
+            row.appendChild(h('span', 'mono mut', new Date(m.t * 1000).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})));
+            const live = (typeof g != 'undefined' && g.planesOrdered || []).find(p => p && ((m.callsign && (p.flight || '').trim() === m.callsign) || (m.reg && p.registration === m.reg)));
+            if (live) row.addEventListener('click', () => { if (typeof selectPlaneByHex == 'function') selectPlaneByHex(live.icao, {follow: true}); });
+            else row.disabled = true;
+            rows.appendChild(row);
+        }
+        d.appendChild(rows);
+        c.appendChild(d);
+        return c;
     }
     function wxFor(icao) {
         const d = st.wx;
@@ -414,6 +447,7 @@ const AIRPT = (function () {
         }
         const rc = runwayCard(r, m); if (rc) body.appendChild(rc);
         body.appendChild(trafficCard(r));
+        const mc = movementsCard(r); if (mc) body.appendChild(mc);
         const fc = freqCard(r); if (fc) body.appendChild(fc);
         body.appendChild(sunCard(r));
         const lc = linksCard(r); if (lc) body.appendChild(lc);
@@ -523,10 +557,11 @@ const AIRPT = (function () {
         render();
         fitAirport(st.cur, false);
         fetchWx().then(() => { if (st.cur && st.cur.icao === row[0]) render(); });
+        fetchMv().then(() => { if (st.cur && st.cur.icao === row[0]) render(); });
         clearInterval(st.timer);
         clearInterval(st.wxTimer);
         st.timer = setInterval(() => { if (st.cur) { sampleTraffic(); if (document.hidden) return; render(); } }, 5000);
-        st.wxTimer = setInterval(() => fetchWx().then(() => { st.cur && render(); }), WX_REFRESH);
+        st.wxTimer = setInterval(() => Promise.all([fetchWx(), fetchMv()]).then(() => { st.cur && render(); }), WX_REFRESH);
         try { history.replaceState(null, '', location.href); } catch (e) { /* ignore */ }
     }
     function close() {

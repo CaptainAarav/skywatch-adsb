@@ -73,6 +73,7 @@ Options added or changed by this fork:
 | `airlineLogoUrl` | `https://pics.avs.io/al_square/{size}/{size}/{iata}.png` | Logo source. `{iata}` and `{size}` are replaced. |
 | `airlineLogoKey` | empty | Key for the logo service if it needs one. Never commit a key. |
 | `airportDetail` | `true` | Airport detail overlay (OpenFreeMap tiles). |
+| `terrain3d` | `false` in `defaults.js`; the first-run default is on for desktop with a hardware GPU | Real terrain in the 3D view (elevation tiles from AWS Open Data). Settings has an exaggeration slider. |
 | `planespottersAPI` | `true` | Aircraft photos from planespotters.net. |
 | `useRouteAPI`, `routeApiUrl` | `false`, adsb.im | Route lookup. Off by default; set `routeApiUrl = ""` to forbid it. |
 | `airportWeather`, `airportLinks` | `true` | Weather cards and external link buttons in the airport panel. |
@@ -124,6 +125,7 @@ Visitors' browsers contact these services directly, and each sees the visitor's 
 | Service | For | Can be turned off |
 |---|---|---|
 | OpenFreeMap / VersaTiles / CARTO | map tiles and styles | choose the base map; there is no map without tiles |
+| AWS Open Data (s3.amazonaws.com) | elevation tiles, only in the 3D view with terrain on | yes (`terrain3d`, Settings) |
 | pics.avs.io | airline logos | yes (`airlineLogos`) |
 | planespotters.net | aircraft photos | yes (`planespottersAPI`) |
 | adsb.im | flight routes | off by default (`useRouteAPI`) |

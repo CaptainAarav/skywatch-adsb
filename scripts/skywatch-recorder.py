@@ -348,6 +348,176 @@ def alerts_tick(cfg, st, aircraft, now=None, send=ntfy_send):
     return out
 
 
+# ---------------------------------------------------------------------------------------------
+# Recent movements (inferred). Landings and take-offs near known airports, from aircraft.json only.
+# Written to movements.json (rolling 24 h). Entries carry time, callsign, registration, type, airport ICAO,
+# direction and an inferred runway. Never the receiver position or a distance from it.
+# Needs the airport list (html/airport-db/airports.json); without it nothing is written.
+# ---------------------------------------------------------------------------------------------
+MOVES = os.environ.get('SW_MOVES', '1') != '0'
+MOVE_INTERVAL = max(5, int(os.environ.get('SW_MOVE_INTERVAL', '10')))
+AIRPORTS = os.environ.get('SW_AIRPORTS', '/opt/skywatch/airports.json')
+MOVE_KEEP = 24 * 3600
+NEAR_NM = 3.0            # horizontal radius around an airport that counts as "at the airport"
+LOW_FT = 800             # height above the airport that counts as "on the runway or just above it"
+LOST_S = 90              # not heard for this long counts as gone
+
+
+def dist_nm(la1, lo1, la2, lo2):
+    r = math.pi / 180
+    dy = (la2 - la1) * 60
+    dx = (lo2 - lo1) * 60 * math.cos((la1 + la2) * r / 2)
+    return math.hypot(dx, dy)
+
+
+def angdiff(a, b):
+    return abs((a - b + 180) % 360 - 180)
+
+
+class Airports:
+    def __init__(self, rows):
+        self.grid = {}
+        self.by = {}
+        for r in rows:
+            try:
+                a = {'icao': r[0], 'lat': float(r[4]), 'lon': float(r[5]), 'elev': float(r[6] or 0), 'rwy': []}
+                for rw in (r[11] if len(r) > 11 and r[11] else []):
+                    for ident in rw[:2]:
+                        m = re.match(r'(\d+)', str(ident or ''))
+                        if m:
+                            a['rwy'].append((str(ident), int(m.group(1)) % 36 * 10))
+            except Exception:
+                continue
+            self.by[a['icao']] = a
+            self.grid.setdefault((int(a['lat'] * 5), int(a['lon'] * 5)), []).append(a)
+
+    def near(self, lat, lon):
+        best = None
+        ci, cj = int(lat * 5), int(lon * 5)
+        for i in (ci - 1, ci, ci + 1):
+            for j in (cj - 1, cj, cj + 1):
+                for a in self.grid.get((i, j), ()):
+                    d = dist_nm(lat, lon, a['lat'], a['lon'])
+                    if d <= NEAR_NM and (best is None or d < best[0]):
+                        best = (d, a)
+        return best[1] if best else None
+
+
+def infer_runway(ap, track):
+    if track is None or not ap['rwy']:
+        return None
+    ident, hd = min(ap['rwy'], key=lambda x: angdiff(x[1], track))
+    return ident if angdiff(hd, track) <= 30 else None
+
+
+class MovementTracker:
+    """Feed it the aircraft list; it returns new movements. State per aircraft: whether it was ever seen airborne
+    near here, whether it was on the ground, and where it was last seen."""
+
+    def __init__(self, airports):
+        self.ap = airports
+        self.st = {}
+        self.recent = {}
+
+    def _emit(self, now, a, ac, direction, rwy, out):
+        key = (ac['hex'], a['icao'], direction)
+        if now - self.recent.get(key, 0) < 1200:
+            return
+        self.recent[key] = now
+        out.append({'t': int(now), 'callsign': ac.get('flight') or '', 'reg': ac.get('reg') or '', 'type': ac.get('type') or '',
+                    'airport': a['icao'], 'dir': direction, 'rwy': rwy})
+
+    def update(self, aircraft, now):
+        out = []
+        seen = set()
+        for r in aircraft:
+            hexid = str(r.get('hex', ''))
+            lat, lon = r.get('lat'), r.get('lon')
+            if not hexid or lat is None or lon is None or (r.get('seen_pos', r.get('seen', 0)) or 0) > 30:
+                continue
+            seen.add(hexid)
+            alt = r.get('alt_baro')
+            ground = alt == 'ground'
+            alt_ft = None if ground else (alt if isinstance(alt, (int, float)) else None)
+            ac = {'hex': hexid, 'flight': str(r.get('flight', '')).strip(), 'reg': r.get('r'), 'type': r.get('t')}
+            s = self.st.get(hexid)
+            ap = self.ap.near(lat, lon)
+            gs = r.get('gs') or 0
+            trk = r.get('track')
+            rate = r.get('baro_rate') or 0
+            agl = None if (ap is None or alt_ft is None) else alt_ft - ap['elev']
+            low = ground or (agl is not None and agl <= LOW_FT)
+            if s is None:
+                s = self.st[hexid] = {'air': False, 'ground': False, 'first': True}
+                # first sighting low, close to an airport and climbing away fast: a take-off we only caught the end of
+                if ap and not ground and agl is not None and agl <= 1500 and rate > 300 and 80 <= gs <= 260:
+                    self._emit(now, ap, ac, 'takeoff', infer_runway(ap, trk), out)
+                    s['air'] = True
+            if ground:
+                if s['air'] and ap and s.get('desc'):
+                    self._emit(now, ap, ac, 'landing', infer_runway(ap, s.get('trk')), out)
+                s['ground'] = True
+                s['air'] = False
+                s['desc'] = False
+            else:
+                if s['ground'] and ap and agl is not None and agl > 100 and gs >= 80 and rate >= 0:
+                    self._emit(now, ap, ac, 'takeoff', infer_runway(ap, trk), out)   # was on the ground here, now airborne and still near
+                    s['ground'] = False
+                elif s['ground'] and (ap is None or (agl is not None and agl > 100)):
+                    s['ground'] = False
+                s['air'] = True
+                s['desc'] = bool(rate < -100 or (agl is not None and agl < 2000 and rate <= 0)) and bool(ap)
+            s.update({'t': now, 'lat': lat, 'lon': lon, 'agl': agl, 'trk': trk if trk is not None else s.get('trk'), 'gs': gs,
+                      'rate': rate, 'ap': ap, 'low': low, 'ac': ac})
+            if ap is None:
+                s['desc'] = False
+        # aircraft that went quiet low, near an airport, descending and slow, lined up with a runway: landing
+        for hexid in list(self.st):
+            s = self.st[hexid]
+            if hexid in seen or now - s['t'] < LOST_S:
+                continue
+            ap = s.get('ap')
+            if s['air'] and ap and s.get('desc') and s.get('agl') is not None and s['agl'] <= LOW_FT and s['gs'] < 170 \
+                    and s['rate'] <= 0 and infer_runway(ap, s.get('trk')) is not None:
+                self._emit(now, ap, s['ac'], 'landing', infer_runway(ap, s.get('trk')), out)
+            if now - s['t'] > 600:
+                del self.st[hexid]
+        if len(self.recent) > 5000:
+            self.recent = {k: t for k, t in self.recent.items() if now - t < 3600}
+        return out
+
+
+def load_airports():
+    try:
+        with open(AIRPORTS) as f:
+            return Airports(json.load(f).get('a', []))
+    except Exception as e:
+        print('recorder: movements off (no airport list):', e, file=sys.stderr, flush=True)
+        return None
+
+
+def move_loop():
+    ap = load_airports()
+    if not ap:
+        return
+    path = os.path.join(OUT, 'movements.json')
+    doc = load(path, {'v': 1, 'movements': []})
+    trk = MovementTracker(ap)
+    while True:
+        try:
+            now = time.time()
+            new = trk.update(get('aircraft.json').get('aircraft', []), now)
+            doc['movements'] = [m for m in doc.get('movements', []) if m['t'] > now - MOVE_KEEP]
+            if new:
+                doc['movements'] = (doc['movements'] + new)[-500:]
+            if new or not os.path.exists(path):
+                doc.update({'v': 1, 'updated': int(now), 'note': 'Inferred from receiver data'})
+                save(path, doc)
+        except Exception as e:
+            print('recorder: movement detection failed:', e, file=sys.stderr, flush=True)
+        time.sleep(MOVE_INTERVAL)
+
+
 def main():
     os.makedirs(OUT, exist_ok=True)
     hp, pp = os.path.join(OUT, 'history.json'), os.path.join(OUT, 'polar.json')
@@ -358,6 +528,8 @@ def main():
     print(f'recorder: {SRC} -> {OUT}, {len(hist["samples"])} samples on disk (+{n} backfilled from graphs1090 rrd)', flush=True)
     if WX:
         threading.Thread(target=wx_loop, daemon=True).start()
+    if MOVES:
+        threading.Thread(target=move_loop, daemon=True).start()
     alert_state = AlertState()
     nxt = time.time()
     while True:
