@@ -581,3 +581,28 @@ Cost (headless, software GL): camera-move refresh of 54 aircraft = 0.50 ms JS; s
 - Terms read on 2026-11-09 (see THIRD_PARTY.md): free for personal, educational and small community use with attribution. Built because that fits a personal site; the overlay is off by default and nothing is requested while off.
 - `html/ui/maplibre-radar.js` replaces tar1090's `MLR.addRainviewer`: last two hours of frames (13 at 10 minute steps), a glass play/pause bar with a time slider and a credit link, `source.setTiles` per frame, refresh every 2 minutes unless playing, a toast if the API or tiles fail. Playback never starts by itself. Radar tiles stop at zoom 7 (the API's limit for this tile size); the layer overzooms.
 - Nowcast frames are not used (the API returned none on the day it was checked).
+
+## Phase 34: pixel-match pass, palette tokens, logo
+
+### Palette tokens (html/theme.css, applied in html/ui/elevation.css)
+| Token | Desktop | Phone |
+|---|---|---|
+| `--bg-panel` (floating panels) | #0d0d0d | #000000 |
+| `--bg-card` | #1e1e1e | #161616 |
+| `--bg-row` (secondary rows) | #161616 | #161616 |
+| `--bg-control` (control column, round buttons, gear) | #131313 | #131313 |
+| `--bg-input` (search, inputs) | #111111, 1px `--border-ctl` (white .08) | same |
+| `--bg-segment` / `--bg-segment-on` | #151515 / #2c2c2c, white text | same |
+| `--bg-action` / hover | #1e1e1e / #292929 | same |
+| `--text`, `--text-2`, `--text-3`, `--text-input`, `--icon` | #fff, #939393, #7a7a7a, #cfcfcf, #d2d2d2 | same |
+
+`--text-3` is for inactive nav, hints and credits over the header scrim only (4.5:1 on #0d0d0d, under 4.5 on cards, so never used for content on a card). Map: land #181818, sea #020202, airport ground #000, minor roads #242424, major #363636, motorways and country borders #3f3f3f, labels #7e7e7e / #747474 / #6a6a6a with a 0.6 black halo. `ui/elevation.css` is the desktop layer (`@media (min-width: 769px) and (not (pointer: coarse))`: note that headless Chromium reports `pointer: none`, so do not use `(pointer: fine)` for desktop).
+
+### Colour checks
+- `tools/test/neutral-greys.test.js`: static lint over hex, rgb(a), hsl(a), gradients, url-encoded SVG fills and the style JSON. Effective colour = alpha over #0d0d0d and #1e1e1e; fails on any low-saturation colour whose channels differ by more than 2.
+- `tools/audit-colours.js`: runtime audit. Start Chromium with `--remote-debugging-port=9222`, then `docker run --rm --network host -v "$PWD":/w -w /w node:22-slim node tools/audit-colours.js --cdp http://127.0.0.1:9222 --url http://127.0.0.1:8096/` (add `--phone` for 390x844). It walks every visible element in 20 states and writes `.private/colour-audit.md` (not committed).
+- `tools/cdp-snippets/selected-sprite.js`: in-page assertions on the selected aircraft's sprite ImageData (no images).
+
+### Map provider failures
+`MLR.onError` keeps the last 30 tile failures (`MLR.tileFailures`: status, URL) and logs one `console.warn` per 15 s. Errors whose URL belongs to a different provider than the current style (requests still in flight after a switch) are ignored, which stops one provider's failure being charged to the next. If every provider fails the first is retried after 45 s.
+

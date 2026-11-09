@@ -155,11 +155,19 @@ Options added or changed by this fork:
 | `useRouteAPI`, `routeApiUrl` | `false`, adsb.im | Route lookup. Off by default; set `routeApiUrl = ""` to forbid it. |
 | `airportWeather`, `airportLinks` | `true` | Weather cards and external link buttons in the airport panel. |
 | `airportPinWx` | `true` | Flight-category rings on airport pins and the hover card (needs the weather feed). |
+| `aircraftColor` | `white` | Map aircraft icon colour: `white` or `altitude`. Settings > Aircraft & labels. Tracks always use the altitude gradient. |
+| `liftMapOnSelect` | `true` on phones, `false` on desktop | Lightens the map land to #2c2c2c while an aircraft is selected. |
+| `dimOthers` | `false` | Draw the other aircraft at about 60% while one is selected. |
 | `SiteShow`, `actual_range_show` | `false` | Show the receiver marker and range outline. |
 
 The receiver position drives the distance column, bearings and the instrument panel's receiver distance only when
 `SiteShow` is on. Per-visitor settings (base map, map view, smooth movement and the switches above) are in Settings
 and stored in the browser.
+
+**On a phone** (touch device or a window up to 768 px wide) the layout switches to a bottom sheet with three heights
+(peek, half, full) and a Map | Aircraft | Alerts | Settings tab bar. Settings become a list that opens one page at a time
+with a back button, and the base map picker is a list of radio rows. The top search bar, the toolbar and the chip bar are
+gone on phones; their switches live under Settings > Aircraft & labels. Desktop is unchanged by this.
 
 ## Privacy: who sees what
 

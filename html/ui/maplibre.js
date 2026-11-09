@@ -182,6 +182,7 @@ MLR.selectBase = async function (name) {
     }
     if (token !== this.baseToken) return;
     this.ready = false;
+    this.baseDomains = mlStyleDomains(style);
     this.map.setStyle(style, {diff: false});
     this.updateAttribution();
     // base map tiles must arrive; otherwise try another provider (see onError)
@@ -197,6 +198,16 @@ MLR.onError = function (e) {
     const isTile = !!(e && e.tile) || /HTTP|Failed to fetch|NetworkError|429|Load failed/i.test(msg);
     if (!isTile) { console.warn('map:', msg); return; }
     if (src && /^(tar-|ov-)/.test(src)) return;     // overlay problems don't affect the base map
+    // keep the evidence: URL and HTTP status of recent failures (window.MLR.tileFailures), one console line per 15 s
+    const url = (e.error && e.error.url) || '', status = e.error && e.error.status;
+    (this.tileFailures || (this.tileFailures = [])).push({t: Date.now(), status: status == null ? null : status, url: String(url).slice(0, 160), msg: msg.slice(0, 120)});
+    if (this.tileFailures.length > 30) this.tileFailures.shift();
+    if (!this._failLog || Date.now() - this._failLog > 15000) { this._failLog = Date.now(); console.warn('map tile request failed:', status == null ? '(no HTTP status: blocked or offline, often a CDN error page without CORS headers)' : status, url); }
+    // a failure from the style we just left (requests still in flight after a provider switch) says nothing about the new one
+    if (url && this.baseDomains && this.baseDomains.size) {
+        let host = ''; try { host = new URL(url, location.href).hostname; } catch (err) { /* relative */ }
+        if (host && host !== location.hostname && !this.baseDomains.has(mlDomain(host))) return;
+    }
     if (++this.tileErr >= 4 && this.tileOk === 0) this.baseFailed(this.baseName, e.error || new Error(msg));
 };
 
@@ -209,9 +220,25 @@ MLR.baseFailed = function (name, err) {
     if (typeof SKYUI != 'undefined') SKYUI.banner('map', next
         ? {kind: 'warn', title: 'Map provider switched', detail: (def ? def.get('title') : name) + ' is not answering, using ' + this.findLayer(next).get('title') + '.', action: {label: 'Dismiss', run: () => SKYUI.banner('map')}}
         : {kind: 'error', title: 'Map tiles unavailable', detail: 'No map provider is answering. Aircraft are still shown.'});
-    if (!next) return;
+    if (!next) {
+        // every provider failed (often a short CDN outage or a rate limit): try the first one again after a pause, once per failure
+        const token = this.baseToken;
+        clearTimeout(this.retryTimer);
+        this.retryTimer = setTimeout(() => { if (token === this.baseToken) { this.tried.clear(); this.selectBase(this.baseName); } }, 45000);
+        return;
+    }
     this.selectBase(next);
 };
+
+// registrable-ish domain (last two labels) of every host a style loads from: sources, sprite, glyphs
+function mlDomain(host) { return host.split('.').slice(-2).join('.'); }
+function mlStyleDomains(style) {
+    const out = new Set(), add = (u) => { try { out.add(mlDomain(new URL(u, location.href).hostname)); } catch (err) { /* not a URL */ } };
+    for (const k of Object.keys(style.sources || {})) { const s = style.sources[k]; if (s.url) add(s.url); for (const t of s.tiles || []) add(t); }
+    if (typeof style.sprite === 'string') add(style.sprite);
+    if (typeof style.glyphs === 'string') add(style.glyphs);
+    return out;
+}
 
 // our sources and layers go on top of whatever style was just loaded
 MLR.install = function () {
