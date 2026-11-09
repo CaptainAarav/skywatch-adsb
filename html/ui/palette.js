@@ -29,7 +29,7 @@ const PALETTE = (function () {
         }
         if (typeof layers != 'undefined' && layers.getArray) {
             for (const l of layers.getArray()) if (l.get('type') === 'base') {
-                a.push({title: 'Map: ' + l.get('title'), keys: ['basemap', 'provider', 'style'], run: () => { l.visible = true; }});
+                a.push({title: 'Map: ' + l.get('title'), keys: ['basemap', 'provider', 'style'], run: () => { l.setVisible(true); }});
             }
         }
         return a;
