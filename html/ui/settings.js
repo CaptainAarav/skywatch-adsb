@@ -29,6 +29,7 @@ const SET_ROWS = {
     airlineLogos:    ['set_photos', 'Airline logos'],
     airportWeather:  ['set_photos', 'Airport weather (METAR and TAF)'],
     airportLinks:    ['set_photos', 'Airport links'],
+    airportPinWx:    ['set_photos', 'Weather on airport pins'],
 
     moreTableLines1: ['set_table', 'More table rows'],
     moreTableLines2: ['set_table', 'Even more table rows'],

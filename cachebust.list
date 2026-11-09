@@ -42,6 +42,9 @@ ui/airport-geom.js
 ui/airport-calc.js
 ui/airport-panel.js
 ui/airport.css
+ui/palette.css
+ui/palette-rank.js
+ui/palette.js
 ui/history.css
 ui/history.js
 ui/settings.css

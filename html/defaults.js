@@ -389,6 +389,7 @@ let airportDetail = true;
 // links are plain external links. Both can be switched off.
 let airportWeather = true;
 let airportLinks = true;
+let airportPinWx = true;
 let airlineLogoUrl = 'https://pics.avs.io/al_square/{size}/{size}/{iata}.png';
 let airlineLogoKey = '';
 // get pictures from planespotters.net

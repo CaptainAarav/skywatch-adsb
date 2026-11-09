@@ -64,6 +64,20 @@ const AIRCALC = (function () {
         return 'VFR';
     }
     const CAT_RANK = {VFR: 0, MVFR: 1, IFR: 2, LIFR: 3};
+    const WX_MAX_AGE = 3 * 3600;
+    // the one category helper (airport panel, pin rings, palette): from the METAR's visibility and clouds, else the feed's own `cat`
+    function metarCategory(m) {
+        if (!m) return null;
+        const c = flightCategory(visSM(m.vis), ceilingFt(m.clouds, null));
+        return c || (CAT_RANK[m.cat] != null ? m.cat : null);
+    }
+    // a station entry of wx.json -> its category, or null when there is no METAR or the feed is older than 3 h
+    function stationCategory(feed, icao, nowSec) {
+        if (!feed || !feed.stations || typeof feed.fetched_at !== 'number') return null;
+        if ((nowSec == null ? Date.now() / 1000 : nowSec) - feed.fetched_at > WX_MAX_AGE) return null;
+        const s = feed.stations[icao];
+        return s && s.m ? metarCategory(s.m) : null;
+    }
 
     // pressure altitude = elev + (1013.25 - QNH) * 27; ISA = 15 - 2 * elev / 1000; DA = PA + 120 * (OAT - ISA)
     function densityAltitude(elevFt, qnhHpa, tempC) {
@@ -146,7 +160,7 @@ const AIRCALC = (function () {
         return res;
     }
 
-    return {endHeading, windComponents, runwayWind, ceilingFt, visSM, flightCategory, CAT_RANK, densityAltitude, sunTimes,
+    return {endHeading, windComponents, runwayWind, ceilingFt, visSM, flightCategory, CAT_RANK, metarCategory, stationCategory, WX_MAX_AGE, densityAltitude, sunTimes,
         inferRunwayEnd, angDiff, distNm, tafSlots};
 })();
 if (typeof module !== 'undefined') module.exports = AIRCALC;

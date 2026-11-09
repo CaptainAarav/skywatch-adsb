@@ -32,3 +32,14 @@ assert.equal(A.endHeading('07', 74), 74); assert.equal(A.endHeading('25', null),
 const f = [{from: 0, to: 36000, chg: null, vis: '6+', clouds: [['FEW', 3000]]}, {from: 7200, to: 36000, chg: 'BECMG', vis: null, clouds: [['BKN', 800]]}, {from: 3600, to: 5400, chg: 'TEMPO', vis: 1, clouds: []}];
 const sl = A.tafSlots(f, 0, 3, 3600 * 2); assert.equal(sl[0].cat, 'VFR'); assert.equal(sl[0].temp, 'IFR'); assert.equal(sl[1].cat, 'IFR');
 console.log('airport-calc: all tests passed');
+
+// shared category helper (pins, panel, palette)
+assert.equal(A.metarCategory({vis: 10, clouds: []}), 'VFR'); assert.equal(A.metarCategory({vis: 2, clouds: []}), 'IFR');
+assert.equal(A.metarCategory({vis: 0.5, clouds: [['OVC', 100]]}), 'LIFR'); assert.equal(A.metarCategory({vis: null, clouds: [], cat: 'MVFR'}), 'MVFR');
+assert.equal(A.metarCategory(null), null);
+const feed = {fetched_at: 1000000, stations: {EGLL: {m: {vis: 10, clouds: []}}, EGKK: {t: {}}}};
+assert.equal(A.stationCategory(feed, 'EGLL', 1000100), 'VFR');
+assert.equal(A.stationCategory(feed, 'EGLL', 1000000 + 3 * 3600 + 1), null, 'older than 3 h: no ring');
+assert.equal(A.stationCategory(feed, 'EGKK', 1000100), null, 'TAF only: no ring');
+assert.equal(A.stationCategory(feed, 'XXXX', 1000100), null); assert.equal(A.stationCategory(null, 'EGLL', 1), null);
+console.log('airport-calc pins ok');

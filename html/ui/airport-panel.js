@@ -133,7 +133,7 @@ const AIRPT = (function () {
     }
     function metarCard(r, m) {
         const vis = A.visSM(m.vis), ceil = A.ceilingFt(m.clouds, null);
-        const cat = A.flightCategory(vis, ceil) || (CAT_CLASS[m.cat] ? m.cat : null);
+        const cat = A.metarCategory(m);
         const age = h('span', 'age');
         if (typeof m.obs === 'number') {
             const d = new Date(m.obs * 1000);
@@ -582,10 +582,23 @@ const AIRPT = (function () {
     });
     jQuery(function () {
         new Toggle({key: 'airportWeather', display: 'Airport weather (METAR and TAF from the recorder)', container: '#settingsRight', init: airportWeather,
-            setState: function (s) { airportWeather = s; if (st.cur) { st.wx = null; fetchWx().then(render); render(); } }});
+            setState: function (s) { airportWeather = s; if (st.cur) { st.wx = null; fetchWx().then(render); render(); } refreshWx(); }});
         new Toggle({key: 'airportLinks', display: 'Airport links (SkyVector, AIP, Wikipedia)', container: '#settingsRight', init: airportLinks,
             setState: function (s) { airportLinks = s; st.cur && render(); }});
     });
 
-    return {open, close, mapClick, searchAndOpen, load, state: st};
+    // pins and the palette: categories of every fresh station, refreshed with the feed
+    function weatherCats() {
+        const out = {};
+        if (!airportWeather || !st.wx || !st.wx.stations) return out;
+        for (const k in st.wx.stations) { const c = A.stationCategory(st.wx, k); if (c) out[k] = c; }
+        return out;
+    }
+    const wxListeners = [];
+    function refreshWx() { return fetchWx().then(() => { for (const f of wxListeners) { try { f(); } catch (e) { console.error(e); } } }); }
+    function onWx(f) { wxListeners.push(f); }
+    onWx(() => { if (typeof MLR != 'undefined' && MLR.map && MLR.applyPinWeather) MLR.applyPinWeather(); });
+    setTimeout(refreshWx, 3000);
+    setInterval(() => { if (!document.hidden) refreshWx(); }, WX_REFRESH);
+    return {open, close, mapClick, searchAndOpen, load, state: st, weatherCats, onWx, refreshWx, wxFor, catChip, ageText, visText, cloudText};
 })();
