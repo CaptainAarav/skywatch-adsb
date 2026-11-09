@@ -322,7 +322,7 @@
 }
 #filterPopover .filterSection.chipHidden { display: none; }
 #filterPopover.fromList .filterSection { border-top: 0; padding-top: 4px; }
-@media (max-width: 700px) {
+@media (max-width: 768px), (pointer: coarse) {
     #filterPopover.fromList { left: 8px; right: 8px; top: auto; }
     .statTiles { gap: 6px; }
     .statTile { padding: 10px; }

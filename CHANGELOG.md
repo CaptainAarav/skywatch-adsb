@@ -8,6 +8,8 @@
 - Alerts: browser watchlist (Settings > Alerts) and an optional ntfy sender in the recorder.
 - Real terrain in 3D (AWS Open Data elevation tiles) with terrain-aware altitude lift.
 - Coverage plot, inferred recent movements, rain radar playback (off by default).
+- Neutral grey palette, white aircraft icons by default (Settings > Aircraft colour), selection glow, dark glass label pills, optional map lift on selection.
+- Phone layout (coarse pointer or width up to 768 px): three-snap bottom sheet with tabs, floating glass controls, settings that drill into pages, base map radio rows, flight status sentence, airport sheet with inferred arriving and departing traffic within 30 nm. Desktop is unchanged.
 - README rewritten: install, migration, FAQ, privacy and provider tables.
 
 ## 0.1.0

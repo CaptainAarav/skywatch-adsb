@@ -50,6 +50,9 @@ ui/airport.css
 ui/palette.css
 ui/palette-rank.js
 ui/palette.js
+ui/sheet-snap.js
+ui/flight-status.js
+ui/phone.js
 ui/alerts.css
 ui/alerts-calc.js
 ui/alerts.js

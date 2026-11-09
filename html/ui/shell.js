@@ -230,7 +230,7 @@ function updateSearchPlaceholder() {
     const inp = document.getElementById('search_input');
     if (!inp) return;
     let ph = 'Search';
-    if (window.matchMedia('(max-width: 700px)').matches) {
+    if (window.matchMedia('(max-width: 768px), (pointer: coarse)').matches) {
         // search covers every tracked aircraft, not just the ones passing the filters
         let n = 0;
         if (globeIndex) n = parseInt(jQuery('#dump1090_total_ac').text(), 10);
@@ -318,7 +318,7 @@ function initShell() {
     });
 
     initList();
-    initPhoneLayout();
+    // initPhoneLayout(): replaced by ui/phone.js (bottom sheet)
     initGraphsLink();
     shellSync();
 }
@@ -327,7 +327,7 @@ function initShell() {
 // settings button joins the small control stack. Moved in the DOM so the
 // tab order follows the visual order; moved back on wider screens.
 function initPhoneLayout() {
-    const mq = window.matchMedia('(max-width: 700px)');
+    const mq = window.matchMedia('(max-width: 768px), (pointer: coarse)');
     const layers = document.getElementById('layers_button');
     const cog = document.getElementById('settingsCog');
     const stack = document.getElementById('controlStack');

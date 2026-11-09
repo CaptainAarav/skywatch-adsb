@@ -140,7 +140,7 @@ function ibAirportName(a) {
 }
 
 function ibIsPhone() {
-    return window.matchMedia('(max-width: 700px)').matches;
+    return window.matchMedia('(max-width: 768px), (pointer: coarse)').matches;
 }
 
 // phone sheet (mockup 05): six tiles, Follow / Show track / expand
@@ -151,6 +151,18 @@ function ibRenderPhone(p, airline, sq, sitedist) {
 
     const onGround = p.altitude === 'ground';
     const altFt = adjust_baro_alt(p.altitude);
+    // second header row: full type name left, speed and altitude (with a climb/descend glyph) right
+    ibText('ib_p_type', p.typeLong || p.icaoType || '');
+    const spd = [];
+    if (p.gs != null) spd.push(Math.round(convert_speed(p.gs, DisplayUnits)) + ' ' + get_unit_label('speed', DisplayUnits));
+    if (onGround) spd.push('Ground'); else if (altFt != null) spd.push(ibAlt(altFt) + ' ' + ibUnit('altitude'));
+    const vr0 = onGround ? null : p.vert_rate;
+    const glyph = (vr0 != null && Math.abs(vr0) > 192) ? (vr0 > 0 ? ' \u2191' : ' \u2193') : '';
+    ibEl('ib_p_spd').textContent = spd.join(' \u00b7 ') + glyph;
+    // flight status: one sentence built only from received data
+    const fsEl = ibEl('ib_p_status');
+    const fs = FLIGHTSTATUS.sentence(onGround ? 'ground' : altFt, vr0, p.gs, units_for('altitude', DisplayUnits) === 'metric');
+    fsEl.textContent = fs; fsEl.hidden = !fs;
     ibText('ib_p_alt', onGround ? 'Ground' : ibAlt(altFt));
     ibSub('ib_p_alt_u', (altFt != null && !onGround) ? ibUnit('altitude') : '');
     const vr = p.vert_rate;
@@ -397,6 +409,13 @@ function initInfoblock() {
     jQuery('#ib_collapse').on('click', function () {
         toggles['wideInfoblock'].toggle(false);
     });
+    jQuery('#ib_p_share').on('click', function () {
+        const p = SelectedPlane; if (!p) return;
+        const url = location.origin + location.pathname + '?icao=' + p.icao;
+        const title = (p.flight && p.flight.trim()) || p.registration || p.icao.toUpperCase();
+        if (navigator.share) navigator.share({title: title, url: url}).catch(() => {});
+        else if (navigator.clipboard) navigator.clipboard.writeText(url).catch(() => {});
+    });
     jQuery('#ib_p_expand').on('click', () => ibSetSheetFull(!document.body.classList.contains('sheetFull')));
     jQuery('#ib_p_second').on('click', function () {
         if (this.dataset.mode == 'trace') jQuery('#show_trace').trigger('click');
@@ -419,7 +438,7 @@ function initInfoblock() {
         } else ibSetSheetFull(!full);
     });
     h.addEventListener('pointercancel', () => { y0 = null; });
-    const mq = window.matchMedia('(max-width: 700px)');
+    const mq = window.matchMedia('(max-width: 768px), (pointer: coarse)');
     const onMq = () => { if (typeof adjustInfoBlock == 'function') adjustInfoBlock(); };
     if (mq.addEventListener) mq.addEventListener('change', onMq);
 }

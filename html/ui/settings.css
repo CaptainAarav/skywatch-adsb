@@ -272,7 +272,7 @@
 .kvRow > span:first-child { color: var(--muted); }
 .kvRow > span:last-child { text-align: right; }
 
-@media (max-width: 700px) {
+@media (max-width: 768px), (pointer: coarse) {
     #settings_infoblock {
         left: 0;
         top: auto;

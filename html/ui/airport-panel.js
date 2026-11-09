@@ -329,31 +329,47 @@ const AIRPT = (function () {
         }
         st.samples = st.samples.filter(s => s.t > now - 15 * 60000);
     }
+    function bearingTo(lat1, lon1, lat2, lon2) {
+        const R = Math.PI / 180, dl = (lon2 - lon1) * R;
+        const y = Math.sin(dl) * Math.cos(lat2 * R), x = Math.cos(lat1 * R) * Math.sin(lat2 * R) - Math.sin(lat1 * R) * Math.cos(lat2 * R) * Math.cos(dl);
+        return (Math.atan2(y, x) / R + 360) % 360;
+    }
     function trafficCard(r) {
-        const near = planesNear(r, 10);
-        const c = card('Traffic now (from your receiver)');
-        const ground = near.filter(x => x.p.altitude === 'ground' && x.d <= 3).length;
+        const near = planesNear(r, 30);
+        const c = card('Live traffic near');
         const gr = h('div', 'apGrid');
-        gr.appendChild(tile('On the ground', String(ground)));
-        gr.appendChild(tile('Within 10 nm', String(near.length)));
+        gr.appendChild(tile('On the ground', String(near.filter(x => x.p.altitude === 'ground' && x.d <= 3).length)));
+        gr.appendChild(tile('Within 30 nm', String(near.length)));
         c.appendChild(gr);
-        const list = h('div', 'apList');
-        const fe = r.elev || 0;
-        for (const {p, d} of near.slice(0, 5)) {
-            const gnd = p.altitude === 'ground', alt = typeof p.altitude === 'number' ? p.altitude : null;
+        const groups = {Arriving: [], Departing: []};
+        for (const x of near) {
+            const p = x.p;
+            if (p.altitude === 'ground') continue;
             const vr = typeof p.baro_rate === 'number' ? p.baro_rate : p.geom_rate;
-            let st2 = gnd ? 'on ground' : typeof vr === 'number' && vr < -300 ? 'arriving' : typeof vr === 'number' && vr > 300 ? 'departing' : 'overhead';
-            const row = h('button', 'apRow'), left = h('span');
-            left.appendChild(h('b', 'mono', (p.flight || '').trim() || p.icao.toUpperCase()));
-            left.appendChild(h('span', 'mut', ' ' + (p.icaoType || '') + ' · ' + st2));
-            row.appendChild(left);
-            row.appendChild(h('span', 'mono mut', (gnd ? 'ground' : alt != null ? fmt(alt) + ' ft' : '–') + ' · ' + d.toFixed(d < 10 ? 1 : 0) + ' nm'));
-            row.type = 'button';
-            row.addEventListener('click', () => { if (typeof selectPlaneByHex == 'function') selectPlaneByHex(p.icao, {follow: true}); });
-            list.appendChild(row);
+            if (typeof vr !== 'number' || Math.abs(vr) <= 300 || typeof p.track !== 'number' || !p.position) continue;
+            // bearing from the airport to the aircraft; descending toward it = arriving, climbing away from it = departing
+            const brg = bearingTo(r.lat, r.lon, p.position[1], p.position[0]);
+            const toward = Math.abs(((p.track - brg - 180 + 540) % 360) - 180) < 90;   // track roughly points back at the airport
+            if (vr < 0 && toward) groups.Arriving.push(x); else if (vr > 0 && !toward) groups.Departing.push(x);
         }
-        if (!near.length) list.appendChild(h('div', 'apNote', 'No aircraft within 10 nm right now.'));
-        c.appendChild(list);
+        for (const name of ['Arriving', 'Departing']) {
+            if (!groups[name].length) continue;
+            c.appendChild(h('div', 'apNote', name));
+            const list = h('div', 'apList');
+            for (const {p, d} of groups[name].slice(0, 5)) {
+                const alt = typeof p.altitude === 'number' ? p.altitude : null;
+                const row = h('button', 'apRow'), left = h('span');
+                left.appendChild(h('b', 'mono', (p.flight || '').trim() || p.icao.toUpperCase()));
+                left.appendChild(h('span', 'mut', ' ' + (p.icaoType || '')));
+                row.appendChild(left);
+                row.appendChild(h('span', 'mono mut', (alt != null ? fmt(alt) + ' ft' : '\u2013') + ' \u00b7 ' + d.toFixed(d < 10 ? 1 : 0) + ' nm'));
+                row.type = 'button';
+                row.addEventListener('click', () => { if (typeof selectPlaneByHex == 'function') selectPlaneByHex(p.icao, {follow: true}); });
+                list.appendChild(row);
+            }
+            c.appendChild(list);
+        }
+        c.appendChild(h('div', 'apNote', near.length ? 'Inferred from receiver data: arriving = descending toward the airport, departing = climbing away.' : 'No aircraft within 30 nm right now.'));
         return c;
     }
 
@@ -432,10 +448,17 @@ const AIRPT = (function () {
         const flag = r.country && /^[A-Z]{2}$/.test(r.country) ? String.fromCodePoint(...[...r.country].map(c => 0x1F1E6 + c.charCodeAt(0) - 65)) + ' ' : '';
         for (const [txt, k] of [[r.iata, ''], [TYPE_NAME[r.type], ''], [cn ? flag + cn : null, ''], [typeof r.elev == 'number' ? 'Elevation ' + fmt(r.elev) + ' ft' : null, 'k'], [r.city || rn, 'k']])
             if (txt) chips.appendChild(h('span', 'apChip ' + k, txt));
-        body.appendChild(chips);
-
+        chips.appendChild(h('span', 'apChip k', hhmm(new Date()) + ' UTC'));   // no timezone data is bundled, so UTC rather than a guessed local time
         const wx = wxFor(r.icao);
         const m = wx && wx.m ? wx.m : null;
+        if (m && airportWeather) {
+            const cat0 = A.metarCategory(m), bits = [];
+            if (cat0) bits.push(cat0);
+            if (typeof m.wspd === 'number') bits.push(m.wspd === 0 ? 'calm' : (typeof m.wdir === 'number' ? pad3(m.wdir) + '\u00b0 ' : '') + m.wspd + ' kt');
+            if (bits.length) chips.appendChild(h('span', 'apChip', bits.join(' \u00b7 ')));
+        }
+        body.appendChild(chips);
+
         if (airportWeather) {
             if (wx && wx.m) body.appendChild(metarCard(r, wx.m));
             if (wx && wx.t) { const c = tafCard(wx.t, wx.m); if (c) body.appendChild(c); }
@@ -445,18 +468,18 @@ const AIRPT = (function () {
                 if (why) body.appendChild(h('div', 'apNote apWxNote', why));
             }
         }
-        const rc = runwayCard(r, m); if (rc) body.appendChild(rc);
         body.appendChild(trafficCard(r));
         const mc = movementsCard(r); if (mc) body.appendChild(mc);
-        const fc = freqCard(r); if (fc) body.appendChild(fc);
+        const rc = runwayCard(r, m); if (rc) body.appendChild(rc);
         body.appendChild(sunCard(r));
+        const fc = freqCard(r); if (fc) body.appendChild(fc);
         const lc = linksCard(r); if (lc) body.appendChild(lc);
         body.appendChild(h('div', 'apFoot', 'Data: OurAirports (public domain)' + (wx ? ' · aviationweather.gov (METAR, TAF)' : '') + ' · your receiver. Never use for navigation.'));
 
         const bar = h('div', 'apBar');
-        const b1 = h('button', 'apBtn p', st.isolating ? 'Show all traffic' : 'Show traffic here'); b1.type = 'button';
+        const b1 = h('button', 'apBtn p', st.isolating ? 'All traffic' : 'Show traffic'); b1.type = 'button';
         b1.addEventListener('click', toggleTraffic);
-        const b2 = h('button', 'apBtn', 'Zoom to airport'); b2.type = 'button';
+        const b2 = h('button', 'apBtn', 'Zoom in'); b2.type = 'button';
         b2.addEventListener('click', () => fitAirport(r, true));
         const b3 = h('button', 'apBtn', 'Layers'); b3.type = 'button';
         b3.addEventListener('click', () => { const l = document.getElementById('layers_button'); l && l.click(); });
@@ -497,7 +520,7 @@ const AIRPT = (function () {
     }
     // free map area: right of the panel on desktop, above the bottom sheet on phones; below the top bar
     function padding() {
-        const phone = window.matchMedia('(max-width: 700px)').matches, p = st.root && !st.root.hidden ? st.root.getBoundingClientRect() : null;
+        const phone = window.matchMedia('(max-width: 768px), (pointer: coarse)').matches, p = st.root && !st.root.hidden ? st.root.getBoundingClientRect() : null;
         if (phone) return {top: 84, bottom: p ? Math.round(window.innerHeight - p.top + 16) : Math.round(window.innerHeight * 0.55), left: 20, right: 20};
         return {top: 84, bottom: 70, left: (p ? Math.round(p.right) : 408) + 28, right: 92};
     }

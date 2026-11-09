@@ -1,105 +1,135 @@
 /*
- * Skywatch ADS-B: phone layout (design/mockups/05-phone.html).
- * Full-screen map, floating search + layers button, small control stack,
- * left panels become bottom sheets. Targets are at least 44px.
+ * Skywatch ADS-B: phone layout (coarse pointer or width <= 768 px). Built by ui/phone.js, which adds body.phone.
+ * One bottom sheet (#phoneSheet) owns the search pill, the tab bar and the open panel; the map gets the rest;
+ * round glass controls ride above the sheet through --sheet-h. Desktop is untouched: every rule here is under body.phone
+ * or inside the phone media query.
  */
 .phoneOnly { display: none !important; }
+@media (max-width: 768px), (pointer: coarse) { .phoneOnly { display: inline-flex !important; } }
 
-@media (max-width: 700px) {
-    .phoneOnly { display: inline-flex !important; }
+html, body { overscroll-behavior: none; }
+body.phone { height: 100dvh; overflow: hidden; touch-action: manipulation; }
+body.phone #map_container, body.phone #map_canvas { overscroll-behavior: none; touch-action: none; }
 
-    #wordmark, #viewPill, #north_up:not(.on), #hide_panels_button,
-    #altitude_chart, .ol-zoom { display: none !important; }
-
-    #searchWrap {
-        left: 16px;
-        right: 74px;
-        top: calc(env(safe-area-inset-top, 0px) + 12px);
-        width: auto;
-    }
-    #search_form { height: 48px; border-radius: 24px; padding: 0 16px; }
-    #search_input { font-size: 16px; }      /* 16px stops iOS zooming on focus */
-    #search_form kbd { display: none; }
-    #search_warning { top: 56px; left: 0; right: 0; width: auto; }
-
-    #layers_button {
-        position: absolute;
-        right: 16px;
-        top: calc(env(safe-area-inset-top, 0px) + 12px);
-        width: 48px;
-        height: 48px;
-        border-radius: 50%;
-        z-index: 30;
-    }
-
-    #controlStack {
-        right: 16px;
-        top: calc(env(safe-area-inset-top, 0px) + 76px);
-        padding: 2px;
-    }
-    #controlStack .btn { width: 40px; height: 40px; }
-    #settingsCog { position: static; width: 40px; height: 40px; border: 0; }
-
-    /* toolbar: one scrollable strip along the bottom */
-    #toolbar {
-        left: 8px;
-        right: 8px;
-        bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
-        max-width: none;
-        flex-wrap: nowrap;
-        overflow-x: auto;
-        scrollbar-width: none;
-        border-radius: 24px;
-        padding: 5px;
-    }
-    #toolbar::-webkit-scrollbar { display: none; }
-    #toolbar .tb { height: 38px; padding: 0 12px; font-size: 13px; }
-    #toolbar .tb kbd { display: none; }
-    body.infoOpen #toolbar { display: none; }
-
-    /* 2D / 3D / Globe: compact pill above the toolbar, bottom-left */
-    #dimSwitch {
-        left: 12px; right: auto;
-        bottom: calc(env(safe-area-inset-bottom, 0px) + 62px);
-        font-size: 12px;
-    }
-    #dimSwitch button { padding: 0 12px; height: 38px; line-height: 38px; min-width: 44px; }
-    body.infoOpen #dimSwitch { display: none; }
-
-    .ol-attribution.ol-control {
-        right: 12px !important;
-        bottom: calc(env(safe-area-inset-bottom, 0px) + 62px) !important;
-        max-width: calc(100% - 24px);
-    }
-    body.infoOpen .ol-attribution.ol-control { display: none; }
-
-    /* left panels become bottom sheets */
-    #sidebar_container { left: 8px !important; }
-    #sidebar_container,
-    #selected_infoblock {
-        left: 8px;
-        right: 8px;
-        top: auto;
-        width: auto !important;
-        max-height: 62%;
-        border-radius: 32px 32px 28px 28px;
-    }
-    #sidebar_container {
-        bottom: calc(env(safe-area-inset-bottom, 0px) + 66px);
-        height: 62% !important;
-    }
-    #selected_infoblock {
-        bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
-        padding: 8px 16px 16px;
-    }
-
-    #filterPopover {
-        left: 8px;
-        right: 8px;
-        top: auto;
-        bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
-        width: auto;
-        max-height: 70%;
-        z-index: 45;
-    }
+/* old chrome is replaced by the sheet and the round controls */
+body.phone #topbar, body.phone #controlStack, body.phone #toolbar, body.phone #dimSwitch,
+body.phone #wordmark, body.phone #viewPill, body.phone #altitude_chart, body.phone .ol-zoom { display: none !important; }
+body.phone .ol-attribution.ol-control { display: none !important; }
+body.phone.attrOpen .ol-attribution.ol-control {
+    display: block !important; position: fixed !important; left: 16px !important; right: 16px !important; bottom: calc(var(--sheet-h, 140px) + 76px) !important;
+    max-width: none; z-index: 46; background: var(--bg-sheet); border: 1px solid var(--line); border-radius: 16px; padding: 10px 14px;
+    font: 12px/1.5 Inter, system-ui, sans-serif; color: var(--text-2);
 }
+body.phone.attrOpen .ol-attribution.ol-control a { color: var(--text); }
+
+/* ---------- the sheet ---------- */
+.psSheet {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 45; display: flex; flex-direction: column; overflow: hidden;
+    background: var(--bg-sheet); border: 1px solid var(--line); border-bottom: 0; border-radius: 24px 24px 0 0;
+    box-shadow: 0 -12px 40px rgba(0,0,0,.5); color: var(--text); font-family: var(--font-ui);
+    height: 140px; max-height: 100dvh; overscroll-behavior: none;
+}
+.psSheet.psAnim { transition: height .25s cubic-bezier(.2,.8,.2,1); }
+.psHandle { position: relative; z-index: 2; flex: none; height: 44px; margin-bottom: -16px; align-items: flex-start; padding-top: 8px !important; width: 100%; background: none; border: 0; padding: 0; cursor: grab; touch-action: none; display: flex; justify-content: center; color: var(--handle); }
+.psGrip { width: 40px; height: 5px; border-radius: 3px; background: var(--handle); }
+.psHandle:focus-visible, .psSearch:focus-visible, .psTab:focus-visible, .pcBtn:focus-visible, .pcMenuItem:focus-visible, .setBack:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.psBody { flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+.psFoot { flex: none; display: flex; flex-direction: column; gap: 8px; padding: 4px 12px calc(env(safe-area-inset-bottom, 0px) + 8px); background: var(--bg-sheet); touch-action: none; }
+.psSearch { display: flex; align-items: center; gap: 10px; width: 100%; height: 48px; padding: 0 16px; border-radius: 24px; background: var(--bg-control); border: 1px solid var(--line); color: var(--text-2); font: 500 15px Inter, system-ui, sans-serif; text-align: left; cursor: pointer; }
+.psSearch span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.psTabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; padding: 4px; border-radius: 26px; background: var(--bg-control); border: 1px solid var(--line); }
+.psTab { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 48px; min-width: 44px; padding: 4px 2px; border: 0; border-radius: 22px; background: none; color: var(--text-2); font: 600 11px Inter, system-ui, sans-serif; cursor: pointer; }
+.psTab span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.psTab.on { background: #fff; color: #000; }
+
+/* panels live inside the sheet */
+body.phone #phoneSheetBody > #sidebar_container,
+body.phone #phoneSheetBody > #selected_infoblock,
+body.phone #phoneSheetBody > #airport_panel {
+    position: static !important; left: auto !important; right: auto !important; top: auto !important; bottom: auto !important;
+    width: auto !important; height: auto !important; max-height: none !important; margin: 0 !important; border: 0 !important; border-radius: 0 !important;
+    background: none !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; box-shadow: none !important; transform: none !important;
+    overflow: visible !important; padding-left: 14px; padding-right: 14px;
+}
+body.phone #phoneSheetBody > #sidebar_container { padding: 0 !important; }
+body.phone #phoneSheetBody > #sidebar_container #sidebar_canvas { overflow: visible; padding: 4px 12px 12px; }
+body.phone #phoneSheetBody > #airport_panel { display: flex; padding: 0 !important; }
+body.phone #phoneSheetBody > #airport_panel[hidden] { display: none !important; }
+body.phone #airport_panel .apScroll { overflow: visible; padding: 0 14px 12px; }
+body.phone #airport_panel .apBar { position: sticky; bottom: 0; background: var(--bg-sheet); padding: 10px 14px 12px; }
+body.phone #selected_infoblock .ibScroll { overflow: visible; }
+body.phone #selected_infoblock .sheetHandle { display: none !important; }
+body.phone.sheetFull #selected_infoblock { top: auto; }
+
+/* ---------- round glass controls ---------- */
+.pcCol, .pcLeft { position: fixed; z-index: 44; display: flex; gap: 10px; transition: opacity .2s; }
+.pcCol { right: calc(env(safe-area-inset-right, 0px) + 12px); bottom: calc(var(--sheet-h, 140px) + 12px); flex-direction: column-reverse; }
+.pcLeft { left: calc(env(safe-area-inset-left, 0px) + 12px); bottom: calc(var(--sheet-h, 140px) + 12px); align-items: flex-end; }
+body:not(.phone) .pcCol, body:not(.phone) .pcLeft { display: none; }
+body.phone.sheetHigh .pcCol, body.phone.sheetHigh .pcLeft { opacity: 0; pointer-events: none; }
+body.phone.settingsOpen .pcCol, body.phone.settingsOpen .pcLeft, body.phone.settingsOpen .psSheet { visibility: hidden; }
+.pcBtn { display: inline-flex; align-items: center; justify-content: center; gap: 4px; width: 48px; height: 48px; padding: 0; border-radius: 50%; border: 1px solid var(--line); background: var(--bg-control); color: var(--text); cursor: pointer; -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); }
+.pcBtn[hidden] { display: none; }
+.pcBtn.on { background: #fff; color: #000; }
+.pcCompass svg { transition: transform .15s linear; }
+.pcCycle { width: auto; min-width: 48px; padding: 0 14px; border-radius: 24px; }
+.pcCycleLabel { font: 600 13px Inter, system-ui, sans-serif; }
+.pcMenu { position: absolute; left: 0; bottom: 58px; display: flex; flex-direction: column; gap: 4px; padding: 6px; background: var(--bg-sheet); border: 1px solid var(--line); border-radius: 18px; }
+.pcMenu[hidden] { display: none; }
+.pcMenuItem { min-height: 44px; min-width: 96px; padding: 0 16px; border: 0; border-radius: 14px; background: none; color: var(--text); font: 600 14px Inter, system-ui, sans-serif; text-align: left; cursor: pointer; }
+.pcMenuItem:hover { background: var(--bg-control-hover); }
+.pcLeft .pcInfo { margin-left: 0; }
+@media (prefers-reduced-motion: reduce) { .psSheet.psAnim, .pcCol, .pcLeft, .pcCompass svg { transition: none; } }
+
+/* map-side overlays that would collide with the sheet */
+body.phone #filterPopover { left: 8px; right: 8px; top: auto; bottom: calc(var(--sheet-h, 140px) + 8px); width: auto; max-height: 60dvh; z-index: 47; }
+body.phone .rdBar { bottom: calc(var(--sheet-h, 140px) + 76px); }
+body.phone #search_warning { display: none; }
+
+/* ---------- settings: grouped list that drills into pages ---------- */
+body.phone #settings_infoblock {
+    left: 0; right: 0; top: 0; bottom: 0; width: 100%; height: 100dvh; max-height: none; transform: none; border-radius: 0; flex-direction: column;
+    background: var(--bg-sheet); z-index: 80; padding-top: env(safe-area-inset-top, 0px);
+}
+body.phone #settings_infoblock .setNav { width: auto; flex: 1; flex-direction: column; flex-wrap: nowrap; overflow-y: auto; overflow-x: hidden; padding: 12px 16px calc(env(safe-area-inset-bottom, 0px) + 16px); gap: 0; border: 0; }
+body.phone #settings_infoblock .setTitle { display: block; font: 700 28px Inter, system-ui, sans-serif; padding: 12px 4px 14px; }
+body.phone #settings_infoblock .setNavBtn { width: 100%; min-height: 56px; padding: 0 16px; text-align: left; font: 500 16px Inter, system-ui, sans-serif; color: var(--text); background: var(--bg-card); border-radius: 0; border-bottom: 1px solid var(--divider); display: flex; align-items: center; justify-content: space-between; white-space: normal; }
+body.phone #settings_infoblock .setNavBtn:first-of-type { border-radius: 20px 20px 0 0; }
+body.phone #settings_infoblock .setNavBtn:last-of-type { border-radius: 0 0 20px 20px; border-bottom: 0; }
+body.phone #settings_infoblock .setNavBtn::after { content: ''; width: 8px; height: 8px; border-top: 2px solid var(--text-2); border-right: 2px solid var(--text-2); transform: rotate(45deg); flex: none; }
+body.phone #settings_infoblock .setNavBtn.on { background: var(--bg-card); color: var(--text); }
+body.phone #settings_infoblock .setReset { margin: 20px 0 0; min-height: 48px; width: 100%; white-space: normal; }
+body.phone #settings_infoblock .setMain { display: none; padding: 0; flex: 1; min-height: 0; flex-direction: column; }
+body.phone #settings_infoblock[data-phone-page="page"] .setMain { display: flex; }
+body.phone #settings_infoblock[data-phone-page="page"] .setNav { display: none; }
+body.phone #settings_infoblock .setHead { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--divider); }
+body.phone #settings_infoblock .setHead h2 { flex: 1; margin: 0; font: 600 18px Inter, system-ui, sans-serif; }
+body.phone #settings_infoblock .setBody { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; padding: 16px 16px calc(env(safe-area-inset-bottom, 0px) + 24px); }
+body.phone #settings_infoblock .setBack, body.phone #settings_infoblock .setClose { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 50%; background: var(--bg-control); border: 1px solid var(--line); color: var(--text); }
+body.phone #settings_infoblock[data-phone-page="root"] .setBack { display: none; }
+body.phone #settings_infoblock .setCols { grid-template-columns: 1fr; gap: 18px; }
+body.phone #settings_infoblock .setRow, body.phone #settings_infoblock .settingsOptionContainer { min-height: 48px; }
+body.phone #settingsBackdrop { display: none !important; }
+/* base map picker: radio rows (name, then provider line), no thumbnails */
+body.phone .baseGrid { grid-template-columns: 1fr; gap: 0; background: var(--bg-card); border-radius: 20px; overflow: hidden; }
+body.phone .baseTile { flex-direction: row; flex-wrap: wrap; align-items: center; column-gap: 12px; min-height: 56px; padding: 8px 16px; border-bottom: 1px solid var(--divider); position: relative; }
+body.phone .baseTile .baseThumb { display: none; }
+body.phone .baseTile::before { content: ''; flex: none; width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--text-2); box-sizing: border-box; }
+body.phone .baseTile.on::before { border-color: #fff; background: radial-gradient(#fff 0 40%, transparent 45%); }
+body.phone .baseTile .baseName { font: 600 15px Inter, system-ui, sans-serif; }
+body.phone .baseTile .baseSub { flex-basis: 100%; padding-left: 32px; margin-top: -2px; font-size: 12.5px; color: var(--text-2); }
+body.phone .baseChip { min-height: 44px; }
+
+/* tooltips never show on touch (they stick after a tap) */
+@media (hover: none) { .sk-tip { display: none !important; } }
+
+.setBack { display: none; }
+body.phone #settings_infoblock .setBack { display: inline-flex; }
+
+/* ---------- tap targets: at least 44 x 44 on phones ---------- */
+body.phone :is(#phoneSheet, #settings_infoblock, #filterPopover) :is(button, .chip, .formButton, select, summary, .apBtn, input:not([type=checkbox]):not([type=radio]):not([type=range])) { min-height: 44px; min-width: 44px; box-sizing: border-box; }
+body.phone :is(#phoneSheet, #settings_infoblock, #filterPopover) input[type=range] { height: 44px; margin: 0; }
+body.phone :is(#phoneSheet, #settings_infoblock) a { display: inline-block; padding: 14px 6px; margin: -14px -6px; min-width: 44px; box-sizing: border-box; text-align: center; }
+body.phone :is(#phoneSheet, #settings_infoblock) a.apLink, body.phone #airport_panel a { text-align: left; }
+body.phone .apX, body.phone #selected_infoblock .ibBtn { width: 44px; height: 44px; }
+body.phone .chip { display: inline-flex; align-items: center; }

@@ -62,7 +62,7 @@ body.panelsHidden #airport_panel { display: none !important; }
 .apBtn { flex: 1; padding: 11px 6px; font: inherit; font-size: 13px; font-weight: 600; border-radius: 999px; background: var(--tile); border: 1px solid var(--line); color: var(--text); cursor: pointer; }
 .apBtn.p { background: #fff; color: #0b0b0d; border-color: #fff; }
 .apBtn:hover { filter: brightness(1.1); }
-@media (max-width: 700px) {
+@media (max-width: 768px), (pointer: coarse) {
     #airport_panel { left: 8px; right: 8px; top: auto; width: auto; max-height: 62%; bottom: calc(env(safe-area-inset-bottom, 0px) + 8px); border-radius: 32px 32px 28px 28px; }
     .apScroll { padding: 14px 14px 10px; }
     .apRwRow { grid-template-columns: 1fr; justify-items: center; }

@@ -93,7 +93,7 @@ MLR.motionHot = function () {
 // (checkFollow notices the centre moved).
 const FOCUS_ZOOM = 9.5, FOCUS_MS = 1200;
 MLR.focusPadding = function () {
-    const phone = window.innerWidth < 700;
+    const phone = window.matchMedia("(max-width: 768px), (pointer: coarse)").matches;
     const w = this.map.getContainer().clientWidth, h = this.map.getContainer().clientHeight;
     let left = 0, bottom = 0;
     for (const id of ['selected_infoblock', 'sidebar_container']) {

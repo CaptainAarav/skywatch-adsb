@@ -158,6 +158,28 @@ function setSwitchRow(id, label, checked, onChange, sub) {
     return row;
 }
 
+// the map-chip toggles (Labels, Extended, Track labels, All tracks, Persist) live here; on phones the chip bar is gone
+const SET_QUICK = [['L', 'Aircraft labels'], ['O', 'Extended labels'], ['K', 'Track labels'], ['T', 'All tracks'], ['P', 'Persistence mode']];
+function setBuildQuick() {
+    const list = document.getElementById('set_aircraft');
+    if (!list) return;
+    let box = document.getElementById('setQuick');
+    if (!box) { box = document.createElement('div'); box.id = 'setQuick'; box.className = 'setList'; list.parentNode.insertBefore(box, list); }
+    box.replaceChildren();
+    for (const [id, label] of SET_QUICK) {
+        const btn = document.getElementById(id);
+        if (!btn) continue;
+        const row = setSwitchRow('quick_' + id, label, !btn.classList.contains('inActiveButton'), () => { btn.click(); setTimeout(setBuildQuickState, 80); });
+        box.appendChild(row);
+    }
+}
+function setBuildQuickState() {
+    for (const [id] of SET_QUICK) {
+        const btn = document.getElementById(id), cb = document.getElementById('quick_' + id);
+        if (btn && cb) cb.checked = !btn.classList.contains('inActiveButton');
+    }
+}
+
 function setBuildOverlays() {
     const list = document.getElementById('set_overlays');
     if (!list || list.dataset.built) return;
@@ -309,6 +331,7 @@ function openSettings(sec, opener) {
     setBuildBaseMaps();
     setBuildOverlays();
     setBuildTable();
+    setBuildQuick();
     setArrange();
     setSyncSwitches();
     setRenderBaseState();
@@ -316,11 +339,12 @@ function openSettings(sec, opener) {
     setUnitsSync();
     setAbout();
     showSettingsSection(sec || loStore['settingsSection'] || 'map');
+    if (typeof PHONE != 'undefined') PHONE.settingsPage(sec ? 'page' : 'root');      // phones: grouped list first, a page when a section was asked for
     d.hidden = false;
     document.getElementById('settingsBackdrop').hidden = false;
     document.body.classList.add('settingsOpen');
     const first = d.querySelector('.setNavBtn.on') || d.querySelector('.setNavBtn');
-    first && first.focus();
+    if (!(typeof PHONE != 'undefined' && PHONE.isPhone())) first && first.focus();
 }
 
 function closeSettings() {

@@ -621,7 +621,7 @@ body.infoOpen #selected_infoblock { display: flex; }
 #graphsOverlay .gCard figcaption { font: 600 14px Inter, system-ui, sans-serif; margin: 2px 6px 10px; }
 #graphsOverlay .gCard img { display: block; width: 100%; height: auto; border-radius: 14px; background: #000000; }
 #graphsOverlay .gCard.gMissing { display: none; }
-@media (max-width: 700px) {
+@media (max-width: 768px), (pointer: coarse) {
     #graphsOverlay { left: 0; right: 0; top: 0; bottom: 0; border-radius: 0; padding: 16px; }
     #graphsOverlay .gGrid { grid-template-columns: 1fr; }
     #graphsOverlay .gFull { display: none; }
@@ -642,7 +642,7 @@ body.infoOpen #selected_infoblock { display: flex; }
 #graphsOverlay .gTip span { font: 500 11px Inter, system-ui, sans-serif; color: var(--muted); }
 #graphsOverlay .gNote { grid-column: 1 / -1; padding: 10px 14px; border-radius: 16px; background: rgba(245,185,74,.12); color: #F5B94A; font: 500 13px Inter, system-ui, sans-serif; }
 #graphsOverlay .gFull { font-size: 12px; opacity: .8; }
-@media (max-width: 700px) {
+@media (max-width: 768px), (pointer: coarse) {
     #graphsOverlay .gGrid { grid-template-columns: 1fr; }
     #graphsOverlay .gCard.gLive { height: 320px; }
     #graphsOverlay .gHead { gap: 10px; }

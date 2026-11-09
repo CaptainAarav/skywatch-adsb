@@ -4107,7 +4107,7 @@ function adjustInfoBlock() {
     // shows/hides the panel and tells the shell which state the left panel is in.
     const show = !!(SelectedPlane && toggles['enableInfoblock'].state);
     // the wide details view needs room; phones always get the compact sheet
-    const roomy = !window.matchMedia('(max-width: 700px)').matches;
+    const roomy = !window.matchMedia('(max-width: 768px), (pointer: coarse)').matches;
     document.body.classList.toggle('infoOpen', show);
     const wideNow = show && !!wideInfoBlock && roomy;
     const prevShow = adjustInfoBlock.lastShow, infoChanged = prevShow !== show || adjustInfoBlock.lastWide !== wideNow;

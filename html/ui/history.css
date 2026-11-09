@@ -153,7 +153,7 @@ body.replayOpen #dimSwitch,
 body.traceOpen #dimSwitch { bottom: calc(42px + var(--hb-h, 140px)); }
 body.replayOpen.traceOpen #replayBar { display: none !important; }
 
-@media (max-width: 700px) {
+@media (max-width: 768px), (pointer: coarse) {
     .histBar {
         left: 8px;
         right: 8px;

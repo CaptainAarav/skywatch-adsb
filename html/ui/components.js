@@ -115,6 +115,7 @@ const SKYUI = (function () {
     // ---- Tooltip: replaces native title on our controls (glass, 150 ms delay, focus-aware) ----
     let tip = null, tipT = null;
     function showTip(el) {
+        if (window.matchMedia('(hover: none)').matches) return;      // no tooltips on touch
         const txt = el.getAttribute('data-tip'); if (!txt) return;
         hideTip();
         tip = h('div', 'sk-tip', txt); tip.setAttribute('role', 'tooltip');

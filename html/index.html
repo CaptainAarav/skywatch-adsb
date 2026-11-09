@@ -7,7 +7,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
 
-    <meta name="viewport" content="user-scalable=no, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, minimal-ui" />
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
 
     <!-- HEAD_ANCHOR -->
 
@@ -108,6 +108,9 @@
               <span id="ib_dbflags" class="ibDbFlags"></span>
               <span class="ibHeadBtns">
                 <span class="ibHeadSrc phoneOnly" id="ib_head_src"></span>
+                <button type="button" class="btn ibBtn phoneOnly" id="ib_p_share" aria-label="Share this aircraft">
+                  <svg aria-hidden="true" class="ico" width="18" height="18" viewBox="0 0 24 24"><path d="M12 15V4M8 8l4-4 4 4M5 12v7h14v-7"/></svg>
+                </button>
                 <button type="button" class="btn ibBtn wideOnly" id="ib_collapse" aria-label="Collapse to compact card" title="Compact card">
                   <svg aria-hidden="true" class="ico" width="16" height="16" viewBox="0 0 24 24"><path d="M9 4H4v5M15 20h5v-5M4 4l6 6M20 20l-6-6"/></svg>
                 </button>
@@ -119,6 +122,7 @@
             </div>
             <div class="ibSub compactOnly" id="ib_sub"></div>
             <div class="ibSub phoneOnly" id="ib_sub_phone"></div>
+            <div class="ibPhoneRow phoneOnly" id="ib_p_row"><span class="ibPType" id="ib_p_type"></span><span class="ibPSpd" id="ib_p_spd"></span></div>
             <div class="ibLine1 wideOnly" id="ib_line1"></div>
             <div class="ibLine2 wideOnly" id="ib_line2"></div>
             <div class="ibHeadChips wideOnly" id="ib_head_chips"></div>
@@ -153,6 +157,7 @@
           </section>
 
           <!-- phone sheet (mockup 09): compass + three tiles, chips, track/squawk/distance -->
+          <div class="ibStatus phoneOnly" id="ib_p_status" hidden></div>
           <div class="ibPhoneInst phoneOnly" aria-label="Flight data">
             <div class="ibCompassSlot ibCompassPhone" id="ib_compass_phone"></div>
             <div class="ibPhoneTiles">
@@ -929,6 +934,9 @@
     <script src="ui/airport-panel.js"></script>
     <script src="ui/palette-rank.js"></script>
     <script src="ui/palette.js"></script>
+    <script src="ui/sheet-snap.js"></script>
+    <script src="ui/flight-status.js"></script>
+    <script src="ui/phone.js"></script>
     <script src="ui/alerts-calc.js"></script>
     <script src="ui/alerts.js"></script>
     <script src="ui/history.js"></script>

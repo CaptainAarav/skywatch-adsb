@@ -195,7 +195,7 @@
 
 /* ---- phone sheet (mockup 09) ---- */
 .ibPhoneInst, .ibTiles3.phoneOnly { display: none; }
-@media (max-width: 700px) {
+@media (max-width: 768px), (pointer: coarse) {
     .ibPhoneInst.phoneOnly { display: flex !important; gap: 12px; align-items: center; flex: none; }
     .ibCompassPhone { flex: none; margin: 0; }
     .ibPhoneTiles { flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0; }

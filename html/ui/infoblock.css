@@ -325,11 +325,11 @@ body.infoWide .ibScroll { display: block; }
 .ibExport { flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 #selected_infoblock .ibExport button.chip { cursor: pointer; font-family: inherit; }
 
-@media (max-width: 700px) {
+@media (max-width: 768px), (pointer: coarse) {
     #selected_infoblock .ibTiles { gap: 8px; }
 }
 /* ---------- phone bottom sheet (mockup 05) ---------- */
-@media (max-width: 700px) {
+@media (max-width: 768px), (pointer: coarse) {
     #selected_infoblock { gap: 0; }
     body.sheetFull #selected_infoblock {
         top: calc(env(safe-area-inset-top, 0px) + 12px);
@@ -371,6 +371,14 @@ body.infoWide .ibScroll { display: block; }
     #selected_infoblock .ibHeadSrc:empty { display: none !important; }
 
     #selected_infoblock .ibScroll { gap: 8px; padding-top: 12px; }
+    #selected_infoblock .ibPhoneRow.phoneOnly { display: flex !important; justify-content: space-between; gap: 12px; margin-top: 2px; font-size: 13px; min-width: 0; }
+    .ibPType { color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+    .ibPSpd { flex: none; color: var(--text); font-variant-numeric: tabular-nums; }
+    #selected_infoblock #ib_p_share { display: inline-flex !important; }
+    #selected_infoblock .ibStatus.phoneOnly:not([hidden]) { display: block !important; padding: 12px 14px; border-radius: 16px; background: var(--bg-card); font-size: 15px; font-weight: 600; }
+    body:not(.sheetFull) #selected_infoblock .ibStatus { display: none !important; }
+    #selected_infoblock .ibPhoneActions.phoneOnly { flex-wrap: nowrap; }
+    #selected_infoblock .ibPBtn { white-space: nowrap; min-width: 0; }
 
     /* route: one line (codes and an arc) */
     #selected_infoblock .ibRoute { padding: 0; background: none; border-radius: 0; margin: 0 0 4px; }
@@ -436,7 +444,7 @@ body.infoWide .ibScroll { display: block; }
     }
     body.sheetFull .ibPExpand svg { transform: rotate(180deg); }
 }
-@media (max-width: 700px) {
+@media (max-width: 768px), (pointer: coarse) {
     /* the expanded sheet covers the top controls */
     body.sheetFull #searchWrap,
     body.sheetFull #layers_button,
@@ -446,7 +454,7 @@ body.infoWide .ibScroll { display: block; }
 
 
 /* ---------- audit fixes against the mockups (desktop) ---------- */
-@media (min-width: 701px) {
+@media (min-width: 769px) and (pointer: fine) {
     /* the panel fits its content: Follow / Isolate sit right under the cards, long content scrolls */
     #selected_infoblock { bottom: auto !important; max-height: calc(100% - 100px); }
     .ibScroll { flex: 0 1 auto; }
