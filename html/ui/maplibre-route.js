@@ -8,6 +8,7 @@
 const SELROUTE = {
     gradientStops: 240,         // upper limit of colour stops in the track gradient
     routeColor: 'rgba(255,255,255,0.5)',
+    flownColor: 'rgba(255,255,255,0.2)',
 };
 
 MLR.installSelection = function (before) {
@@ -16,7 +17,11 @@ MLR.installSelection = function (before) {
     m.addSource('tar-sel-trail', {type: 'geojson', lineMetrics: true, data: {type: 'FeatureCollection', features: []}});
     m.addSource('tar-route', {type: 'geojson', data: {type: 'FeatureCollection', features: []}});
     m.addSource('tar-sel-head', {type: 'geojson', data: {type: 'FeatureCollection', features: []}});
-    m.addLayer({id: 'tar-route', type: 'line', source: 'tar-route',
+    // origin to aircraft (already flown, thin and faint) and aircraft to destination (still to fly, dashed): one source, two layers
+    m.addLayer({id: 'tar-route-done', type: 'line', source: 'tar-route', filter: ['==', ['get', 'done'], 1],
+        layout: {'line-cap': 'butt', 'line-join': 'round'},
+        paint: {'line-color': SELROUTE.flownColor, 'line-width': 1.2}}, before);
+    m.addLayer({id: 'tar-route', type: 'line', source: 'tar-route', filter: ['==', ['get', 'done'], 0],
         layout: {'line-cap': 'butt', 'line-join': 'round'},
         paint: {'line-color': SELROUTE.routeColor, 'line-width': 1.4, 'line-dasharray': [3, 3]}}, before);
     m.addLayer({id: 'tar-sel-trail-casing', type: 'line', source: 'tar-sel-trail',
@@ -148,15 +153,16 @@ MLR.flushSelection = function () {
     this.updateSelHead();
 
     // ---- route line: aircraft to destination (rebuilt every frame from the drawn icon, see updateSelRoute) ----
-    let dest = null;
+    let dest = null, origin = null;
     if (p && p.position && typeof ibRoute == 'function') {
         const r = ibRoute(p);
         const a = r && r._airports;
         const d = a && a[a.length - 1];
-        const lat = d && (d.lat != null ? d.lat : d.latitude), lon = d && (d.lon != null ? d.lon : (d.lng != null ? d.lng : d.longitude));
-        if (typeof lat == 'number' && typeof lon == 'number') dest = [lon, lat];
+        const ll = x => { const la = x && (x.lat != null ? x.lat : x.latitude), lo = x && (x.lon != null ? x.lon : (x.lng != null ? x.lng : x.longitude)); return typeof la == 'number' && typeof lo == 'number' ? [lo, la] : null; };
+        dest = ll(d);
+        origin = ll(a && a[0]);
     }
-    this.selRoute = dest ? {dest, icao: p.icao} : null;
+    this.selRoute = dest ? {dest, origin, icao: p.icao} : null;
     this.updateSelRoute();
 };
 
@@ -185,16 +191,19 @@ MLR.updateSelRoute = function () {
     const r = this.selRoute, p = this.gradientPlane();
     const e = r && p && p.icao === r.icao && this.planes.get(p.icao);
     if (!e || !p.proj) {
-        if (this.selRouteShown) { src.setData({type: 'FeatureCollection', features: []}); this.selRouteShown = false; }
+        if (this.selRouteShown) { src.setData({type: 'FeatureCollection', features: []}); this.selRouteShown = false; this.selRouteData = null; }
         return;
     }
     const base = this.baseLL(e);
     const gc = mlGreatCircle(base, r.dest, 64);
     const alt = typeof p.altitude == 'number' ? p.altitude : 0;
-    let coords = gc;
-    if (this.liftActive() && alt > 0) {
-        coords = gc.map((q, i) => this.liftLLAlt(q, alt * (1 - i / (gc.length - 1))));
+    const lift = this.liftActive() && alt > 0;
+    const features = [{type: 'Feature', properties: {done: 0}, geometry: {type: 'LineString', coordinates: lift ? gc.map((q, i) => this.liftLLAlt(q, alt * (1 - i / (gc.length - 1)))) : gc}}];
+    if (r.origin) {                                    // the part already flown: origin to the aircraft (it climbs from the ground in 3D)
+        const fl = mlGreatCircle(r.origin, base, 64);
+        features.push({type: 'Feature', properties: {done: 1}, geometry: {type: 'LineString', coordinates: lift ? fl.map((q, i) => this.liftLLAlt(q, alt * (i / (fl.length - 1)))) : fl}});
     }
-    src.setData({type: 'Feature', properties: {}, geometry: {type: 'LineString', coordinates: coords}});
+    this.selRouteData = {type: 'FeatureCollection', features};
+    src.setData(this.selRouteData);
     this.selRouteShown = true;
 };

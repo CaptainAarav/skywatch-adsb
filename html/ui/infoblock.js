@@ -132,6 +132,19 @@ function ibRoute(p) {
     if (!r || !r._airports || r._airports.length < 2) return null;
     return r;
 }
+// a lookup that finished with no usable route (nothing known, or the service was unreachable): the card says so quietly instead of vanishing
+function ibRouteNone(p) {
+    if (!useRouteAPI || !p.name || p.name === 'no callsign' || p.registration === p.name) return false;
+    const r = g.route_cache && g.route_cache[normalized_callsign(p.name)];
+    return !!r && !(r._airports && r._airports.length >= 2);
+}
+function ibRouteFlag(id, a) {
+    const e = ibEl(id);
+    if (!e) return;
+    const cc = a && a.countryiso2 ? String(a.countryiso2).toUpperCase() : '';
+    if (/^[A-Z]{2}$/.test(cc)) { const u = 'flags/3x2/' + cc + '.svg'; if (e.getAttribute('src') !== u) e.setAttribute('src', u); e.hidden = false; }
+    else { e.removeAttribute('src'); e.hidden = true; }
+}
 function ibCode(a) {
     return a.iata || a.icao || '';
 }
@@ -182,13 +195,9 @@ function ibRender(p) {
     let hc = ibSourceChip(p);
     if (sq) hc += `<span class="chip mono">sq ${ibEsc(sq)}</span>`;
     if (p.icaoType) hc += `<span class="chip mono">${ibEsc(p.icaoType)}</span>`;
-    if (route) {
-        const a = route._airports;
-        hc += `<span class="chip">${a.map(x => ibEsc(ibCode(x))).join(' → ')}</span>`;
-    }
     ibHtml('ib_head_chips', hc);
 
-    // ---- route card (only with a looked-up route; decision e9) ----
+    // ---- route card: ONE component for the compact card, the wide panel and the phone sheet ----
     const rc = ibEl('ib_route');
     if (route) {
         const a = route._airports;
@@ -198,8 +207,19 @@ function ibRender(p) {
         ibSub('ib_route_from_n', ibAirportName(first));
         ibSub('ib_route_to_n', ibAirportName(last));
         ibSub('ib_route_via', a.length > 2 ? 'via ' + a.slice(1, -1).map(ibCode).join(', ') : '');
+        ibRouteFlag('ib_route_from_f', first); ibRouteFlag('ib_route_to_f', last);
         ibEl('ib_route_warn').hidden = route.plausible !== false;
+        ibEl('ib_route_none').hidden = true;
+        rc.classList.remove('ibRouteEmpty');
         rc.title = a.map(x => `${ibCode(x)} ${x.name || x.location || ''}`).join('\n');
+        rc.hidden = false;
+    } else if (rc && ibRouteNone(p)) {
+        ibSub('ib_route_from', ''); ibSub('ib_route_to', ''); ibSub('ib_route_from_n', ''); ibSub('ib_route_to_n', ''); ibSub('ib_route_via', '');
+        ibRouteFlag('ib_route_from_f', null); ibRouteFlag('ib_route_to_f', null);
+        ibEl('ib_route_warn').hidden = true;
+        ibEl('ib_route_none').hidden = false;
+        rc.classList.add('ibRouteEmpty');
+        rc.title = '';
         rc.hidden = false;
     } else if (rc) {
         rc.hidden = true;

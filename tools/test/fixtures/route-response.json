@@ -1,0 +1,205 @@
+[
+ {
+  "_airport_codes_iata": "DXB-BHX",
+  "_airports": [
+   {
+    "alt_feet": 62,
+    "alt_meters": 18.9,
+    "countryiso2": "AE",
+    "iata": "DXB",
+    "icao": "OMDB",
+    "lat": 25.2528,
+    "location": "Dubai",
+    "lon": 55.364399,
+    "name": "Dubai International Airport"
+   },
+   {
+    "alt_feet": 327,
+    "alt_meters": 99.67,
+    "countryiso2": "GB",
+    "iata": "BHX",
+    "icao": "EGBB",
+    "lat": 52.453899,
+    "location": "Birmingham",
+    "lon": -1.74803,
+    "name": "Birmingham International Airport"
+   }
+  ],
+  "airline_code": "UAE",
+  "airport_codes": "OMDB-EGBB",
+  "callsign": "UAE39K",
+  "number": "39K",
+  "plausible": true
+ },
+ {
+  "_airport_codes_iata": "TPE-BKK-LHR",
+  "_airports": [
+   {
+    "alt_feet": 106,
+    "alt_meters": 32.31,
+    "countryiso2": "TW",
+    "iata": "TPE",
+    "icao": "RCTP",
+    "lat": 25.0777,
+    "location": "Taipei",
+    "lon": 121.233002,
+    "name": "Taiwan Taoyuan International Airport"
+   },
+   {
+    "alt_feet": 5,
+    "alt_meters": 1.52,
+    "countryiso2": "TH",
+    "iata": "BKK",
+    "icao": "VTBS",
+    "lat": 13.6811,
+    "location": "Bangkok",
+    "lon": 100.747002,
+    "name": "Suvarnabhumi Airport"
+   },
+   {
+    "alt_feet": 83,
+    "alt_meters": 25.3,
+    "countryiso2": "GB",
+    "iata": "LHR",
+    "icao": "EGLL",
+    "lat": 51.4706,
+    "location": "London",
+    "lon": -0.461941,
+    "name": "London Heathrow Airport"
+   }
+  ],
+  "airline_code": "EVA",
+  "airport_codes": "RCTP-VTBS-EGLL",
+  "callsign": "EVA67",
+  "number": "67",
+  "plausible": true
+ },
+ {
+  "_airport_codes_iata": "HAM-LHR",
+  "_airports": [
+   {
+    "alt_feet": 53,
+    "alt_meters": 16.15,
+    "countryiso2": "DE",
+    "iata": "HAM",
+    "icao": "EDDH",
+    "lat": 53.630402,
+    "location": "Hamburg",
+    "lon": 9.98823,
+    "name": "Hamburg Airport"
+   },
+   {
+    "alt_feet": 83,
+    "alt_meters": 25.3,
+    "countryiso2": "GB",
+    "iata": "LHR",
+    "icao": "EGLL",
+    "lat": 51.4706,
+    "location": "London",
+    "lon": -0.461941,
+    "name": "London Heathrow Airport"
+   }
+  ],
+  "airline_code": "EWG",
+  "airport_codes": "EDDH-EGLL",
+  "callsign": "EWG8A",
+  "number": "8A",
+  "plausible": true
+ },
+ {
+  "_airport_codes_iata": "DUS-LHR",
+  "_airports": [
+   {
+    "alt_feet": 147,
+    "alt_meters": 44.81,
+    "countryiso2": "DE",
+    "iata": "DUS",
+    "icao": "EDDL",
+    "lat": 51.289501,
+    "location": "D\u00fcsseldorf",
+    "lon": 6.76678,
+    "name": "D\u00fcsseldorf International Airport"
+   },
+   {
+    "alt_feet": 83,
+    "alt_meters": 25.3,
+    "countryiso2": "GB",
+    "iata": "LHR",
+    "icao": "EGLL",
+    "lat": 51.4706,
+    "location": "London",
+    "lon": -0.461941,
+    "name": "London Heathrow Airport"
+   }
+  ],
+  "airline_code": "EWG",
+  "airport_codes": "EDDL-EGLL",
+  "callsign": "EWG5JG",
+  "number": "5JG",
+  "plausible": true
+ },
+ {
+  "_airport_codes_iata": "BRS-AMS",
+  "_airports": [
+   {
+    "alt_feet": 622,
+    "alt_meters": 189.59,
+    "countryiso2": "GB",
+    "iata": "BRS",
+    "icao": "EGGD",
+    "lat": 51.382702,
+    "location": "Bristol",
+    "lon": -2.71909,
+    "name": "Bristol International Airport"
+   },
+   {
+    "alt_feet": -11,
+    "alt_meters": -3.35,
+    "countryiso2": "NL",
+    "iata": "AMS",
+    "icao": "EHAM",
+    "lat": 52.308601,
+    "location": "Amsterdam",
+    "lon": 4.76389,
+    "name": "Amsterdam Airport Schiphol"
+   }
+  ],
+  "airline_code": "KLM",
+  "airport_codes": "EGGD-EHAM",
+  "callsign": "KLM1082",
+  "number": "1082",
+  "plausible": true
+ },
+ {
+  "_airport_codes_iata": "MAN-FRA",
+  "_airports": [
+   {
+    "alt_feet": 257,
+    "alt_meters": 78.33,
+    "countryiso2": "GB",
+    "iata": "MAN",
+    "icao": "EGCC",
+    "lat": 53.353699,
+    "location": "Manchester",
+    "lon": -2.27495,
+    "name": "Manchester Airport"
+   },
+   {
+    "alt_feet": 364,
+    "alt_meters": 110.95,
+    "countryiso2": "DE",
+    "iata": "FRA",
+    "icao": "EDDF",
+    "lat": 50.026402,
+    "location": "Frankfurt-am-Main",
+    "lon": 8.54313,
+    "name": "Frankfurt-am-Main International Airport"
+   }
+  ],
+  "airline_code": "LHX",
+  "airport_codes": "EGCC-EDDF",
+  "callsign": "LHX1EJ",
+  "number": "1EJ",
+  "plausible": true
+ }
+]

@@ -42,6 +42,16 @@ const CONTROLS = (function () {
             return v;
         },
     };
+    // the replay button is ONE element: a text tab in the top view pill on desktop (where it always was), and on phones the same element sits in the
+    // floating cluster (where the phone column had it). Same id, same handler; only its parent and its look (tab or round glass) follow the surface.
+    function placeReplay() {
+        const rp = $('RP'), stack = $('controlStack'), pill = $('viewPill');
+        if (!rp || !stack || !pill) return;
+        const phone = document.body.classList.contains('phone');
+        const want = phone ? stack : pill;
+        if (rp.parentNode !== want) { if (phone) stack.insertBefore(rp, $('follow_button') || stack.firstChild); else pill.appendChild(rp); }
+        rp.classList.toggle('btn', phone); rp.classList.toggle('tb', !phone);
+    }
     function init() {
         const cycle = $('view_cycle'), menu = $('viewMenu');
         if (cycle && menu) {
@@ -64,7 +74,7 @@ const CONTROLS = (function () {
         if (f) f.addEventListener('click', () => { if (typeof toggleFollow == 'function') toggleFollow(); setTimeout(syncFollow, 30); });
         const a = $('attr_button');
         if (a) a.addEventListener('click', () => { const on = !document.body.classList.contains('attrOpen'); document.body.classList.toggle('attrOpen', on); a.setAttribute('aria-expanded', on ? 'true' : 'false'); });
-        const upd = () => { syncView(); syncFollow(); BOTTOMINSET.update(); };
+        const upd = () => { placeReplay(); syncView(); syncFollow(); BOTTOMINSET.update(); };
         new MutationObserver(upd).observe(document.body, {attributes: true, attributeFilter: ['class']});
         window.addEventListener('tar:viewmode', syncView);
         window.addEventListener('resize', upd);
@@ -81,5 +91,5 @@ const CONTROLS = (function () {
         upd();
     }
     jQuery(init);
-    return {syncView, syncFollow, BOTTOMINSET};
+    return {syncView, syncFollow, placeReplay, BOTTOMINSET};
 })();

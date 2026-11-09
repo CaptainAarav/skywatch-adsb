@@ -376,3 +376,10 @@ body:not(.infoWide) .ibCallsign { font-size: 18px; font-weight: 600; }
 .act:hover { background: rgba(255,255,255,.10); }
 .act:active { background: rgba(255,255,255,.16); }
 .act.on, .act.activeButton { background: #fff; color: #000; }
+
+/* route card: flags beside the codes, quiet empty state */
+.ibRouteEnd { display: inline-flex; align-items: center; gap: 8px; }
+.ibRouteFlag { width: 20px; height: 14px; border-radius: 3px; flex: none; }
+.ibRouteNone { font-size: 12px; }
+.ibRoute.ibRouteEmpty { padding: 10px 16px; }
+.ibRoute.ibRouteEmpty .ibRouteCodes, .ibRoute.ibRouteEmpty .ibRouteNames { display: none; }

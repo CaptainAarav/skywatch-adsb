@@ -638,3 +638,7 @@ body.infoOpen #selected_infoblock { display: flex; }
 }
 
 .altLegendNote { font-size: 11px; color: var(--muted); margin-top: 6px; }
+
+/* replay: a text tab in the top view pill on desktop, an icon-only round button in the phone cluster (one element, see control-stack.js) */
+#viewPill #RP .rpIco, #controlStack #RP .rpLbl { display: none; }
+#controlStack #RP .rpIco { display: block; }

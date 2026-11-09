@@ -9,5 +9,6 @@
   const nodes = [...root.querySelectorAll('[data-component], [data-part]')];
   const sig = nodes.map(e => [e.dataset.component || '', e.dataset.part || '', e.tagName.toLowerCase(), e.className.split(' ').filter(c => c && !/^(on|na|hidden)$/.test(c)).sort().join('.')].join('/'));
   const ids = [...root.querySelectorAll('.ibInstGrid [id]')].map(e => e.id);
-  return {signature: sig.join('|'), count: nodes.length, ids: ids.join(','), body: document.body.className, vw: innerWidth};
+  const failures = nodes.length ? [] : ['the selected panel has no data-component nodes'];
+  return {failures, signature: sig.join('|'), count: nodes.length, ids: ids.join(','), body: document.body.className, vw: innerWidth};
 })()

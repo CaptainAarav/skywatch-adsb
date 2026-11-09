@@ -2600,7 +2600,7 @@ function routeDoLookup() {
                 delete g.route_check_todo[entry.callsign];
                 const cached = g.route_cache[entry.callsign];
                 if (!cached || currentTime > cached.tarNextUpdate) {
-                    g.route_cache[entry.callsign] = { tarNextUpdate: Math.ceil(currentTime / 30) * 30 };
+                    g.route_cache[entry.callsign] = { tarNextUpdate: currentTime + 300, none: true };
                 }
                 const plane = g.planes[entry.icao];
                 plane && plane.dataChanged();
@@ -2610,9 +2610,19 @@ function routeDoLookup() {
             g.route_check_checking = null;
         })
         .fail((jqxhr, status, error) => {
+            // a failed lookup must never touch anything but the route: remember it per callsign for 5 minutes, one quiet debug line
+            const t = Date.now() / 1000;
             g.route_check_in_flight = false;
-            g.route_next_lookup =  Date.now()/1000 + 15;
-            console.log('route API request error, delaying next request by 15 seconds.');
+            g.route_next_lookup = t + 15;
+            console.debug('route lookup unavailable (' + (status || 'error') + '); retrying those callsigns in 5 minutes');
+            for (const entry of (g.route_check_checking || [])) {
+                delete g.route_check_todo[entry.callsign];
+                g.route_cache[entry.callsign] = { tarNextUpdate: t + 300, none: true, failed: true };
+                const plane = g.planes[entry.icao];
+                plane && plane.dataChanged();
+            }
+            g.route_check_checking = null;
+            refresh();
         });
 }
 
