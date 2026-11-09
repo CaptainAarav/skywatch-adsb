@@ -19,19 +19,28 @@ MLR.liftPx = function (ll, p) {
     if (typeof alt != 'number') alt = (typeof p.alt_geom == 'number') ? p.alt_geom : 0;   // 'ground' and unknown stay on the map
     return this.liftPxAlt(ll, alt);
 };
-MLR.liftPxAlt = function (ll, alt) {
+// uncompressed lift in pixels (altitude ft, exaggeration k) and the cap it is soft-limited to
+MLR.liftRawPx = function (ll, alt) {
     if (!(alt > 0)) return 0;
     const m = this.map, pitch = m.getPitch() * Math.PI / 180;
     if (pitch < 0.01) return 0;
     const mpp = 40075016.686 * Math.cos(ll[1] * Math.PI / 180) / (512 * Math.pow(2, m.getZoom()));
-    const raw = alt * LIFT.ft * LIFT.k / mpp * Math.sin(pitch);
-    const max = Math.min(LIFT.max, m.getContainer().clientHeight * 0.3);
+    return alt * LIFT.ft * LIFT.k / mpp * Math.sin(pitch);
+};
+MLR.liftMaxPx = function () { return Math.min(LIFT.max, this.map.getContainer().clientHeight * 0.3); };
+MLR.liftPxAlt = function (ll, alt) {
+    const raw = this.liftRawPx(ll, alt);
+    if (!(raw > 0)) return 0;
+    const max = this.liftMaxPx();
     return max * Math.tanh(raw / max);
 };
 
 // lifted lon/lat (identical array when there is no lift)
 MLR.liftLL = function (ll, p) {
     if (!this.liftActive()) return ll;
+    // an aircraft drawn as a 3D model stands at its TRUE position with real height (ui/maplibre-models.js); its icon, label, hit target and Follow
+    // use the ground point that projects to the model's screen point. Everything else keeps the screen-space lift below.
+    if (this.modelAnchor && this.modelSet && this.modelSet.size && this.modelSet.has(p.icao)) { const a = this.modelAnchor(ll, p); if (a) return a; }
     const px = this.liftPx(ll, p);
     if (px < 0.5) return ll;
     const q = this.map.project(ll);
@@ -61,7 +70,7 @@ MLR.liftFeats = function (e, g, l) {
     if (l === g) return null;
     return {
         s: {type: 'Feature', id: e.id, geometry: {type: 'LineString', coordinates: [g, l]}, properties: {}},
-        h: {type: 'Feature', id: e.id, geometry: {type: 'Point', coordinates: g}, properties: {}},
+        h: this.modelSet && this.modelSet.has(e.plane.icao) ? null : {type: 'Feature', id: e.id, geometry: {type: 'Point', coordinates: g}, properties: {}},   // a model casts its own shadow
     };
 };
 
@@ -85,7 +94,7 @@ MLR.liftFlushAll = function () {
             if (!e.id || !e.plane.proj) continue;
             const g = this.baseLL(e);
             const f = this.liftFeats(e, g, this.liftLL(g, e.plane));
-            if (f) { S.push(f.s); H.push(f.h); }
+            if (f) { S.push(f.s); if (f.h) H.push(f.h); }
         }
     }
     a.setData({type: 'FeatureCollection', features: S});
@@ -109,7 +118,7 @@ MLR.liftCamera = function () {
         const g = this.baseLL(e), l = this.liftLL(g, p);
         up.push({id: e.id, newGeometry: {type: 'Point', coordinates: l}});
         const f = this.liftFeats(e, g, l);
-        if (f) { addA.push(f.s); addB.push(f.h); }
+        if (f) { addA.push(f.s); if (f.h) addB.push(f.h); }
         n++;
     }
     try {

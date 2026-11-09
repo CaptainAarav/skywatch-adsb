@@ -39,7 +39,7 @@
     function ensureBar() {
         if (R.bar) return;
         const b = R.bar = el('div', 'rdBar'); b.setAttribute('role', 'group'); b.setAttribute('aria-label', 'Rain radar playback');
-        const pb = el('button', 'rdBtn', 'Play'); pb.type = 'button'; pb.setAttribute('aria-label', 'Play radar'); pb.addEventListener('click', play);
+        const pb = el('button', 'act on', 'Play'); pb.type = 'button'; pb.setAttribute('aria-label', 'Play radar'); pb.addEventListener('click', play);
         const rg = el('input'); rg.type = 'range'; rg.min = 0; rg.max = R.frames.length - 1; rg.step = 1; rg.setAttribute('aria-label', 'Radar time, last two hours');
         rg.addEventListener('input', () => { stop(); show(Number(rg.value)); });
         b.append(pb, rg, el('span', 'rdTime mono'));

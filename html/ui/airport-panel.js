@@ -33,9 +33,9 @@ const AIRPT = (function () {
         return e;
     }
     function add(p) { for (let i = 1; i < arguments.length; i++) if (arguments[i]) p.appendChild(arguments[i]); return p; }
-    function tile(label, value, mono) { return add(h('div', 'apTile'), h('small', null, label), h('b', mono === false ? null : 'mono', value)); }
+    function tile(label, value, mono) { return add(h('div', 'ibTile'), h('small', null, label), h('b', mono === false ? null : 'mono', value)); }
     function card(title, extra) {
-        const c = h('section', 'apCard'), t = h('h3', null, title);
+        const c = h('section', 'ibCard'), t = h('h3', null, title);
         if (extra) t.appendChild(extra);
         c.appendChild(t);
         return c;
@@ -110,7 +110,7 @@ const AIRPT = (function () {
         const all = st.mv && st.mv.movements ? st.mv.movements.filter(m => m && m.airport === r.icao && typeof m.t === 'number') : [];
         if (!all.length) return null;
         const list = all.slice(-12).reverse();
-        const c = h('section', 'apCard'), d = h('details', 'apMoves');
+        const c = h('section', 'ibCard'), d = h('details', 'apMoves');
         d.open = st.mvOpen !== false;
         d.addEventListener('toggle', () => { st.mvOpen = d.open; });
         const sum = h('summary'); sum.appendChild(h('h3', null, 'Recent movements (' + all.length + ' in 24 h)'));
@@ -477,11 +477,11 @@ const AIRPT = (function () {
         body.appendChild(h('div', 'apFoot', 'Data: OurAirports (public domain)' + (wx ? ' · aviationweather.gov (METAR, TAF)' : '') + ' · your receiver. Never use for navigation.'));
 
         const bar = h('div', 'apBar');
-        const b1 = h('button', 'apBtn p', st.isolating ? 'All traffic' : 'Show traffic'); b1.type = 'button';
+        const b1 = h('button', 'act on', st.isolating ? 'All traffic' : 'Show traffic'); b1.type = 'button';
         b1.addEventListener('click', toggleTraffic);
-        const b2 = h('button', 'apBtn', 'Zoom in'); b2.type = 'button';
+        const b2 = h('button', 'act', 'Zoom in'); b2.type = 'button';
         b2.addEventListener('click', () => fitAirport(r, true));
-        const b3 = h('button', 'apBtn', 'Layers'); b3.type = 'button';
+        const b3 = h('button', 'act', 'Layers'); b3.type = 'button';
         b3.addEventListener('click', () => { const l = document.getElementById('layers_button'); l && l.click(); });
         add(bar, b1, b2, b3);
         root.replaceChildren(body, bar);

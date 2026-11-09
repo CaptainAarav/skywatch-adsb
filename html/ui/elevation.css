@@ -20,14 +20,14 @@
     #selected_infoblock { --card: var(--bg-card); --card-line: var(--line); --mini: var(--bg-row); }
     #selected_infoblock .ibRoute, #selected_infoblock .ibCard, #selected_infoblock .ibCard2, #selected_infoblock .ibDetailsBtn,
     #selected_infoblock .ibTile, #selected_infoblock .ibNote,
-    .apCard, #graphsOverlay .gCard, .alRule, .statTile, .altimeterTile:not(.hidden) {
+    #graphsOverlay .gCard, .alRule, .statTile, .altimeterTile:not(.hidden) {
         background: var(--bg-card);
         border: 1px solid var(--line);
         border-radius: var(--r-card);
     }
     #selected_infoblock .ibDetailsBtn:hover { background: var(--bg-action-hover); }
     #selected_infoblock .ibScroll, #airport_panel .apScroll { gap: 12px; }
-    .infoblock_row:not(.hidden), #columnsPopover #sortableColumns li, .apTile, .apEnd { background: var(--bg-row); }
+    .infoblock_row:not(.hidden), #columnsPopover #sortableColumns li, #airport_panel .ibTile, .apEnd { background: var(--bg-row); }
 
     /* the panel's own chips and small buttons */
     #selected_infoblock .ibBtn { background: var(--bg-segment); border: 1px solid var(--line); }

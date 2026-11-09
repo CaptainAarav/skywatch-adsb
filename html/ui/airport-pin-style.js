@@ -6,14 +6,18 @@
 const AIRPIN = (function () {
     const SPRITE = {size: 48, pixelRatio: 2, fill: '#1c1c1c', clipInset: 2, ringInset: 2.5, ringWidth: 5, neutralRing: '#6e6e6e'};
     const CAT_COLOR = {VFR: '#3DDC97', MVFR: '#F5B94A', IFR: '#FF6B6B', LIFR: '#B07BFF'};
+    // Far zoom: the flag circle starts small (12 px, 1 px collision padding) and grows to the restored 24 px / 6 px by zoom FULL, so more airports
+    // survive collision when zoomed out; from FULL zoom on the marker is exactly the restored one (icon-size 1, icon-padding 6).
+    const FAR = {z0: 3.5, size0: 0.5, pad0: 1, full: 8};
+    const farRamp = (a, b) => ['interpolate', ['linear'], ['zoom'], FAR.z0, a, FAR.full, b];
     // layout of a pin layer, as in the old commit (text-size 11 * globalScale, font = ML_FONT)
     function layout(font, gs, textField) {
         return {
-            'icon-image': ['concat', 'flagc-', ['get', 'f'], '-', ['get', 'w']], 'icon-size': 1, 'icon-allow-overlap': false,
+            'icon-image': ['concat', 'flagc-', ['get', 'f'], '-', ['get', 'w']], 'icon-size': farRamp(FAR.size0, 1), 'icon-allow-overlap': false,
             'text-field': textField,
             'text-font': font, 'text-size': 11 * gs, 'text-anchor': 'top', 'text-offset': [0, 1.0], 'text-optional': true, 'text-max-width': 12,
             'symbol-sort-key': ['get', 's'],
-            'icon-padding': 6, 'text-padding': 3,
+            'icon-padding': farRamp(FAR.pad0, 6), 'text-padding': 3,
         };
     }
     const PAINT = {'text-color': '#8f8f8f', 'text-halo-color': 'rgba(0,0,0,0.6)', 'text-halo-width': 0.8};
@@ -26,6 +30,6 @@ const AIRPIN = (function () {
     // image id for a feature: flagc-<ISO country>-<VFR|MVFR|IFR|LIFR|N>
     const ID_RE = /^flagc-([A-Z]{2})-(VFR|MVFR|IFR|LIFR|N)$/;
     function imageId(cc, cat) { return 'flagc-' + (/^[A-Z]{2}$/.test(cc || '') ? cc : 'XX') + '-' + (CAT_COLOR[cat] ? cat : 'N'); }
-    return {SPRITE, CAT_COLOR, layout, PAINT, textField, ID_RE, imageId};
+    return {SPRITE, CAT_COLOR, FAR, layout, PAINT, textField, ID_RE, imageId};
 })();
 if (typeof module !== 'undefined') module.exports = AIRPIN;

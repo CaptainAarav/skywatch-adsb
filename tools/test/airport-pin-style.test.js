@@ -7,6 +7,14 @@ const gs = 1.25, lay = AIRPIN.layout(['Font'], gs, 'X');
 for (const [k, v] of Object.entries(old.layout)) {
   const got = lay[k];
   if (k === 'text-size') assert.strictEqual(got, 11 * gs, 'text-size scales as 11 * globalScale');
+  else if (k === 'icon-size' || k === 'icon-padding') {
+    // far-zoom change (Phase 40): a linear ramp that is SMALLER at far zoom and equals the restored value from zoom FAR.full on
+    const ev = (expr, z) => { const [, , , z0, a, z1, b] = expr; return z <= z0 ? a : z >= z1 ? b : a + (b - a) * (z - z0) / (z1 - z0); };
+    assert.strictEqual(got[0], 'interpolate'); assert.deepStrictEqual(got[2], ['zoom']);
+    for (const z of [AIRPIN.FAR.full, 9, 10, 12, 16, 22]) assert.strictEqual(ev(got, z), v, k + ' at zoom ' + z + ' is the restored value ' + v);
+    let prev = -1; for (const z of [3.5, 4, 5, 6, 7, 8]) { const x = ev(got, z); assert.ok(x >= prev, k + ' grows with zoom'); prev = x; }
+    assert.ok(ev(got, 3.5) < v && ev(got, 5) < v, k + ' is smaller at far zoom');
+  }
   else assert.deepStrictEqual(got, v, 'layout ' + k);
 }
 assert.deepStrictEqual(AIRPIN.PAINT, old.paint, 'paint');

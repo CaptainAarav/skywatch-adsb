@@ -711,6 +711,7 @@ MLR.flush = function () {
                 properties: {hex: p.icao, icon: e.icon, rot: e.rotDraw, scale: e.scale, limg, loff, lprio, z: e.z, sel: e.sel ? 1 : 0, top: isTop ? 1 : 0, m: md ? 1 : 0}});
             e.feat = true;
         }
+        this.planeFeats = feats;                                   // the features the plane layers were just fed (read by the placement tests)
         const src = m.getSource('tar-planes');
         src && src.setData({type: 'FeatureCollection', features: feats});
         this.liftFlushAll && this.liftFlushAll();

@@ -504,6 +504,13 @@
                         <input type="range" id="altExagRange" min="0" max="10" step="0.5">
                       </div>
                       <div class="setSlider">
+                        <div class="lbl setLbl">Aircraft height (3D models)</div>
+                        <div class="segmented" id="heightSegmented" role="radiogroup" aria-label="Aircraft height">
+                          <button type="button" data-height="compressed" title="Heights are compressed so aircraft stay in view above their shadow; the order by altitude is kept">Compressed</button>
+                          <button type="button" data-height="realistic" title="True height above the surface: aircraft climb out of view as you zoom in">Realistic</button>
+                        </div>
+                      </div>
+                      <div class="setSlider">
                         <label for="terrainExagRange"><span>Terrain exaggeration (3D)</span><span class="mono lbl" id="terrainExagValue"></span></label>
                         <input type="range" id="terrainExagRange" min="0" max="3" step="0.25">
                       </div>

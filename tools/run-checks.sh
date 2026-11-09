@@ -72,6 +72,7 @@ snippet airport-pins $S/airport-pins.js 1440 900 desktop "" 500
 snippet airport-proxy $S/airport-proxy.js 1440 900 desktop "" 400
 snippet models3d-desktop $S/models3d.js 1440 900 desktop "window.M3_PART='a';" 500
 snippet models3d-phone $S/models3d.js 390 844 phone "window.M3_PART='a';" 500
+snippet models3d-height $S/models3d-height.js 1440 900 desktop "" 700
 snippet models3d-budget $S/models3d-budget.js 1440 900 desktop "" 900
 snippet models3d-zoom-soak $S/models3d-soak.js 1440 900 desktop "" 900
 

@@ -96,3 +96,71 @@ assert.ok(M.smoothAngle(350, 10, 0.1, 1, true) > 350 || M.smoothAngle(350, 10, 0
 // terrain exaggeration
 assert.strictEqual(M.surfaceZ(true, 120, 1.5), 180); assert.strictEqual(M.surfaceZ(true, null, 2), 0);
 console.log('models-calc tests ok');
+
+// ---- true 3D placement: closed-form height, compression, monotonicity (synthetic perspective camera, column-major, Mercator in, clip out) ----
+(function () {
+    const W = 1000, H = 800, fov = 0.6435;
+    function camera(zoom, pitchDeg, bearingDeg, cLon, cLat) {
+        const ws = 512 * Math.pow(2, zoom), ctd = 0.5 / Math.tan(fov / 2) * H, near = 1, far = 1e9, f = 1 / Math.tan(fov / 2), asp = W / H;
+        const mul = (a, b) => { const r = new Array(16).fill(0); for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) for (let k = 0; k < 4; k++) r[j * 4 + i] += a[k * 4 + i] * b[j * 4 + k]; return r; };
+        const P = [f / asp, 0, 0, 0, 0, f, 0, 0, 0, 0, (far + near) / (near - far), -1, 0, 0, 2 * far * near / (near - far), 0];
+        const T = (x, y, z) => [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, x, y, z, 1];
+        const Rx = a => [1, 0, 0, 0, 0, Math.cos(a), Math.sin(a), 0, 0, -Math.sin(a), Math.cos(a), 0, 0, 0, 0, 1];
+        const Rz = a => [Math.cos(a), Math.sin(a), 0, 0, -Math.sin(a), Math.cos(a), 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
+        const S = (x, y, z) => [x, 0, 0, 0, 0, y, 0, 0, 0, 0, z, 0, 0, 0, 0, 1];
+        const cs = Math.sin(cLat * Math.PI / 180), cx = (cLon + 180) / 360, cy = 0.5 - Math.log((1 + cs) / (1 - cs)) / (4 * Math.PI);
+        // world: Mercator -> pixels (x right, y down, z up), then camera
+        let m = mul(P, T(0, 0, -ctd)); m = mul(m, Rx(-pitchDeg * Math.PI / 180)); m = mul(m, Rz(bearingDeg * Math.PI / 180));
+        m = mul(m, S(ws, -ws, ws)); m = mul(m, T(-cx, -cy, 0));
+        return m;
+    }
+    const g = {}, o = {}, o2 = {}, ALT = 10000, lat = 51.5, lon = -0.45;
+    // Realistic: the offset above the shadow never decreases as zoom increases (while the point is in front of the camera)
+    for (const pitch of [30, 60]) {
+        let prev = -1;
+        for (let z = 9; z <= 15; z += 0.5) {
+            const Mx = camera(z, pitch, 20, lon, lat);
+            M.ground(Mx, lon, lat, 0, g); assert.ok(g.ok);
+            M.pose(Mx, g, ALT, 'realistic', 0, 190, W, H, o);
+            const y0 = (0.5 - 0.5 * g.cy / g.cw) * H;
+            if (!o.ok || o.clamped) continue;
+            const off = y0 - o.y;
+            assert.ok(off >= prev - 1e-6, 'realistic offset decreased at zoom ' + z + ' pitch ' + pitch + ': ' + off + ' < ' + prev);
+            prev = off;
+        }
+        assert.ok(prev > 50, 'the offset is substantial: ' + prev);
+    }
+    // Compressed: reaches exactly the requested screen offset, and is monotonic in altitude
+    const Mx = camera(12, 55, 0, lon, lat);
+    M.ground(Mx, lon, lat, 0, g);
+    const y0 = (0.5 - 0.5 * g.cy / g.cw) * H;
+    let prevOff = -1;
+    for (const alt of [0, 100, 500, 1000, 3000, 6000, 10000, 13000]) {
+        const raw = alt / 12 * Math.sin(55 * Math.PI / 180);
+        M.pose(Mx, g, alt, 'compressed', raw, 190, W, H, o);
+        assert.ok(o.ok);
+        const off = y0 - o.y;
+        near(off, M.compressPx(raw, 190), 1e-6, 'compressed offset at ' + alt);
+        assert.ok(off >= prevOff - 1e-9, 'compressed offset not monotonic in altitude at ' + alt);
+        prevOff = off;
+    }
+    assert.ok(prevOff < 190, 'bounded by the cap');
+    // a larger altitude is never drawn lower than a smaller one, at every zoom 9..20 (compressed)
+    for (let z = 9; z <= 20; z += 1) {
+        const Mz = camera(z, 60, 0, lon, lat); M.ground(Mz, lon, lat, 0, g);
+        const mppz = M.metresPerPixel(lat, z);
+        let last = -1;
+        for (const alt of [200, 1000, 4000, 9000, 12000]) {
+            M.pose(Mz, g, alt, 'compressed', alt / mppz * Math.sin(60 * Math.PI / 180), 190, W, H, o);
+            const off = (0.5 - 0.5 * g.cy / g.cw) * H - o.y; assert.ok(off >= last - 1e-6, 'zoom ' + z + ' alt ' + alt); last = off;
+        }
+    }
+    // zero pitch: the height cannot move the point on screen; the true height is kept, nothing is NaN
+    const Mt = camera(12, 0, 0, lon, lat); M.ground(Mt, lon, lat, 0, g); M.pose(Mt, g, 8000, 'compressed', 300, 190, W, H, o); assert.ok(o.ok && isFinite(o.x) && isFinite(o.y));
+    // closed form: heightForScreenY inverts screenAbove
+    const dz = M.heightForScreenY(Mx, g, y0 - 120, H); M.screenAbove(Mx, g, dz, W, H, o2); near(o2.y, y0 - 120, 1e-6, 'closed form');
+    // allocation-free orientation equals the allocating one
+    const out = new Float64Array(9);
+    for (const [yaw, p, r] of [[0, 0, 0], [90, 0.1, -0.2], [217, -0.2, 0.5]]) { M.orientationInto(out, yaw, p, r); vnear(Array.from(out), M.orientationENU(yaw, p, r), 'orientationInto ' + yaw); }
+    console.log('models-calc placement ok');
+})();

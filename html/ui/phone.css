@@ -157,7 +157,7 @@ body.phone .baseChip { min-height: 44px; }
 body.phone #settings_infoblock .setBack { display: inline-flex; }
 
 /* ---------- tap targets: at least 44 x 44 on phones ---------- */
-body.phone :is(#phoneSheet, #settings_infoblock, #filterPopover) :is(button, .chip, .formButton, select, summary, .apBtn, input:not([type=checkbox]):not([type=radio]):not([type=range])) { min-height: 44px; min-width: 44px; box-sizing: border-box; }
+body.phone :is(#phoneSheet, #settings_infoblock, #filterPopover) :is(button, .chip, .formButton, select, summary, .act, input:not([type=checkbox]):not([type=radio]):not([type=range])) { min-height: 44px; min-width: 44px; box-sizing: border-box; }
 body.phone :is(#phoneSheet, #settings_infoblock, #filterPopover) input[type=range] { height: 44px; margin: 0; }
 body.phone :is(#phoneSheet, #settings_infoblock) a { display: inline-block; padding: 14px 6px; margin: -14px -6px; min-width: 44px; box-sizing: border-box; text-align: center; }
 body.phone :is(#phoneSheet, #settings_infoblock) a.apLink, body.phone #airport_panel a { text-align: left; }

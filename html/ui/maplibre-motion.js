@@ -223,7 +223,7 @@ MLR.motionTick = function (now) {
         e.tR = now;
         const lf = this.liftLL(ll, p);
         const u = {id: e.id, newGeometry: {type: 'Point', coordinates: lf}};
-        if (lf !== ll) { const f = this.liftFeats(e, ll, lf); if (f) { stemU.push({id: e.id, newGeometry: f.s.geometry}); shU.push({id: e.id, newGeometry: f.h.geometry}); } }
+        if (lf !== ll) { const f = this.liftFeats(e, ll, lf); if (f) { stemU.push({id: e.id, newGeometry: f.s.geometry}); if (f.h) shU.push({id: e.id, newGeometry: f.h.geometry}); } }
         if (rotChanged) u.addOrUpdateProperties = [{key: 'rot', value: e.rotDraw}];
         updates.push(u);
     }

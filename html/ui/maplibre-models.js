@@ -7,9 +7,10 @@
 // * One InstancedMesh per archetype (narrowbody, widebody twin / quad, regional jet, business jet, turboprop, light single / twin, helicopter,
 //   generic) plus one for the ground shadows. Flat-shaded low-poly built from three.js primitives, no textures, no downloaded models. Capped at the
 //   MODEL_CAP aircraft nearest the screen centre; the rest keep their icons.
-// * POSITION is exactly where the icon is drawn: MLR.drawnLL(entry), the interpolated position with the 3D altitude lift (ui/maplibre-lift.js), on
-//   the terrain surface when terrain is on. So the label pill, hit-testing (MLR.closestPlane), trails and Follow need no second system.
-//   The icon stays in the layer as the (invisible) hit target: its opacity is 0 for model-drawn aircraft; closestPlane widens its radius to the model.
+// * POSITION is the aircraft's TRUE interpolated lon/lat with real height above the surface (terrain added when terrain is on): the model is a real
+//   object in the scene, not a lifted icon. Heights: Settings > Map > Aircraft height, Realistic (true) or Compressed (default). The icon stays in
+//   the layer as the invisible hit target at the ground point that projects to the model's screen point (MLR.modelAnchor, used by liftLL), so the
+//   label pill, hit-testing (MLR.closestPlane) and Follow use the projected 3D point and need no second picking system.
 // * SIZE is never below MODELS.MIN_PX on screen (ui/models-calc.js scaleFactor), true scale once the real length exceeds that; icon -> model
 //   crossfade over half a zoom level starting at MODELS_Z0.
 // * ORIENTATION: yaw from true heading (else track), pitch from vertical rate / ground speed, roll from the reported roll (else the turn rate);
@@ -21,10 +22,15 @@
     let wanted = true;
     try { const v = localStorage.getItem(KEY); if (v === '0' || v === 'false') wanted = false; } catch (e) { /* private mode: default on */ }
     let T = null, loading = null, failed = false, layer = null, dimOn = false;
-    const stats = {drawn: 0, byArchetype: {}, loaded: false, active: false, lastFrameMs: 0, builds: 0, disposals: 0};
+    const stats = {drawn: 0, byArchetype: {}, loaded: false, active: false, lastFrameMs: 0, builds: 0, disposals: 0,
+        frames: 0, skipped: 0, culled: 0, tris: 0, measureAlloc: false, allocBytes: 0, allocMax: 0, gpuMs: null, gpuState: 'not measured'};
+    // per-frame CPU timing of the layer (prepare = placement and buffer writes, render = three.js submit), ring buffers filled when stats.timing is on
+    const RING = 1024, ring = {prep: new Float64Array(RING), rend: new Float64Array(RING), n: 0};
+    stats.timing = false; stats.ring = ring;
     MLR.modelsStats = stats;
     MLR.modelCap = CAP;
-    MLR.modelSet = new Map();                     // icao -> {arch, span, length, px}
+    MLR.modelSet = new Map();                     // icao -> {arch, ai, span, length, f, px}
+    MLR.modelArr = [];                            // the same entries as an array (the frame loop walks it without allocating)
 
     MLR.modelsWanted = function () { return wanted && !failed && this.is3D && !this.isGlobe(); };
     MLR.modelsActive = function () { return !!layer && this.modelsWanted(); };
@@ -121,6 +127,8 @@
             for (let i = 0; i < c; i++) part[o + i] = p.part;
             o += c; p.g.dispose();
         }
+        let minZ = Infinity; for (let i = 2; i < pos.length; i += 3) if (pos[i] < minZ) minZ = pos[i];
+        for (let i = 2; i < pos.length; i += 3) pos[i] -= minZ;                      // the belly is the origin: scale and rotation pivot about it, and a grounded aircraft rests on the surface
         const g = new T.BufferGeometry();
         g.setAttribute('position', new T.BufferAttribute(pos, 3)); g.setAttribute('normal', new T.BufferAttribute(nor, 3)); g.setAttribute('part', new T.BufferAttribute(part, 1));
         void jets;
@@ -128,7 +136,8 @@
     }
     function makeMaterial() {
         return new T.ShaderMaterial({
-            transparent: true, depthWrite: true, depthTest: true, side: T.DoubleSide,
+            transparent: false, depthWrite: true, depthTest: true, side: T.BackSide,    // opaque and depth-tested; the Mercator mirror flips winding, so BackSide culls the far faces
+            
             uniforms: {uAlpha: {value: 1}, uTrim: {value: new T.Color(107 / 255, 107 / 255, 107 / 255)}},
             vertexShader: 'attribute float part; varying vec3 vN; varying float vPart; varying vec3 vTint;\n' +
                 'void main() { vPart = part;\n#ifdef USE_INSTANCING_COLOR\n vTint = instanceColor;\n#else\n vTint = vec3(1.0);\n#endif\n' +
@@ -141,23 +150,24 @@
 
     // ----- the custom layer -----
     function createLayer() {
-        const state = {meshes: {}, shadow: null, scene: null, camera: null, renderer: null, mats: [], geos: [], tmp: null};
+        const state = {meshes: {}, meshesByIndex: [], shadow: null, scene: null, camera: null, renderer: null, mats: [], geos: [], tmp: null};
         const mat4 = () => new T.Matrix4();
         return {
             id: LAYER, type: 'custom', renderingMode: '3d', _s: state,
             onAdd(map, gl) {
                 if (typeof WebGL2RenderingContext == 'undefined' || !(gl instanceof WebGL2RenderingContext)) throw new Error('WebGL2 is not available');
-                state.map = map;
+                state.map = map; state.gl = gl;
                 state.renderer = new T.WebGLRenderer({canvas: map.getCanvas(), context: gl, antialias: true});
                 state.renderer.autoClear = false;
                 state.scene = new T.Scene(); state.camera = new T.Camera();
                 state.mat = makeMaterial(); state.mats.push(state.mat);
                 for (const a of MODELS.ARCHETYPES) {
                     const g = buildGeometry(a); state.geos.push(g);
+                    (stats.trisByArchetype || (stats.trisByArchetype = {}))[a] = g.attributes.position.count / 3;
                     const mesh = new T.InstancedMesh(g, state.mat, CAP);
                     mesh.instanceMatrix.setUsage(T.DynamicDrawUsage); mesh.count = 0; mesh.frustumCulled = false;
                     mesh.setColorAt(0, new T.Color(1, 1, 1)); mesh.instanceColor.setUsage(T.DynamicDrawUsage);
-                    state.meshes[a] = mesh; state.scene.add(mesh);
+                    state.meshes[a] = mesh; state.meshesByIndex.push(mesh); state.scene.add(mesh);
                 }
                 const sg = new T.CircleGeometry(0.5, 16); state.geos.push(sg);
                 const sm = new T.MeshBasicMaterial({color: 0x000000, transparent: true, opacity: 0.3, depthWrite: false}); state.mats.push(sm);
@@ -181,36 +191,101 @@
                     for (const m of state.mats) m.dispose();
                     state.renderer && state.renderer.dispose();
                 } catch (e) { /* already gone */ }
-                state.ok = false; state.meshes = {}; state.geos = []; state.mats = []; stats.disposals++; stats.loaded = false;
+                state.ok = false; state.meshes = {}; state.meshesByIndex = []; state.geos = []; state.mats = []; stats.disposals++; stats.loaded = false;
             },
         };
     }
 
+    // ----- true 3D placement -----
+    // A model stands at its TRUE lon/lat with real height above the surface; the layer's matrix is map.transform.mercatorMatrix (double precision),
+    // so the model is a real object in the scene and zooming scales it like the map. "Realistic" uses the true height (geometric altitude, else
+    // barometric); "Compressed" (default) places the model at the height whose SCREEN offset above its shadow is the soft-limited (tanh) offset of the
+    // real altitude (same formula as the 2D-icon lift): monotonic in altitude, never decreasing with zoom, always in view above its shadow.
+    const HKEY = 'modelHeight';
+    let heightMode = 'compressed';
+    try { const v = localStorage.getItem(HKEY); if (v === 'realistic' || v === 'compressed') heightMode = v; } catch (e) { /* default */ }
+    MLR.modelHeightMode = function () { return heightMode; };
+    MLR.setModelHeightMode = function (v) {
+        heightMode = v === 'realistic' ? 'realistic' : 'compressed';
+        try { localStorage.setItem(HKEY, heightMode); } catch (e) { /* not persisted */ }
+        if (this.liftCamera) this.liftCamera();
+        this.touch && this.touch('planes');
+        this.map && this.map.triggerRepaint();
+    };
+    const G = {}, PO = {}, ELL = {x: 0, y: 0}, R = new Float64Array(9), R2 = new Float64Array(9);
+    const CAM = {w: 1, h: 1, pitch: 0, mpp: 1};
+    function meters(p) {
+        if (MLR.testAltM != null) return MLR.testAltM;               // test hook: a known altitude for the projection tables
+        if (p.altitude === 'ground' || p.onGround) return 0;
+        const ft = typeof p.alt_geom === 'number' ? p.alt_geom : (typeof p.altitude === 'number' ? p.altitude : 0);
+        return ft > 0 ? ft * 0.3048 : 0;
+    }
+    function terrainM(map, s, lon, lat, now) {
+        if (!map.getTerrain || !map.getTerrain()) return 0;
+        if (s.elT === undefined || now - s.elT > 1000) {
+            s.elT = now;
+            try { s.el = map.queryTerrainElevation({lng: lon, lat}) || 0; } catch (er) { s.el = s.el || 0; }
+        }
+        return s.el || 0;
+    }
+    // the model's pose for entry e at the CURRENT camera. Returns PO {x, y (screen px of the belly), dz, ok} and G (ground clip); no allocation.
+    MLR.modelPose = function (e, ll, now) {
+        const map = this.map, t = map.transform, M = t.mercatorMatrix, c = map.getContainer();
+        const W = c.clientWidth, H = c.clientHeight, p = e.plane;
+        const s = e.mo || (e.mo = {t: now});
+        MODELS.ground(M, ll[0], ll[1], terrainM(map, s, ll[0], ll[1], now), G);
+        if (!G.ok) { PO.ok = false; return PO; }
+        const altM = meters(p);
+        const pitch = map.getPitch() * Math.PI / 180, mpp = MODELS.metresPerPixel(ll[1], map.getZoom());
+        const raw = pitch < 0.01 ? 0 : altM * MLR.liftK() / mpp * Math.sin(pitch);
+        MODELS.pose(M, G, altM, heightMode, raw, Math.min(LIFT.max, H * 0.3), W, H, PO);
+        return PO;
+    };
+    MLR.liftK = function () { return LIFT.k; };
+    // ground point that projects to the model's screen point: the icon, label, hit target and Follow use it (ui/maplibre-lift.js liftLL)
+    MLR.modelAnchor = function (ll, p) {
+        const e = this.planes.get(p.icao);
+        if (!e) return null;
+        const po = this.modelPose(e, ll, performance.now());
+        if (!po.ok || !isFinite(po.x) || !isFinite(po.y)) return null;
+        const u = this.map.unproject([po.x, po.y]);
+        return [u.lng, u.lat];
+    };
+
+    // one frame: place every model-set aircraft, update the instance buffers, render. Allocation-free in steady state (scratch objects and typed
+    // arrays only); `stats.alloc*` measure it when MLR.modelsStats.measureAlloc is set.
     const TMP = {};
-    // one frame: place every model-set aircraft, update the instance buffers, render
+    const D2R = Math.PI / 180;
     MLR.modelsFrame = function (state, args) {
-        const map = this.map, zoom = map.getZoom(), w = MODELS.modelWeight(zoom, Z0, BAND), now = performance.now();
-        const proj = (args && args.defaultProjectionData && args.defaultProjectionData.mainMatrix) || (args && args.modelViewProjectionMatrix) || args;
-        if (!TMP.q) { TMP.q = new T.Quaternion(); TMP.v = new T.Vector3(); TMP.s = new T.Vector3(); TMP.m = new T.Matrix4(); TMP.r = new T.Matrix4(); TMP.c = new T.Color(); TMP.S = new T.Matrix4().makeScale(1, -1, 1); TMP.r2 = new T.Matrix4(); TMP.o = new T.Matrix4(); TMP.p = new T.Matrix4(); }
-        // positions are made relative to the map centre in double precision and the centre is folded into the projection matrix:
-        // float32 world coordinates (0..1 around the Earth) would jitter by metres at high zoom
-        const oc = maplibregl.MercatorCoordinate.fromLngLat(map.getCenter(), 0);
-        const counts = {}; let shadows = 0; stats.drawn = 0;
-        const terrain = map.getTerrain && map.getTerrain();
-        for (const a of MODELS.ARCHETYPES) counts[a] = 0;
-        for (const [icao, d] of this.modelSet) {
-            const e = this.planes.get(icao);
+        const map = this.map, t = map.transform, M = t.mercatorMatrix, zoom = map.getZoom(), w = MODELS.modelWeight(zoom, Z0, BAND), now = performance.now();
+        const heap = stats.measureAlloc && performance.memory ? performance.memory.usedJSHeapSize : 0;
+        const src = this.modelTestPlanes || this.planes;
+        stats.frames++;
+        if (!TMP.q) { TMP.counts = new Int32Array(MODELS.ARCHETYPES.length); TMP.p = new T.Matrix4(); }
+        const c = map.getContainer(), W = c.clientWidth, H = c.clientHeight;
+        const pitch = map.getPitch() * D2R, maxPx = Math.min(LIFT.max, H * 0.3), kx = LIFT.k;
+        // origin: the map centre in Mercator (double precision) folded into the projection matrix; instance positions are relative to it
+        const cc = t.center, cs = Math.sin(cc.lat * D2R), ox = (cc.lng + 180) / 360, oy = 0.5 - Math.log((1 + cs) / (1 - cs)) / (4 * Math.PI);
+        const counts = TMP.counts; counts.fill(0);
+        let shadows = 0, drawn = 0;
+        const arr = this.modelArr, n = arr.length, margin = 120;
+        let culled = 0;
+        for (let q = 0; q < n; q++) {
+            const d = arr[q], e = src.get(d.icao);
             if (!e || !e.plane.proj) continue;
-            const p = e.plane, mesh = state.meshes[d.arch];
-            if (!mesh || counts[d.arch] >= CAP) continue;
-            const ll = this.drawnLL(e), base = this.baseLL(e);
-            const lat = ll[1], k = maplibregl.MercatorCoordinate.fromLngLat({lng: ll[0], lat}, 0).meterInMercatorCoordinateUnits();
-            const f = MODELS.scaleFactor(d.length, lat, zoom, MIN_PX);
-            let elev = 0, belev = 0;
-            if (terrain) { try { elev = map.queryTerrainElevation({lng: ll[0], lat}) || 0; belev = map.queryTerrainElevation({lng: base[0], lat: base[1]}) || 0; } catch (er) { /* tiles not ready */ } }
-            const mc = maplibregl.MercatorCoordinate.fromLngLat({lng: ll[0], lat}, 0);
-            // orientation with smoothing (state kept on the entry)
+            const p = e.plane, ai = d.ai, mesh = state.meshesByIndex[ai];
+            if (!mesh || counts[ai] >= CAP) continue;
+            const ll = this.baseLL(e);
             const s = e.mo || (e.mo = {t: now});
+            MODELS.ground(M, ll[0], ll[1], terrainM(map, s, ll[0], ll[1], now), G);
+            if (!G.ok) continue;
+            // cheap cull before any further maths: the ground point and the (compressed or true) top of the model must be near the screen
+            const altM = meters(p), mpp = MODELS.metresPerPixel(ll[1], zoom);
+            const raw = pitch < 0.01 ? 0 : altM * kx / mpp * Math.sin(pitch);
+            MODELS.pose(M, G, altM, heightMode, raw, maxPx, W, H, PO);
+            if (!PO.ok) continue;
+            const sg = 0.5 * (1 + G.cx / G.cw) * W;
+            if ((PO.x < -margin - d.px && sg < -margin - d.px) || (PO.x > W + margin + d.px && sg > W + margin + d.px) || PO.y < -margin - d.px * 2 || PO.y - maxPx > H + margin + d.px) { culled++; continue; }
             const dt = Math.min(0.5, (now - s.t) / 1000); s.t = now;
             const heading = typeof p.true_heading == 'number' ? p.true_heading : (typeof p.track == 'number' ? p.track : (p.rotation || 0));
             const vs = typeof p.geom_rate == 'number' ? p.geom_rate : p.baro_rate, gs = typeof p.gs == 'number' ? p.gs : p.speed;
@@ -218,58 +293,96 @@
             s.yaw = MODELS.smoothAngle(s.yaw, heading, dt, 0.5, true);
             s.pitch = MODELS.smoothAngle(s.pitch, onG ? 0 : MODELS.pitchFrom(vs, gs), dt, 0.9);
             s.roll = MODELS.smoothAngle(s.roll, onG ? 0 : MODELS.rollFrom(typeof p.roll == 'number' ? p.roll : null, p.track_rate, gs), dt, 0.7);
-            const Rm = MODELS.orientationENU(s.yaw, s.pitch, s.roll);        // ENU rotation; Mercator = S * R, applied by the mirror matrix below
-            TMP.r.set(Rm[0], Rm[1], Rm[2], 0, Rm[3], Rm[4], Rm[5], 0, Rm[6], Rm[7], Rm[8], 0, 0, 0, 0, 1);
-            const sc = k * f;
-            TMP.s.set(d.span * sc, d.length * sc, d.length * sc);
-            TMP.m.makeTranslation(mc.x - oc.x, mc.y - oc.y, mc.z + elev * k);
-            TMP.m.multiply(TMP.S).multiply(TMP.r).scale(TMP.s);
-            const i = counts[d.arch]++;
-            mesh.setMatrixAt(i, TMP.m);
-            TMP.c.set(e.sel ? '#ffffff' : (e.fillColor || '#cfcfcf'));
-            mesh.setColorAt(i, TMP.c);
-            stats.drawn++;
-            if (shadows < CAP) {   // soft blob on the surface under the real ground position
-                const bm = maplibregl.MercatorCoordinate.fromLngLat({lng: base[0], lat: base[1]}, 0);
-                TMP.m.makeTranslation(bm.x - oc.x, bm.y - oc.y, bm.z + belev * k + 0.2 * k);
-                TMP.m.multiply(TMP.S).multiply(TMP.r2.makeRotationZ(-s.yaw * Math.PI / 180)).scale(TMP.s.set(d.span * sc * 0.55, d.length * sc * 0.55, 1));
-                state.shadow.setMatrixAt(shadows++, TMP.m);
+            MODELS.orientationInto(R, s.yaw, s.pitch, s.roll);
+            const sc = G.k * d.f, sx = d.span * sc, sy = d.length * sc, sz = d.length * sc;
+            const i = counts[ai]++, a = mesh.instanceMatrix.array, o = i * 16;
+            // T(rel) * diag(1,-1,1) * R_enu * S  (Mercator y runs south; the belly of the model is its origin, so it pivots about the belly)
+            a[o] = R[0] * sx; a[o + 1] = -R[3] * sx; a[o + 2] = R[6] * sx; a[o + 3] = 0;
+            a[o + 4] = R[1] * sy; a[o + 5] = -R[4] * sy; a[o + 6] = R[7] * sy; a[o + 7] = 0;
+            a[o + 8] = R[2] * sz; a[o + 9] = -R[5] * sz; a[o + 10] = R[8] * sz; a[o + 11] = 0;
+            a[o + 12] = G.mx - ox; a[o + 13] = G.my - oy; a[o + 14] = G.zg + PO.dz; a[o + 15] = 1;
+            const ca = mesh.instanceColor.array, co = i * 3;
+            if (e.mcSrc !== (e.sel ? '#ffffff' : e.fillColor)) { e.mcSrc = e.sel ? '#ffffff' : e.fillColor; parseHex(e.mcSrc || '#cfcfcf', e); }
+            ca[co] = e.mcR; ca[co + 1] = e.mcG; ca[co + 2] = e.mcB;
+            drawn++;
+            if (shadows < CAP) {   // soft blob on the surface at the TRUE ground point
+                MODELS.orientationInto(R2, s.yaw, 0, 0);
+                const sa = state.shadow.instanceMatrix.array, so = shadows * 16, ssx = d.span * sc * 0.55, ssy = d.length * sc * 0.55;
+                sa[so] = R2[0] * ssx; sa[so + 1] = -R2[3] * ssx; sa[so + 2] = 0; sa[so + 3] = 0;
+                sa[so + 4] = R2[1] * ssy; sa[so + 5] = -R2[4] * ssy; sa[so + 6] = 0; sa[so + 7] = 0;
+                sa[so + 8] = 0; sa[so + 9] = 0; sa[so + 10] = 1; sa[so + 11] = 0;
+                sa[so + 12] = G.mx - ox; sa[so + 13] = G.my - oy; sa[so + 14] = G.zg + 0.2 * G.k; sa[so + 15] = 1;
+                shadows++;
             }
         }
-        for (const a of MODELS.ARCHETYPES) {
-            const mesh = state.meshes[a]; mesh.count = counts[a];
-            if (counts[a]) { mesh.instanceMatrix.needsUpdate = true; if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true; }
-            stats.byArchetype[a] = counts[a];
+        const meshes = state.meshesByIndex;
+        for (let ai = 0; ai < meshes.length; ai++) {
+            const mesh = meshes[ai]; mesh.count = counts[ai];
+            if (counts[ai]) { mesh.instanceMatrix.needsUpdate = true; mesh.instanceColor.needsUpdate = true; }
+            stats.byArchetype[MODELS.ARCHETYPES[ai]] = counts[ai];
         }
+        stats.drawn = drawn;
         state.shadow.count = shadows; if (shadows) state.shadow.instanceMatrix.needsUpdate = true;
+        stats.culled = culled;
+        const t1 = stats.timing ? performance.now() : 0;
+        if (!drawn && !shadows) { stats.skipped++; if (heap) trackAlloc(heap); return; }
         state.mat.uniforms.uAlpha.value = w; state.mat.transparent = w < 1;
         state.shadow.material.opacity = 0.3 * w;
-        TMP.p.fromArray(proj).multiply(TMP.o.makeTranslation(oc.x, oc.y, 0));
-        state.camera.projectionMatrix.copy(TMP.p); state.camera.projectionMatrixInverse.copy(TMP.p).invert();
+        // projection = mercatorMatrix * translate(origin): the same double-precision matrix the map uses, with the origin folded in
+        const P = TMP.p.elements;
+        for (let k = 0; k < 12; k++) P[k] = M[k];
+        P[12] = M[0] * ox + M[4] * oy + M[12]; P[13] = M[1] * ox + M[5] * oy + M[13]; P[14] = M[2] * ox + M[6] * oy + M[14]; P[15] = M[3] * ox + M[7] * oy + M[15];
+        state.camera.projectionMatrix.copy(TMP.p);
         state.renderer.resetState();
+        const q0 = gpuBegin(state);
         state.renderer.render(state.scene, state.camera);
+        gpuEnd(state, q0);
         state.renderer.resetState();
+        if (stats.timing) { const i = ring.n++ % RING; ring.prep[i] = t1 - now; ring.rend[i] = performance.now() - t1; }
+        if (heap) trackAlloc(heap);
     };
+    function trackAlloc(h0) { const d = performance.memory.usedJSHeapSize - h0; if (d > 0) { stats.allocBytes += d; if (d > stats.allocMax) stats.allocMax = d; } }
+    // GPU time with EXT_disjoint_timer_query_webgl2 when the browser offers it (software GL headless does not): one query in flight at a time
+    function gpuBegin(state) {
+        if (!stats.timing) return null;
+        const gl = state.gl;
+        if (state.gpuExt === undefined) { state.gpuExt = gl.getExtension('EXT_disjoint_timer_query_webgl2') || null; stats.gpuState = state.gpuExt ? 'EXT_disjoint_timer_query_webgl2' : 'not available'; }
+        if (!state.gpuExt) return null;
+        if (state.gpuQ) {
+            const q = state.gpuQ;
+            if (gl.getQueryParameter(q, gl.QUERY_RESULT_AVAILABLE)) {
+                if (!gl.getParameter(state.gpuExt.GPU_DISJOINT_EXT)) { stats.gpuMs = gl.getQueryParameter(q, gl.QUERY_RESULT) / 1e6; (stats.gpuSamples || (stats.gpuSamples = [])).push(stats.gpuMs); }
+                gl.deleteQuery(q); state.gpuQ = null;
+            } else return null;
+        }
+        const q = gl.createQuery(); gl.beginQuery(state.gpuExt.TIME_ELAPSED_EXT, q); return q;
+    }
+    function gpuEnd(state, q) { if (q) { state.gl.endQuery(state.gpuExt.TIME_ELAPSED_EXT); state.gpuQ = q; } }
+    function parseHex(h, e) {
+        const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})/i.exec(h);
+        e.mcR = m ? parseInt(m[1], 16) / 255 : 0.81; e.mcG = m ? parseInt(m[2], 16) / 255 : 0.81; e.mcB = m ? parseInt(m[3], 16) / 255 : 0.81;
+    }
 
     // choose the model set: the CAP aircraft nearest the screen centre among those that are in view and have a position (called from flush)
     MLR.modelsSelect = function () {
-        this.modelSet.clear();
+        this.modelSet.clear(); this.modelArr.length = 0;
         if (!this.modelsActive()) return;
         const m = this.map, c = m.getCenter(), ctr = m.project(c), items = [];
+        const cw = m.getContainer().clientWidth, ch = m.getContainer().clientHeight;
         for (const e of this.planes.values()) {
             const p = e.plane;
             if (!p.proj || !p.position) continue;
             if (typeof p.category === 'string' && p.category[0] === 'C') continue;      // surface vehicles and obstacles keep their icons
-            const ll = this.drawnLL(e), q = m.project(ll);
-            const cw = m.getContainer().clientWidth, ch = m.getContainer().clientHeight;
-            if (q.x < -60 || q.y < -60 || q.x > cw + 60 || q.y > ch + 60) continue;
+            const q = m.project(this.baseLL(e));
+            if (q.x < -60 || q.y < -60 - 260 || q.x > cw + 60 || q.y > ch + 60 + 260) continue;     // the model may stand well above its ground point
             items.push({x: q.x, y: q.y, e});
         }
         for (const it of MODELS.nearest(items, ctr.x, ctr.y, CAP)) {
             const e = it.e, p = e.plane;
             const code = p.icaoType, arch = MODELS.archetypeFor(code, {desc: p.typeDescription, wtc: p.wtc, category: p.category}), dm = MODELS.dimsFor(code, arch);
             const lat = p.position[1], f = MODELS.scaleFactor(dm.length, lat, m.getZoom(), MIN_PX), mpp = MODELS.metresPerPixel(lat, m.getZoom());
-            this.modelSet.set(p.icao, {arch, span: dm.span, length: dm.length, px: dm.length * f / mpp});
+            const d = {icao: p.icao, arch, ai: MODELS.ARCHETYPES.indexOf(arch), span: dm.span, length: dm.length, f, px: dm.length * f / mpp};
+            this.modelSet.set(p.icao, d); this.modelArr.push(d);
         }
     };
 
@@ -278,7 +391,7 @@
         failed = true;
         console.debug('3D aircraft models unavailable, using icons:', err && err.message ? err.message : err);
         this.removeModelsLayer();
-        this.modelSet.clear(); this.touch && this.touch('planes'); this.applyIconOpacity();
+        this.modelSet.clear(); this.modelArr.length = 0; this.touch && this.touch('planes'); this.applyIconOpacity();
     };
     MLR.removeModelsLayer = function () {
         const m = this.map;
@@ -291,7 +404,7 @@
         if (!m || !this.ready) return;
         const want = this.modelsWanted();
         if (!want) {
-            if (layer) { this.removeModelsLayer(); this.modelSet.clear(); this.touch('planes'); }
+            if (layer) { this.removeModelsLayer(); this.modelSet.clear(); this.modelArr.length = 0; this.touch('planes'); }
             this.applyIconOpacity();
             return;
         }
@@ -314,6 +427,12 @@
 
     jQuery(function () {
         if (typeof Toggle == 'undefined') return;
+        const seg = document.getElementById('heightSegmented');
+        if (seg) {
+            const sync = () => { for (const b of seg.querySelectorAll('[data-height]')) { const on = b.dataset.height === MLR.modelHeightMode(); b.classList.toggle('on', on); b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', on ? 'true' : 'false'); } };
+            seg.addEventListener('click', (ev) => { const b = ev.target.closest('[data-height]'); if (b) { MLR.setModelHeightMode(b.dataset.height); sync(); } });
+            sync();
+        }
         new Toggle({key: 'models3d', display: '3D aircraft models (3D view)', container: '#set_appearance', init: wanted,
             setState: function (s) { MLR.setModelsWanted(s); }});
     });

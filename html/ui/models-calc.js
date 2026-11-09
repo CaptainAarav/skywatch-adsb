@@ -136,7 +136,69 @@ const MODELS = (function () {
     }
     // rendered height above the surface in Mercator z: metres * (mercator units per metre); on the ground the model sits on the surface
     function surfaceZ(onGround, terrainM, exaggeration) { return (onGround ? 0 : 0) + (terrainM || 0) * (exaggeration == null ? 1 : exaggeration); }
-    return {ARCHETYPES, TYPE_TABLE: T, DEFAULT, archetypeFor, dimsFor, metresPerPixel, drawLength, scaleFactor, modelWeight, orientationENU, orientationMercator, apply,
+    // ---- true 3D placement (see ui/maplibre-models.js) ----
+    // M is a column-major 4x4 taking Mercator coordinates (x, y in 0..1, z in Mercator units = metres * k) to clip space (MapLibre's
+    // map.transform.mercatorMatrix, double precision). A point straight above a ground point g (clip A = M g) at extra height dz has
+    //     clip(dz) = A + B * dz,   B = M's z column,
+    // so its screen y is a Moebius function of dz and the dz that puts it at a wanted screen y has a closed form (no iteration, no allocation).
+    const ROUND = 40075016.686;
+    // out: {mx, my, k (Mercator units per metre), cx, cy, cw (clip of the ground point), ok}
+    function ground(M, lon, lat, zg, out) {
+        const s = Math.sin(lat * D2R);
+        const mx = (lon + 180) / 360, my = 0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI), k = 1 / (ROUND * Math.cos(lat * D2R));
+        const z = zg * k;
+        out.mx = mx; out.my = my; out.k = k; out.zg = z;
+        out.cx = M[0] * mx + M[4] * my + M[8] * z + M[12];
+        out.cy = M[1] * mx + M[5] * my + M[9] * z + M[13];
+        out.cw = M[3] * mx + M[7] * my + M[11] * z + M[15];
+        out.ok = out.cw > 1e-9;
+        return out;
+    }
+    // screen position (CSS px, y down) of the point dz Mercator units above the ground point in `g`
+    function screenAbove(M, g, dz, W, H, out) {
+        const w = g.cw + M[11] * dz;
+        out.w = w;
+        if (!(w > 1e-9)) { out.ok = false; out.x = out.y = NaN; return out; }
+        out.ok = true;
+        out.x = (0.5 + 0.5 * (g.cx + M[8] * dz) / w) * W;
+        out.y = (0.5 - 0.5 * (g.cy + M[9] * dz) / w) * H;
+        return out;
+    }
+    // the height dz (Mercator units) at which the point above g appears at screen y = sy; NaN when no such height exists in front of the camera
+    function heightForScreenY(M, g, sy, H) {
+        const ndc = 1 - 2 * sy / H, den = M[9] - ndc * M[11];
+        if (Math.abs(den) < 1e-18) return NaN;
+        const dz = (ndc * g.cw - g.cy) / den;
+        return (dz >= 0 && g.cw + M[11] * dz > 1e-9) ? dz : NaN;
+    }
+    // Compressed height: the screen offset of the real altitude is soft-limited (tanh) to maxPx; the offset is monotonic in altitude and in zoom.
+    function compressPx(rawPx, maxPx) { return rawPx > 0 ? maxPx * Math.tanh(rawPx / maxPx) : 0; }
+    // pose of one aircraft. mode 'realistic': dz = altitude (true height). 'compressed': dz such that the screen offset above the shadow equals
+    // compressPx(rawPx, maxPx). out: {x, y (screen of the model's belly), w, dz (Mercator), ok}
+    function pose(M, g, altM, mode, rawPx, maxPx, W, H, out) {
+        let dz = altM * g.k;
+        if (mode === 'compressed') {
+            const y0 = (0.5 - 0.5 * g.cy / g.cw) * H, d = heightForScreenY(M, g, y0 - compressPx(rawPx, maxPx), H);
+            if (d === d) dz = d;                                    // else (top-down view: height does not move the point) keep the true height
+        }
+        const lim = M[11] < 0 ? 0.9 * g.cw / -M[11] : Infinity;        // never past the camera plane: a height above the camera cannot be shown
+        out.clamped = dz > lim; if (out.clamped) dz = lim;
+        out.dz = dz;
+        screenAbove(M, g, dz, W, H, out);
+        return out;
+    }
+    // ENU rotation (row-major 3x3) written into `out` (no allocation): same as orientationENU
+    function orientationInto(out, yawDeg, pitchRad, rollRad) {
+        const a = -yawDeg * D2R, ca = Math.cos(a), sa = Math.sin(a), cp = Math.cos(pitchRad || 0), sp = Math.sin(pitchRad || 0), cr = Math.cos(rollRad || 0), sr = Math.sin(rollRad || 0);
+        // Rz(a) * Rx(p) * Ry(r)
+        const b00 = 1, b11 = cp, b12 = -sp, b21 = sp, b22 = cp;                       // Rx rows: [1,0,0],[0,cp,-sp],[0,sp,cp]
+        const t00 = ca, t01 = -sa * b11, t02 = -sa * b12, t10 = sa, t11 = ca * b11, t12 = ca * b12, t21 = b21, t22 = b22;   // Rz*Rx
+        out[0] = t00 * cr + t02 * -sr; out[1] = t01; out[2] = t00 * sr + t02 * cr;
+        out[3] = t10 * cr + t12 * -sr; out[4] = t11; out[5] = t10 * sr + t12 * cr;
+        out[6] = 0 * cr + t22 * -sr;   out[7] = t21; out[8] = 0 * sr + t22 * cr;
+        return out;
+    }
+    return {ground, screenAbove, heightForScreenY, compressPx, pose, orientationInto, ARCHETYPES, TYPE_TABLE: T, DEFAULT, archetypeFor, dimsFor, metresPerPixel, drawLength, scaleFactor, modelWeight, orientationENU, orientationMercator, apply,
         pitchFrom, rollFrom, smoothAngle, nearest, surfaceZ};
 })();
 if (typeof module !== 'undefined') module.exports = MODELS;
