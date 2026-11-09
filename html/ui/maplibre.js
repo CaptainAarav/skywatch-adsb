@@ -201,9 +201,12 @@ MLR.onError = function (e) {
 // Fall back to another keyless provider (never leave the map blank), without changing the saved choice.
 MLR.baseFailed = function (name, err) {
     const def = this.findLayer(name);
-    const chain = [def && def.get('fallback'), 'OpenFreeMapDark', 'CartoDarkMatterVector', 'VersaTilesDark', 'osm'].filter(Boolean);
+    const chain = [def && def.get('fallback'), 'SkywatchDark', 'VersaTilesDark'].filter(Boolean);
     const next = chain.find(n => !this.tried.has(n) && this.findLayer(n));
     console.warn(`Base map "${name}" failed (${err && err.message || err}); ` + (next ? `falling back to "${next}"` : 'no fallback left'));
+    if (typeof SKYUI != 'undefined') SKYUI.banner('map', next
+        ? {kind: 'warn', title: 'Map provider switched', detail: (def ? def.get('title') : name) + ' is not answering, using ' + this.findLayer(next).get('title') + '.', action: {label: 'Dismiss', run: () => SKYUI.banner('map')}}
+        : {kind: 'error', title: 'Map tiles unavailable', detail: 'No map provider is answering. Aircraft are still shown.'});
     if (!next) return;
     this.selectBase(next);
 };

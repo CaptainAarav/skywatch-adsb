@@ -6,8 +6,8 @@
 // MapLibre, so that code keeps working unchanged while the renderer differs.
 //
 // Providers: keyless only. This site is public, so there must be no API keys and no billing risk.
-// CARTO may start requiring a key for its vector styles in future; the automatic fallback below
-// (see MLR.baseFailed) keeps the map alive if that happens or if a provider rate-limits (429).
+// Provider chain (see MLR.baseFailed): Skywatch Dark (OpenFreeMap tiles) -> VersaTiles. No OpenStreetMap standard raster tiles, and
+// CARTO only when the visitor chose it. A provider that rate-limits (429) or fails raises a Banner and the next one takes over.
 
 const ML_GLYPHS = 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf';
 // Label font for everything WE draw (aircraft labels, trails, range rings, airports, GeoJSON layers). The SDF glyph
@@ -100,11 +100,14 @@ function mlBaseDefs() {
         d.push(mlVector('OpenFreeMapOfflineDark', 'OpenFreeMap Offl. Dark', './openfreemap_offline/dark', {attribution: ML_ATTR.ofm, black: true}));
         d.push(mlVector('OpenFreeMapOfflineFiord', 'OpenFreeMap Offl. Fiord', './openfreemap_offline/fiord', {attribution: ML_ATTR.ofm}));
     }
-    d.push(mlVector('OpenFreeMapDark', 'OpenFreeMap Dark', ofm + 'dark', {attribution: ML_ATTR.ofm, black: true, fallback: 'CartoDarkMatterVector'}));
-    d.push(mlVector('CartoDarkMatterVector', 'CARTO Dark Matter', 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
-        {attribution: ML_ATTR.carto, black: true, fallback: 'OpenFreeMapDark'}));
+    // default: our own style JSON (html/styles/skywatch-dark.json, derived from the OpenFreeMap Dark style); tiles, glyphs and sprites come from OpenFreeMap
+    d.push(mlVector('SkywatchDark', 'Skywatch Dark', './styles/skywatch-dark.json', {attribution: ML_ATTR.ofm, fallback: 'VersaTilesDark'}));
+    d.push(mlVector('OpenFreeMapDark', 'OpenFreeMap Dark (live style)', ofm + 'dark', {attribution: ML_ATTR.ofm, black: true, fallback: 'VersaTilesDark'}));
+    // opt-in only (never chosen automatically): CARTO's terms ask for an API key and limit free use
+    d.push(mlVector('CartoDarkMatterVector', 'CARTO Dark Matter (opt-in)', 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
+        {attribution: ML_ATTR.carto, black: true, fallback: 'SkywatchDark'}));
     d.push(mlVector('VersaTilesDark', 'VersaTiles Dark', 'https://tiles.versatiles.org/assets/styles/colorful-dark/style.json',
-        {attribution: ML_ATTR.versatiles, black: true, fallback: 'CartoDarkMatterVector'}));
+        {attribution: ML_ATTR.versatiles, black: true, fallback: 'SkywatchDark'}));
     d.push(mlVector('OpenFreeMapPositron', 'OpenFreeMap Positron', ofm + 'positron', {attribution: ML_ATTR.ofm}));
     d.push(mlVector('OpenFreeMapFiord', 'OpenFreeMap Fiord', ofm + 'fiord', {attribution: ML_ATTR.ofm}));
     d.push(mlVector('OpenFreeMapLiberty', 'OpenFreeMap Liberty', ofm + 'liberty', {attribution: ML_ATTR.ofm}));
@@ -114,8 +117,6 @@ function mlBaseDefs() {
         d.push(mlRasterBase('custom_tiles', 'Custom tiles', loStore['customTiles'], {region: 'custom', maxzoom: 20}));
     if (typeof offlineMapDetail != 'undefined' && offlineMapDetail > 0)
         d.push(mlRasterBase('osm_tiles_offline', 'OpenStreetMap offline', 'osm_tiles_offline/{z}/{x}/{y}.png', {attribution: ML_ATTR.osm, maxzoom: offlineMapDetail}));
-    d.push(mlRasterBase('osm', 'OpenStreetMap', 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', {attribution: ML_ATTR.osm, maxzoom: 17}));
-    d.push(mlRasterBase('osm_de', 'OpenStreetMap DE', 'https://tile.openstreetmap.de/{z}/{x}/{y}.png', {attribution: ML_ATTR.osm, maxzoom: 17}));
     const esri = 'https://server.arcgisonline.com/ArcGIS/rest/services/';
     d.push(mlRasterBase('esri', 'ESRI.com Sat.', esri + 'World_Imagery/MapServer/tile/{z}/{y}/{x}', {attribution: ML_ATTR.esri, maxzoom: 17}));
     d.push(mlRasterBase('esri_gray', 'ESRI.com Gray', esri + 'Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {attribution: ML_ATTR.esri, maxzoom: 16}));
@@ -251,6 +252,7 @@ async function mlBuildStyle(def) {
     else if (style.sprite) style.sprite = mlAbsolute(style.sprite, url);
     if (style.glyphs) style.glyphs = mlAbsolute(style.glyphs, url);
     if (def.black) style = mlBlackStyle(style, def);
+    else if (def.name === 'SkywatchDark') ML_CUR_KIND = 'ofm';        // already restyled (html/styles/skywatch-dark.json)
     if (!style.glyphs) style.glyphs = ML_GLYPHS;
     return style;
 }

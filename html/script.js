@@ -2380,7 +2380,7 @@ function ol_map_init() {
     });
     if (!foundType) {
         // unknown or legacy (OpenLayers era) id: never leave the map blank
-        MapType_tar1090 = "CartoDarkMatterVector";
+        MapType_tar1090 = "SkywatchDark";
         try { delete loStore['MapType_tar1090']; } catch (e) {}
     }
 

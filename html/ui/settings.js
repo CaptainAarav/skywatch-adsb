@@ -52,13 +52,12 @@ const SET_ROWS = {
 
 // curated base maps for the thumbnail grid (mockup 04); everything else is under "More..."
 const BASE_PICKS = [
-    {names: ['CartoDarkMatterVector'], title: 'Dark Matter', sub: 'Default · CARTO', bg: 'linear-gradient(135deg,#050505,#171717)'},
-    {names: ['OpenFreeMapDark', 'OpenFreeMapOfflineDark'], title: 'OpenFreeMap Dark', sub: 'Black · fallback', bg: 'linear-gradient(135deg,#000,#0d0d0d)'},
-    {names: ['VersaTilesDark'], title: 'VersaTiles Dark', sub: 'Warm dark', bg: 'linear-gradient(135deg,#1c1b19,#2d2b27)'},
+    {names: ['SkywatchDark', 'OpenFreeMapOfflineDark'], title: 'Skywatch Dark', sub: 'Default · OpenFreeMap', bg: 'linear-gradient(135deg,#000,#0d0d0d)'},
+    {names: ['VersaTilesDark'], title: 'VersaTiles Dark', sub: 'Fallback', bg: 'linear-gradient(135deg,#1c1b19,#2d2b27)'},
+    {names: ['CartoDarkMatterVector'], title: 'CARTO Dark Matter', sub: 'Opt-in · CARTO terms apply', bg: 'linear-gradient(135deg,#050505,#171717)'},
     {names: ['OpenFreeMapPositron', 'OpenFreeMapOfflinePositron'], title: 'Positron', sub: 'Light', bg: 'linear-gradient(135deg,#e9ecef,#cfd6dc)'},
     {names: ['OpenFreeMapLiberty', 'OpenFreeMapOfflineLiberty'], title: 'Liberty', sub: 'Colour', bg: 'linear-gradient(135deg,#d9e8c8,#bcd4e8)'},
     {names: ['esri'], title: 'Satellite', sub: 'ESRI imagery', bg: 'linear-gradient(135deg,#2d4a2e,#5a4a32)'},
-    {names: ['osm', 'osm_tiles_offline'], title: 'OpenStreetMap', sub: 'Standard', bg: 'linear-gradient(135deg,#e8e0d0,#c6dcb8)'},
     {names: ['OpenFreeMapBright', 'OpenFreeMapOfflineBright'], title: 'Bright', sub: 'OpenFreeMap', bg: 'linear-gradient(135deg,#f5efe0,#d6e6f2)'},
 ];
 

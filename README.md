@@ -139,9 +139,23 @@ everyone, and `receiver.json` contains the receiver position unless your decoder
 
 ## Running this publicly
 
-- **Map tiles:** the CARTO basemaps are free only for non-commercial use within usage limits. A public instance should
-  use OpenFreeMap or VersaTiles as the default base map, or have its own CARTO plan. If every vector provider fails,
-  the map falls back to the OpenStreetMap standard tile server, whose policy forbids heavy use.
+- **Map tiles:** the default is OpenFreeMap (a free public service, donation funded, no SLA) through our own style
+  file. If it fails the map switches to VersaTiles (rate-limited per IP, no guarantee) and shows a banner. CARTO is
+  opt-in only (its terms need an API key and limit free use). No OpenStreetMap standard tiles are used. For a busy
+  public site, host your own tiles (next section).
+
+### Self-hosting your own tiles
+
+Public tile servers are shared and can rate-limit you. When your site has regular visitors, or you need it to keep
+working through a provider outage, serve tiles yourself:
+
+1. OpenFreeMap publishes self-hosting instructions and images (https://github.com/hyperknot/openfreemap); it needs a
+   server with a lot of disk (the planet is hundreds of GB) and is meant for people who want a whole-world map.
+2. For one region, create a PMTiles extract with the `pmtiles` CLI from a planet build and serve the single file
+   from any static host that supports HTTP range requests.
+3. Copy `html/styles/skywatch-dark.json` and change the `openmaptiles` source URL, `glyphs` and `sprite` to your
+   server, then set `MapType_tar1090` to that layer. This was not tested here; treat it as a starting point.
+
 - **Visitor privacy:** every viewer's browser contacts the services in the table above directly, so those services see
   the viewer's IP address. Switch off the logos, photos and route lookup if that is not acceptable
   (see `airlineLogos`, `planespottersAPI`, `useRouteAPI`).
