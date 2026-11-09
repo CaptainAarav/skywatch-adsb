@@ -8,13 +8,6 @@ const PHONE = (function () {
     const mq = window.matchMedia(MQ);
     const NS = 'http://www.w3.org/2000/svg';
     const ICON = {
-        replay: 'M3 12a9 9 0 1 0 3-6.7M3 4v5h5M12 8v5l3 2',
-        locate: 'M12 3l7 17-7-4-7 4z',
-        follow: 'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM12 2v3M12 19v3M2 12h3M19 12h3',
-        layers: 'm12 3 9 5-9 5-9-5zM3 13l9 5 9-5',
-        compass: 'M12 4.5l3 7.5h-6zM12 19.5l3-7.5h-6z',
-        cycle: 'M4 12a8 8 0 0 1 14-5.3M20 4v4h-4M20 12a8 8 0 0 1-14 5.3M4 20v-4h4',
-        info: 'M12 11v6M12 7.5v.01M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z',
         search: 'M20 20l-3.5-3.5M11 18a7 7 0 1 1 0-14 7 7 0 0 1 0 14z',
         map: 'M9 4 3 6v14l6-2 6 2 6-2V4l-6 2zM9 4v14M15 6v14',
         list: 'M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01',
@@ -29,9 +22,8 @@ const PHONE = (function () {
         const p = document.createElementNS(NS, 'path'); p.setAttribute('d', ICON[name]); s.appendChild(p);
         return s;
     }
-    function rbtn(cls, label, ic) { const b = el('button', 'pcBtn ' + cls); b.type = 'button'; b.setAttribute('aria-label', label); b.appendChild(icon(ic)); return b; }
 
-    let sheet, body, foot, handle, tabs = {}, ctl = {}, built = false, snaps = [], idx = 0, h = 0, drag = null, peekExtra = 0;
+    let sheet, body, foot, handle, tabs = {}, built = false, snaps = [], idx = 0, h = 0, drag = null, peekExtra = 0;
 
     function vh() { return window.innerHeight; }
     function safe(side) { const d = el('div'); d.style.cssText = 'position:fixed;visibility:hidden;padding-' + side + ':env(safe-area-inset-' + side + ',0px)'; document.body.appendChild(d); const v = parseFloat(getComputedStyle(d)['padding' + side[0].toUpperCase() + side.slice(1)]) || 0; d.remove(); return v; }
@@ -135,58 +127,8 @@ const PHONE = (function () {
     }
 
     // ---- floating controls ----
-    function clickId(id) { const b = document.getElementById(id); if (b) b.click(); }
-    function syncCtl() {
-        if (!built) return;
-        const rp = document.getElementById('RP');
-        ctl.replay.hidden = !rp || rp.style.display === 'none' || rp.hidden;
-        ctl.follow.hidden = !document.body.classList.contains('infoOpen');
-        const fol = typeof FollowSelected != 'undefined' && FollowSelected;
-        ctl.follow.classList.toggle('on', !!fol); ctl.follow.setAttribute('aria-pressed', fol ? 'true' : 'false');
-        const m = typeof MLR != 'undefined' && MLR.map;
-        const rotated = m && (Math.abs(m.getBearing()) > 1 || m.getPitch() > 1);
-        ctl.compass.hidden = !rotated;
-        const mode = typeof MLR != 'undefined' ? MLR.viewMode : '2d';
-        ctl.cycleLabel.textContent = mode === '3d' ? '3D' : mode === 'globe' ? 'Globe' : '2D';
-        ctl.compassNeedle && (ctl.compassNeedle.style.transform = 'rotate(' + (m ? -m.getBearing() : 0) + 'deg)');
-    }
-    function buildCtl() {
-        const col = el('div', 'pcCol'); col.id = 'phoneCtl';
-        ctl.compass = rbtn('pcCompass', 'Reset to north up and flat view', 'compass'); ctl.compassNeedle = ctl.compass.firstChild; ctl.compass.addEventListener('click', () => clickId('north_up'));
-        ctl.replay = rbtn('', 'Replay history', 'replay'); ctl.replay.addEventListener('click', () => clickId('RP'));
-        ctl.locate = rbtn('', 'Centre the map', 'locate'); ctl.locate.addEventListener('click', () => clickId('H'));
-        ctl.follow = rbtn('', 'Follow selected aircraft', 'follow'); ctl.follow.addEventListener('click', () => typeof toggleFollow == 'function' && toggleFollow());
-        ctl.layers = rbtn('', 'Base map and layers', 'layers'); ctl.layers.addEventListener('click', () => { openSettings('map', ctl.layers); PHONE.settingsPage('page'); markTabs(); });
-        col.append(ctl.compass, ctl.replay, ctl.locate, ctl.follow, ctl.layers);
-        // bottom-left: one cycle button (tap = next, long-press = menu with the three)
-        const left = el('div', 'pcLeft'); left.id = 'phoneView';
-        ctl.cycle = el('button', 'pcBtn pcCycle'); ctl.cycle.type = 'button'; ctl.cycle.setAttribute('aria-label', 'Map view: tap to change, press and hold for the list');
-        ctl.cycle.appendChild(icon('cycle', 18)); ctl.cycleLabel = el('span', 'pcCycleLabel', '2D'); ctl.cycle.appendChild(ctl.cycleLabel);
-        const menu = el('div', 'pcMenu'); menu.hidden = true; menu.setAttribute('role', 'menu');
-        for (const [id, label] of [['view2d', '2D'], ['view3d', '3D'], ['viewGlobe', 'Globe']]) {
-            const it = el('button', 'pcMenuItem', label); it.type = 'button'; it.setAttribute('role', 'menuitem');
-            it.addEventListener('click', () => { clickId(id); menu.hidden = true; setTimeout(syncCtl, 50); });
-            menu.appendChild(it);
-        }
-        let lp = null, long = false;
-        ctl.cycle.addEventListener('pointerdown', () => { long = false; lp = setTimeout(() => { long = true; menu.hidden = false; }, 500); });
-        const endLp = () => clearTimeout(lp);
-        ctl.cycle.addEventListener('pointerup', endLp); ctl.cycle.addEventListener('pointerleave', endLp); ctl.cycle.addEventListener('pointercancel', endLp);
-        ctl.cycle.addEventListener('click', () => {
-            if (long) { long = false; return; }
-            if (!menu.hidden) { menu.hidden = true; return; }
-            const cur = typeof MLR != 'undefined' ? MLR.viewMode : '2d';
-            clickId({'2d': 'view3d', '3d': 'viewGlobe', 'globe': 'view2d'}[cur] || 'view2d'); setTimeout(syncCtl, 50);
-        });
-        ctl.cycle.addEventListener('contextmenu', (e) => { e.preventDefault(); menu.hidden = false; });
-        document.addEventListener('pointerdown', (e) => { if (!menu.hidden && !left.contains(e.target)) menu.hidden = true; });
-        left.append(ctl.cycle, menu);
-        // attribution: compact "i" that reveals the active provider's credits (they must stay reachable)
-        ctl.info = rbtn('pcInfo', 'Map credits', 'info'); ctl.info.setAttribute('aria-expanded', 'false'); ctl.info.id = 'phoneInfo';
-        ctl.info.addEventListener('click', () => { const on = !document.body.classList.contains('attrOpen'); document.body.classList.toggle('attrOpen', on); ctl.info.setAttribute('aria-expanded', on ? 'true' : 'false'); });
-        left.appendChild(ctl.info);
-        document.body.append(col, left);
-    }
+    // the floating cluster is the shared #controlStack (ui/control-stack.js); phones only add the settings-page drill on the layers button
+    function syncCtl() { if (typeof CONTROLS != 'undefined') { CONTROLS.syncFollow(); CONTROLS.syncView(); CONTROLS.BOTTOMINSET.update(); } }
 
     function build() {
         if (built) return;
@@ -212,7 +154,7 @@ const PHONE = (function () {
         wireDrag(handle); wireDrag(foot);
         body.addEventListener('pointerdown', (e) => { const hd = e.target.closest('.ibHead, .apHead'); if (hd && !e.target.closest('button, a')) dragStart({button: e.button, target: e.target, currentTarget: body, pointerId: e.pointerId, clientY: e.clientY}); });
         body.addEventListener('pointermove', (e) => { if (drag) dragMove(e); }); body.addEventListener('pointerup', (e) => { if (drag) dragEnd({pointerId: e.pointerId, currentTarget: body}); });
-        buildCtl();
+        const lb = document.getElementById('layers_button'); if (lb && !lb._phoneWired) { lb._phoneWired = true; lb.addEventListener('click', () => { settingsPage('page'); markTabs(); }); }
         document.body.classList.add('phone');
         const sync = () => {
             const b = document.body;
@@ -225,9 +167,7 @@ const PHONE = (function () {
         new MutationObserver(sync).observe(document.body, {attributes: true, attributeFilter: ['class']});
         window.addEventListener('resize', () => recompute(true));
         window.addEventListener('orientationchange', () => setTimeout(() => recompute(true), 200));
-        const t = setInterval(() => { if (typeof MLR == 'undefined' || !MLR.map) return; clearInterval(t); MLR.map.on('rotate', syncCtl); MLR.map.on('pitch', syncCtl); }, 300);
-        setInterval(syncCtl, 1500);
-        const sh = document.getElementById('RP'); if (sh) new MutationObserver(syncCtl).observe(sh, {attributes: true});
+        const t = setInterval(() => { if (typeof MLR == 'undefined' || !MLR.map) return; clearInterval(t); }, 300);
         sync(); setTimeout(() => recompute(true), 300);
     }
     function modeKey() { const b = document.body; return b.classList.contains('airportOpen') ? 'airport' : b.classList.contains('infoOpen') ? 'info' : (b.classList.contains('listOpen') ? 'list' : 'none'); }
@@ -235,9 +175,9 @@ const PHONE = (function () {
     function unbuild() {
         if (!built) return;
         for (const id of ['sidebar_container', 'selected_infoblock', 'airport_panel']) { const n = document.getElementById(id); if (n) document.getElementById('map_container') ? document.getElementById('map_container').appendChild(n) : document.body.appendChild(n); }
-        sheet.remove(); document.getElementById('phoneCtl').remove(); document.getElementById('phoneView').remove();
+        sheet.remove();
         document.body.classList.remove('phone', 'sheetHigh', 'attrOpen'); document.documentElement.style.removeProperty('--sheet-h');
-        built = false; tabs = {}; ctl = {};
+        built = false; tabs = {};
     }
     function apply() { if (mq.matches) build(); else unbuild(); }
 

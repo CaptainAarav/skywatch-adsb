@@ -14,18 +14,10 @@ body.panelsHidden #airport_panel { display: none !important; }
 .apName { color: var(--muted); margin-top: 4px; }
 #airport_panel .sk-x { margin-left: auto; }
 .apChips { display: flex; flex-wrap: wrap; gap: 6px; }
-.apChip { padding: 4px 10px; border-radius: 999px; background: var(--tile); border: 1px solid var(--line); font-size: 12px; }
-.apChip.k { color: var(--muted); }
 .apCard { background: rgba(255,255,255,.06); border: 1px solid var(--line); border-radius: 24px; padding: 14px; }
 .apCard h3 { margin: 0 0 10px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; display: flex; align-items: center; gap: 8px; }
 .apSpacer { flex: 1; }
 .apCard h3 .age { text-transform: none; letter-spacing: 0; font-weight: 500; font-size: 11px; }
-.apCat { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-weight: 700; font-size: 12px; letter-spacing: 0; text-transform: none; }
-.apCat i { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
-.apCat.ok { background: rgba(61,220,151,.14); color: var(--ok); }
-.apCat.mv { background: rgba(79,140,255,.16); color: #7fa8ff; }
-.apCat.bad { background: rgba(255,107,107,.16); color: var(--bad); }
-.apCat.lf { background: rgba(214,92,255,.16); color: #d98cff; }
 .apGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .apTile { background: var(--tile); border-radius: 16px; padding: 10px 12px; min-width: 0; }
 .apTile b { display: block; font-size: 15px; font-weight: 600; overflow-wrap: anywhere; }
@@ -51,8 +43,6 @@ body.panelsHidden #airport_panel { display: none !important; }
 .apRow { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 9px 0; border: 0; border-top: 1px solid var(--line); background: none; color: var(--text); font: inherit; font-size: 13px; text-align: left; cursor: pointer; }
 .apRow:first-child { border-top: 0; } .apRow:hover { background: rgba(255,255,255,.04); }
 .mut { color: var(--muted); }
-.apPill { display: inline-flex; gap: 6px; align-items: center; padding: 6px 12px; border-radius: 999px; background: var(--tile); border: 1px solid var(--line); font-size: 12.5px; margin: 2px 4px 2px 0; }
-.apPill .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
 .apSun { display: flex; align-items: center; gap: 10px; } .apSun svg { flex: 1; min-width: 0; }
 .apLink { display: flex; justify-content: space-between; gap: 8px; padding: 9px 0; border-top: 1px solid var(--line); color: var(--text); text-decoration: none; font-size: 13.5px; }
 .apLink:first-of-type { border-top: 0; } .apLink:hover { color: #fff; text-decoration: underline; }

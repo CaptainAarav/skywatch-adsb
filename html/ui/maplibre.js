@@ -304,8 +304,7 @@ MLR.install = function () {
     m.addLayer({id: 'tar-plane-glow', type: 'circle', source: 'tar-planes', filter: ['==', ['get', 'sel'], 1],
         paint: {'circle-radius': 20, 'circle-color': 'rgba(255,255,255,0.16)', 'circle-blur': 0.7, 'circle-stroke-color': 'rgba(255,255,255,0.35)', 'circle-stroke-width': 1,
             'circle-pitch-alignment': 'viewport', 'circle-pitch-scale': 'viewport'}});
-    m.addLayer({id: 'tar-planes', type: 'symbol', source: 'tar-planes',
-        layout: {
+    const planeLayout = {
             'icon-image': ['get', 'icon'],
             // smaller icons when zoomed far out (world / globe view), so thousands of aircraft stay readable
             // about 16 px at UK zoom, growing smoothly to about 28 px by zoom 12 (factors of the shape's own size)
@@ -315,21 +314,25 @@ MLR.install = function () {
             // aircraft always draw, but they take part in collision so the map's own labels give way to them
             'icon-allow-overlap': true, 'icon-ignore-placement': true,
             'symbol-sort-key': ['get', 'z'],
-        }});
+    };
+    m.addLayer({id: 'tar-planes', type: 'symbol', source: 'tar-planes', layout: planeLayout});
     // ONE label pill (ui/label-sprite.js): a baked sprite placed as an icon, right of the aircraft, vertically centred.
-    // Both layers sit BELOW the aircraft icons, so an icon is never covered by a label; the icons ignore placement, so a label is only
-    // ever hidden by another label. Priority (symbol-sort-key): selected, then lowest altitude, then closest to the screen centre.
+    // Both layers sit ABOVE the aircraft icons (a dense cluster must never draw an icon over label text); the icons ignore placement, so a
+    // label is only ever hidden by another label. Priority (symbol-sort-key): selected, then lowest altitude, then closest to the screen centre.
     // The 'top' layer (selected, followed, hovered) allows overlap, so those labels are always shown.
     const pillLayout = (extra) => Object.assign({
-        'icon-image': ['get', 'limg'], 'icon-anchor': 'left', 'icon-offset': ['get', 'loff'], 'icon-size': 1, 'icon-padding': 1,
+        'icon-image': ['get', 'limg'], 'icon-anchor': ['case', ['==', ['get', 'm'], 1], 'bottom', 'left'], 'icon-offset': ['get', 'loff'], 'icon-size': 1, 'icon-padding': 1,
         'icon-rotation-alignment': 'viewport', 'icon-pitch-alignment': 'viewport',
     }, extra);
     m.addLayer({id: 'tar-plane-labels', type: 'symbol', source: 'tar-planes', filter: ['all', ['==', ['get', 'top'], 0], ['!=', ['get', 'limg'], '']], minzoom: 5.5,
-        layout: pillLayout({'icon-allow-overlap': false, 'icon-ignore-placement': false, 'symbol-sort-key': ['get', 'lprio']})}, 'tar-planes');
+        layout: pillLayout({'icon-allow-overlap': false, 'icon-ignore-placement': false, 'symbol-sort-key': ['get', 'lprio']})});
     m.addLayer({id: 'tar-plane-labels-top', type: 'symbol', source: 'tar-planes', filter: ['all', ['==', ['get', 'top'], 1], ['!=', ['get', 'limg'], '']],
-        layout: pillLayout({'icon-allow-overlap': true, 'icon-ignore-placement': false})}, 'tar-planes');
+        layout: pillLayout({'icon-allow-overlap': true, 'icon-ignore-placement': false})});
+    // the selected aircraft's icon is drawn once more on top of everything (same layout as tar-planes), so it is never under a pill or a neighbour
+    m.addLayer({id: 'tar-planes-sel', type: 'symbol', source: 'tar-planes', filter: ['==', ['get', 'sel'], 1], layout: planeLayout});
 
     this.ready = true;
+    try { this.installModels && this.installModels(); } catch (e) { console.debug('3D models install:', e); }
     this.sync3DLayers();
     for (const l of layers.getArray()) if (l.get('kind') === 'builtin') this.syncBuiltin(l);
     this.dirty = {planes: true, trails: true, circles: true, location: true, outline: true, calc: true};
@@ -514,6 +517,7 @@ MLR.setView = function (mode, init) {
     }
     this.sync3DLayers();
     this.syncViewButtons();
+    this.syncModels && this.syncModels();
     try { loStore['viewMode'] = mode; loStore['view3d'] = this.is3D ? '1' : '0'; } catch (e) {}
     if (typeof checkMovement == 'function') setTimeout(checkMovement, 0);
 };
@@ -546,6 +550,7 @@ MLR.syncViewButtons = function () {
         b.classList.toggle('on', on);
         b.setAttribute('aria-pressed', on ? 'true' : 'false');
     }
+    window.dispatchEvent(new CustomEvent('tar:viewmode', {detail: this.viewMode}));
 };
 
 // buildings come from the style's own building layer; shown extruded only in 3D (and only if the style has them)
@@ -595,6 +600,7 @@ MLR.setPlane = function (p, fillColor, svgKey, labelSpec, outline) {
     if (!this.icons.has(svgKey)) this.icons.set(svgKey, {shape: p.shape, fill: fillColor, sw: p.strokeWidth, outline: outline || null});
     const sel = !!(p.selected && !SelectedAllPlanes);
     e.icon = svgKey;
+    e.fillColor = fillColor;
     e.rot = p.shape.noRotate ? 0 : p.rotation;
     e.scale = p.scale * (sel ? 1.3 : 1);   // the selected aircraft is a little larger
     e.labelSpec = labelSpec && labelSpec.lines && labelSpec.lines.length ? labelSpec : null;
@@ -675,6 +681,7 @@ MLR.flush = function () {
         const hov = (typeof HighlightedPlane != 'undefined') ? HighlightedPlane : null;
         const zf = this.iconZoomFactor(m.getZoom()), ctr = m.project(m.getCenter());
         const logosOn = airlineLogosOn();
+        if (this.modelsSelect) this.modelsSelect();
         for (const e of this.planes.values()) {
             const p = e.plane;
             if (!p.proj) continue;
@@ -682,6 +689,7 @@ MLR.flush = function () {
             if (!e.id) e.id = ++this.idSeq;
             const lonlat = this.drawnLL(e);
             const isTop = (hov && p === hov) || e.sel;
+            const md = this.modelSet && this.modelSet.get(p.icao);
             let limg = '', loff = [0, 0];
             if (e.labelSpec) {
                 const spec = Object.assign({}, e.labelSpec, {selected: e.sel});
@@ -694,12 +702,13 @@ MLR.flush = function () {
                 } else spec.logo = null;
                 limg = this.labelImage(spec);
                 loff = LABELS.pillOffset(e.w, e.scale, zf);
+                if (md) loff = [0, -(md.px / 2 + 6)];                 // model drawn: the pill sits centred above it
             }
             const sp = m.project(lonlat);
             const lprio = LABELS.sortKey({pinned: isTop, altFt: typeof p.altitude == 'number' ? p.altitude : null, distPx: Math.hypot(sp.x - ctr.x, sp.y - ctr.y)});
             if (!this.smoothActive() || e.rotDraw == null) e.rotDraw = e.rot;
             feats.push({type: 'Feature', geometry: {type: 'Point', coordinates: lonlat}, id: e.id,
-                properties: {hex: p.icao, icon: e.icon, rot: e.rotDraw, scale: e.scale, limg, loff, lprio, z: e.z, sel: e.sel ? 1 : 0, top: isTop ? 1 : 0}});
+                properties: {hex: p.icao, icon: e.icon, rot: e.rotDraw, scale: e.scale, limg, loff, lprio, z: e.z, sel: e.sel ? 1 : 0, top: isTop ? 1 : 0, m: md ? 1 : 0}});
             e.feat = true;
         }
         const src = m.getSource('tar-planes');
@@ -721,7 +730,7 @@ MLR.occluded = function (ll) {
 };
 
 MLR.closestPlane = function (px, radius) {
-    let best = null, bd = radius * radius;
+    let best = null, bd = Infinity;
     for (const e of this.planes.values()) {
         const p = e.plane;
         if (!p.proj) continue;
@@ -729,7 +738,9 @@ MLR.closestPlane = function (px, radius) {
         if (this.isGlobe() && this.occluded(ll)) continue;
         const q = this.map.project(ll);
         const dx = q.x - px[0], dy = q.y - px[1], d = dx * dx + dy * dy;
-        if (d < bd) { bd = d; best = p; }
+        const md = this.modelSet && this.modelSet.get(p.icao);          // a drawn 3D model is hit over its on-screen size
+        const r = md ? Math.max(radius, md.px * 0.6) : radius;
+        if (d < r * r && d < bd) { bd = d; best = p; }
     }
     return best;
 };

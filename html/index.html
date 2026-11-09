@@ -621,7 +621,6 @@
             <button type="button" class="tb" id="view_map" aria-pressed="true">Live map</button>
             <button type="button" class="tb" id="view_list" aria-pressed="false">Aircraft list</button>
             <button type="button" class="tb" id="view_graphs" aria-pressed="false" hidden>Graphs</button>
-            <button type="button" class="tb" id="RP" aria-pressed="false" title="Replay (Shift+Y)" onclick="showReplayBar();" style="display: none">Replay</button>
           </nav>
           <div id="searchWrap">
             <form id="search_form" class="glass" role="search" autocomplete="off">
@@ -644,17 +643,31 @@
           <button type="button" class="btn" id="H" aria-label="Home" title="Home: re-centre the map (H)" onclick="resetMap();">
             <svg aria-hidden="true" class="ico" width="17" height="17" viewBox="0 0 24 24"><path d="M12 3l7 17-7-4-7 4z"/></svg>
           </button>
-          <button type="button" class="btn" id="filters_button" aria-label="Filters" title="Filters" aria-expanded="false" aria-controls="filterPopover">
+          <button type="button" class="btn" id="follow_button" aria-label="Follow selected aircraft" title="Follow selected aircraft" aria-pressed="false" hidden>
+            <svg aria-hidden="true" class="ico" width="17" height="17" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+          </button>
+          <button type="button" class="btn desktopOnly" id="filters_button" aria-label="Filters" title="Filters" aria-expanded="false" aria-controls="filterPopover">
             <svg aria-hidden="true" class="ico" width="17" height="17" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>
           </button>
           <button type="button" class="btn" id="layers_button" aria-label="Base map and layers" title="Base map and layers">
             <svg aria-hidden="true" class="ico" width="17" height="17" viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5zM3 13l9 5 9-5"/></svg>
           </button>
-          <button type="button" class="btn phoneOnly" id="phone_list_button" aria-label="Aircraft list" title="Aircraft list" aria-pressed="false">
-            <svg aria-hidden="true" class="ico" width="17" height="17" viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg>
+          <div class="ctlViewWrap">
+            <button type="button" class="btn ctlView" id="view_cycle" aria-haspopup="menu" aria-expanded="false" aria-label="Map view: 2D. Tap to change, press and hold for the list" title="Map view (tap to change, hold for the list)"><span class="ctlViewLabel">2D</span><svg aria-hidden="true" class="ico ctlChevron" width="10" height="10" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>
+            <div id="viewMenu" class="glass shell" role="menu" aria-label="Map view" hidden>
+              <button type="button" class="on" id="view2d" role="menuitem" aria-pressed="true">2D</button>
+              <button type="button" class="off" id="view3d" role="menuitem" aria-pressed="false" title="Tilted view with 3D buildings (drag with the right mouse button to rotate)">3D</button>
+              <button type="button" class="off" id="viewGlobe" role="menuitem" aria-pressed="false" title="Globe view: flattens into the map as you zoom in">Globe</button>
+            </div>
+          </div>
+          <button type="button" class="btn" id="RP" aria-pressed="false" aria-label="Replay history" title="Replay (Shift+Y)" onclick="showReplayBar();" style="display: none">
+            <svg aria-hidden="true" class="ico" width="17" height="17" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5M12 8v5l3 2"/></svg>
           </button>
-          <button type="button" class="btn" id="hide_panels_button" aria-label="Hide sidebar" title="Hide sidebar" aria-pressed="false">
+          <button type="button" class="btn desktopOnly" id="hide_panels_button" aria-label="Hide sidebar" title="Hide sidebar" aria-pressed="false">
             <svg aria-hidden="true" class="ico" width="17" height="17" viewBox="0 0 24 24"><path d="M3 12s4-7 9-7 9 7 9 7-4 7-9 7-9-7-9-7zM4 4l16 16"/></svg>
+          </button>
+          <button type="button" class="btn phoneOnly" id="attr_button" aria-label="Map credits" title="Map credits" aria-expanded="false">
+            <svg aria-hidden="true" class="ico" width="17" height="17" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.01"/></svg>
           </button>
         </div>
 
@@ -670,12 +683,6 @@
           <button type="button" id="U" class="tb inActiveButton" title="Only military and interesting aircraft (U)" onclick="toggleMilitary();">Military <kbd>U</kbd></button>
           <button type="button" id="B" class="tb inActiveButton" title="Dim the map (B)" onclick="toggles['MapDim'].toggle();">Dim <kbd>B</kbd></button>
           <button type="button" id="R" class="tb inActiveButton" title="Follow a random aircraft (R)" onclick="followRandomPlane();">Random <kbd>R</kbd></button>
-        </div>
-
-        <div id="dimSwitch" class="glass shell" role="group" aria-label="Map view">
-          <button type="button" class="on" id="view2d" aria-pressed="true">2D</button>
-          <button type="button" class="off" id="view3d" aria-pressed="false" title="Tilted view with 3D buildings (drag with the right mouse button to rotate)">3D</button>
-          <button type="button" class="off" id="viewGlobe" aria-pressed="false" title="Globe view: flattens into the map as you zoom in">Globe</button>
         </div>
 
         <div id="filterPopover" class="glass shell popover" role="dialog" aria-label="Filters" hidden>
@@ -916,12 +923,15 @@
     <script src="ui/maplibre-layers.js"></script>
     <script src="ui/label-sprite.js"></script>
     <script src="ui/maplibre.js"></script>
+    <script src="ui/models-calc.js"></script>
     <script src="ui/airport-tiers.js"></script>
+    <script src="ui/airport-pin-style.js"></script>
     <script src="ui/maplibre-airports.js"></script>
     <script src="ui/maplibre-airport-pins.js"></script>
     <script src="ui/maplibre-route.js"></script>
     <script src="ui/maplibre-motion.js"></script>
     <script src="ui/maplibre-lift.js"></script>
+    <script src="ui/maplibre-models.js"></script>
     <script src="ui/maplibre-radar.js"></script>
     <script src="ui/aircraft-color.js"></script>
     <script src="ui/maplibre-land.js"></script>
@@ -939,6 +949,7 @@
     <script src="ui/palette.js"></script>
     <script src="ui/sheet-snap.js"></script>
     <script src="ui/flight-status.js"></script>
+    <script src="ui/control-stack.js"></script>
     <script src="ui/phone.js"></script>
     <script src="ui/alerts-calc.js"></script>
     <script src="ui/alerts.js"></script>

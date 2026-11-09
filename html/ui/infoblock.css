@@ -7,7 +7,6 @@
 #selected_infoblock { color: var(--text); font-size: 13px; }
 #selected_infoblock .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
 #selected_infoblock .lbl { font-size: 12px; color: var(--muted); }
-#selected_infoblock .chip { height: 28px; padding: 0 10px; border-radius: 14px; font-size: 12px; color: var(--text2); background: var(--tile); border: 0; text-decoration: none; }
 #selected_infoblock a.chip:hover, #selected_infoblock button.chip:hover { color: var(--text); background: rgba(255,255,255,.1); }
 #selected_infoblock .chip.mono { font-family: var(--font-mono); }
 

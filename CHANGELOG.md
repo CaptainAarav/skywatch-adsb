@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- 3D aircraft models in the 3D view (three.js custom layer, one InstancedMesh per archetype, nearest 300, lazy-loaded, disposed on leaving 3D; Settings toggle, on by default). 2D keeps the stock icons.
+- Airport marker restored to the flag-in-a-circle with a flight-category ring and the code beneath, keeping the per-tier zoom thresholds and the Fewer / Normal / More setting.
+- One floating control stack on every screen (desktop column, phone cluster above the open bottom surface via `--bottom-inset`); the view-mode button shows the current mode.
+- Phone fixes: the cluster no longer covers the replay panel; label pills draw above aircraft icons; one chip and one close control; the search warning is a toast.
+- The planespotters photo lookup fails quietly and is not retried for the session.
 - Own base map style on OpenFreeMap tiles with VersaTiles fallback and a banner; CARTO opt-in; no OpenStreetMap raster tiles.
 - Shared components (toast, banner, dialog, empty state, tooltip) and a connection banner.
 - Airport night look, weather rings on airport pins with hover card, command palette (Ctrl/Cmd-K).

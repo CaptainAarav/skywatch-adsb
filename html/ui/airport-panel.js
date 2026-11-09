@@ -155,7 +155,7 @@ const AIRPT = (function () {
         return cl.slice(0, 3).map(l => (typeof l[1] == 'number' ? l[0] + ' ' + fmt(l[1]) + ' ft' : String(l[0]))).join(' · ');
     }
     function catChip(cat) {
-        const c = h('span', 'apCat ' + (CAT_CLASS[cat] || ''));
+        const c = h('span', 'chip cat ' + (CAT_CLASS[cat] ? cat : ''));
         c.appendChild(h('i'));
         c.appendChild(document.createTextNode(cat));
         return c;
@@ -380,7 +380,7 @@ const AIRPT = (function () {
         fs.sort((a, b) => (FREQ_ORDER.indexOf(a[0]) + 100) % 100 - (FREQ_ORDER.indexOf(b[0]) + 100) % 100 || a[1] - b[1]);
         const c = card('Frequencies'), box = h('div');
         for (const f of fs.slice(0, 10)) {
-            const p = h('span', 'apPill'), d = h('span', 'dot');
+            const p = h('span', 'chip'), d = h('span', 'dot');
             d.style.background = FREQ_COL[f[0]] || '#8d8d8d';
             add(p, d, document.createTextNode(f[0] + ' '), h('b', 'mono', f[1].toFixed(3)));
             box.appendChild(p);
@@ -447,15 +447,15 @@ const AIRPT = (function () {
         const cn = st.db.countries[r.country], rn = st.db.regions[r.region];
         const flag = r.country && /^[A-Z]{2}$/.test(r.country) ? String.fromCodePoint(...[...r.country].map(c => 0x1F1E6 + c.charCodeAt(0) - 65)) + ' ' : '';
         for (const [txt, k] of [[r.iata, ''], [TYPE_NAME[r.type], ''], [cn ? flag + cn : null, ''], [typeof r.elev == 'number' ? 'Elevation ' + fmt(r.elev) + ' ft' : null, 'k'], [r.city || rn, 'k']])
-            if (txt) chips.appendChild(h('span', 'apChip ' + k, txt));
-        chips.appendChild(h('span', 'apChip k', hhmm(new Date()) + ' UTC'));   // no timezone data is bundled, so UTC rather than a guessed local time
+            if (txt) chips.appendChild(h('span', 'chip ' + k, txt));
+        chips.appendChild(h('span', 'chip k', hhmm(new Date()) + ' UTC'));   // no timezone data is bundled, so UTC rather than a guessed local time
         const wx = wxFor(r.icao);
         const m = wx && wx.m ? wx.m : null;
         if (m && airportWeather) {
             const cat0 = A.metarCategory(m), bits = [];
             if (cat0) bits.push(cat0);
             if (typeof m.wspd === 'number') bits.push(m.wspd === 0 ? 'calm' : (typeof m.wdir === 'number' ? pad3(m.wdir) + '\u00b0 ' : '') + m.wspd + ' kt');
-            if (bits.length) chips.appendChild(h('span', 'apChip', bits.join(' \u00b7 ')));
+            if (bits.length) chips.appendChild(h('span', 'chip', bits.join(' \u00b7 ')));
         }
         body.appendChild(chips);
 

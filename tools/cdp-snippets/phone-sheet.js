@@ -50,7 +50,7 @@
   check('peek: status sentence shown', vis($('#ib_status')) && $('#ib_status').textContent.length > 3, $('#ib_status').textContent);
   check('peek: no status pill beside speed', !$('#ib_speed_status') && !$('.ibStatus'));
   notes.peekHeight = Math.round(sheet.h); notes.statusText = $('#ib_status').textContent;
-  check('floating buttons ride above the sheet', (() => { const c = $('#phoneCtl'); return c && R(c).b <= sheet.y + 1; })());
+  check('floating buttons ride above the sheet', (() => { const c = $('#controlStack'); return c && R(c).b <= sheet.y + 1; })());
 
   // ---- half ----
   await snapTo(1);
@@ -84,7 +84,7 @@
 
   // ---- no horizontal overflow, tap targets ----
   check('no horizontal overflow', document.documentElement.scrollWidth <= VW && sb.scrollWidth <= sb.clientWidth + 1, [document.documentElement.scrollWidth, sb.scrollWidth, sb.clientWidth]);
-  const small = $$('#phoneSheet button, #phoneCtl button, #phoneView button').filter(vis).filter(b => { const r = R(b); return r.w < 43.5 || r.h < 43.5; }).map(b => (b.id || b.className) + ':' + Math.round(R(b).w) + 'x' + Math.round(R(b).h));
+  const small = $$('#phoneSheet button, #controlStack button').filter(vis).filter(b => { const r = R(b); return r.w < 43.5 || r.h < 43.5; }).map(b => (b.id || b.className) + ':' + Math.round(R(b).w) + 'x' + Math.round(R(b).h));
   check('tap targets >=44px', small.length === 0, small);
 
   // ---- close, back, swipe ----
@@ -107,7 +107,7 @@
   const surfacesDef = [
     ['settings', () => $('.psTab:nth-child(4)').click(), () => document.body.classList.contains('settingsOpen'), '#settings_close'],
     ['alerts', () => $('.psTab:nth-child(3)').click(), () => document.body.classList.contains('settingsOpen'), '#settings_close'],
-    ['layers', () => $('.pcBtn[aria-label="Base map and layers"]').click(), () => document.body.classList.contains('settingsOpen'), '#settings_close'],
+    ['layers', () => $('#layers_button').click(), () => document.body.classList.contains('settingsOpen'), '#settings_close'],
     ['about', () => { openSettings('about', null); PHONE.settingsPage('page'); }, () => document.body.classList.contains('settingsOpen'), '#settings_close'],
     ['airport', () => AIRPT.searchAndOpen('EGGW'), () => document.body.classList.contains('airportOpen'), '#airport_panel .sk-x'],
     ['graphs', () => graphsToggle(true), () => !$('#graphsOverlay').hidden, '#graphsOverlay .sk-x'],

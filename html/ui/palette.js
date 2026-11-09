@@ -79,7 +79,7 @@ const PALETTE = (function () {
             row.id = 'palopt' + idx; row.setAttribute('role', 'option'); row.setAttribute('aria-selected', idx === sel ? 'true' : 'false');
             row.appendChild(el('span', 'palTitle', it.title));
             if (it.sub) row.appendChild(el('span', 'palSub', it.sub));
-            if (it.chip) row.appendChild(el('span', 'palChip ' + it.chip, it.chip));
+            if (it.chip) row.appendChild(el('span', 'chip ' + it.chip, it.chip));
             row.addEventListener('mousemove', () => { if (sel !== idx) { sel = idx; mark(); } });
             row.addEventListener('click', () => choose(idx));
             list.appendChild(row);

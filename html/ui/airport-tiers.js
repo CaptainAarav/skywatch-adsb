@@ -68,8 +68,9 @@ const AIRTIERS = (function () {
     // the code shown on the map: IATA, else ICAO
     function code(row) { return row[1] || row[0]; }
     // label at low zoom is the code only; "IATA  Name" when there is room (a name is added by the name layer)
-    function nameText(row) { return code(row) + '  ' + String(row[3] || '').replace(/\s+(International|Intl\.?)?\s*Airport$/i, '').replace(/\s+Airport$/i, '').trim(); }
+    function shortName(row) { return String(row[3] || '').replace(/\s+(International|Intl\.?)?\s*Airport$/i, '').replace(/\s+Airport$/i, '').trim(); }
+    function nameText(row) { return code(row) + '  ' + shortName(row); }
     function densityFrom(v) { return v === 'fewer' || v === 'more' ? v : 'normal'; }
-    return {TIERS, ORDER, DENSITY, PHONE_SHIFT, FT_PER_800M, isPaved, longestFt, tierOf, minZooms, tierZooms, sortKey, code, nameText, densityFrom};
+    return {TIERS, ORDER, DENSITY, PHONE_SHIFT, FT_PER_800M, isPaved, longestFt, tierOf, minZooms, tierZooms, sortKey, code, shortName, nameText, densityFrom};
 })();
 if (typeof module !== 'undefined') module.exports = AIRTIERS;

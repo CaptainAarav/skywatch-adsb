@@ -52,7 +52,6 @@
     outline: none;
 }
 .histBar .histDate:hover, .histBar .histDate:focus-visible { color: var(--text); background: rgba(255,255,255,.1); }
-.histBar .chip { height: 28px; padding: 0 10px; border-radius: 14px; font-size: 12px; color: var(--text2); background: var(--tile); white-space: nowrap; }
 
 .histPlay .icoPlay, .histPlay.playing .icoPause { display: inline; }
 .histPlay .icoPause, .histPlay.playing .icoPlay { display: none; }
@@ -148,9 +147,7 @@ body.traceOpen #toolbar { display: none !important; }
 body.replayOpen #altitude_chart.ol-control,
 body.traceOpen #altitude_chart.ol-control { bottom: calc(34px + var(--hb-h, 140px)); }
 body.replayOpen .ol-zoom.ol-control,
-body.traceOpen .ol-zoom.ol-control,
-body.replayOpen #dimSwitch,
-body.traceOpen #dimSwitch { bottom: calc(42px + var(--hb-h, 140px)); }
+body.traceOpen .ol-zoom.ol-control { bottom: calc(42px + var(--hb-h, 140px)); }
 body.replayOpen.traceOpen #replayBar { display: none !important; }
 
 @media (max-width: 768px), (pointer: coarse) {

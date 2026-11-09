@@ -19,7 +19,6 @@ function shellSync() {
     setPressed('#view_list', listShown);
     setPressed('#view_map', !listShown && !body.classList.contains('replayOpen'));
     setPressed('#RP', body.classList.contains('replayOpen'));
-    setPressed('#phone_list_button', listShown);
     // History (per-aircraft trace) only exists with traces / globe history
     const hist = document.getElementById('history_action');
     if (hist) {
@@ -319,45 +318,9 @@ function initShell() {
         }).observe(bar, {attributes: true, attributeFilter: ['style', 'class']});
     }
 
-    jQuery('#phone_list_button').on('click', function () {
-        const open = !(toggles['sidebar_visible'].state && !document.body.classList.contains('infoOpen'));
-        if (open && (SelectedPlane || SelPlanes.length)) deselectAllPlanes();
-        toggles['sidebar_visible'].toggle(open);
-        shellSync();
-    });
-
     initList();
-    // initPhoneLayout(): replaced by ui/phone.js (bottom sheet)
     initGraphsLink();
     shellSync();
-}
-
-// Phone (mockup 05): the layers button sits beside the search field and the
-// settings button joins the small control stack. Moved in the DOM so the
-// tab order follows the visual order; moved back on wider screens.
-function initPhoneLayout() {
-    const mq = window.matchMedia('(max-width: 768px), (pointer: coarse)');
-    const layers = document.getElementById('layers_button');
-    const cog = document.getElementById('settingsCog');
-    const stack = document.getElementById('controlStack');
-    const search = document.getElementById('searchWrap');
-    const topbar = document.getElementById('topbar');
-    const hide = document.getElementById('hide_panels_button');
-    const apply = () => {
-        if (mq.matches) {
-            search.after(layers);
-            layers.classList.add('glass');
-            stack.insertBefore(cog, hide);
-            cog.classList.remove('glass');
-        } else {
-            stack.insertBefore(layers, document.getElementById('phone_list_button'));
-            layers.classList.remove('glass');
-            topbar.appendChild(cog);
-            cog.classList.add('glass');
-        }
-    };
-    mq.addEventListener('change', apply);
-    apply();
 }
 
 jQuery(initShell);

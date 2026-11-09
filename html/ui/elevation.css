@@ -27,10 +27,10 @@
     }
     #selected_infoblock .ibDetailsBtn:hover { background: var(--bg-action-hover); }
     #selected_infoblock .ibScroll, #airport_panel .apScroll { gap: 12px; }
-    .infoblock_row:not(.hidden), #columnsPopover #sortableColumns li, .apTile, .apEnd, .apPill { background: var(--bg-row); }
+    .infoblock_row:not(.hidden), #columnsPopover #sortableColumns li, .apTile, .apEnd { background: var(--bg-row); }
 
     /* the panel's own chips and small buttons */
-    #selected_infoblock .chip, #selected_infoblock .ibBtn, .apChip { background: var(--bg-segment); border: 1px solid var(--line); }
+    #selected_infoblock .ibBtn { background: var(--bg-segment); border: 1px solid var(--line); }
     #selected_infoblock .ibBtn:hover { background: var(--bg-control-hover); }
 
     /* action bar (Follow, 3D, Replay, Isolate) */
@@ -72,7 +72,7 @@
     #search_form svg { color: var(--icon); }
 
     /* ---------- control column, gear, zoom, 2D/3D/Globe ---------- */
-    #controlStack, .ol-zoom.ol-control, #dimSwitch, #toolbar, #settingsCog {
+    #controlStack, .ol-zoom.ol-control, #toolbar, #settingsCog {
         background: var(--bg-control) !important;
         border: 1px solid var(--border-ctl);
         box-shadow: none;
@@ -88,10 +88,7 @@
     #north_up .northS { fill: var(--compass-n); fill-opacity: .45; }
     #north_up .northRing { stroke: var(--icon); }
     .ol-zoom.ol-control { padding: 4px; background: var(--bg-segment) !important; }
-    #dimSwitch { background: var(--bg-segment) !important; }
-    #dimSwitch .on, #dimSwitch button.on { background: var(--bg-segment-on); color: var(--text); }
-    #dimSwitch button { color: var(--text-2); }
-    #dimSwitch button:hover { color: var(--text); }
+    #viewMenu { background: var(--bg-segment) !important; }
 
     /* toggles in the bottom toolbar and filter chips: active = soft segment, white text */
     .tb.on, .tb.activeButton, .chip.on, .chip.activeButton { background: var(--bg-segment-on); color: var(--text); border-color: var(--line); }

@@ -3,8 +3,8 @@
 // html/airport-db/airports.json (built once when the database has loaded); one symbol layer per tier carries the dot and a label whose text
 // steps with the zoom (nothing, then the code, then "CODE  Name"). A tier's zoom range comes from AIRTIERS, so changing the density or the
 // phone/desktop shift only restates 5 layers' zoom range and text expression. Nothing is rebuilt per frame.
-// Appearance: a 4 px grey dot; a ring in the flight-category colour while a METAR under 3 hours old is known; labels 11 px #cfcfcf with a
-// 1 px dark halo. The layers sit under the aircraft layers, so a dot or a label never covers an aircraft icon or a callsign pill.
+// Appearance: the restored marker (ui/airport-pin-style.js): a flag in a circle, the ring in the flight-category colour while a METAR under 3 hours
+// old is known (neutral grey otherwise), the code below. The layers sit under the aircraft layers.
 (function () {
     const KEY = 'airportLabels';
     const MQ = '(max-width: 768px), (pointer: coarse)';
@@ -16,15 +16,32 @@
     MLR.airportTierLayers = function () { return AIRTIERS.ORDER.map(LAYER); };
     MLR.airportOpts = function () { return {density, phone: !!(window.matchMedia && window.matchMedia(MQ).matches)}; };
 
-    // round dot sprite: grey dot, optionally with a flight-category ring (drawn at 2x)
-    function dotImage(ring) {
-        const s = ring ? 12 : 8, d = 2, c = document.createElement('canvas');
-        c.width = c.height = s * d;
-        const x = c.getContext('2d');
-        x.scale(d, d);
-        if (ring) { x.beginPath(); x.arc(s / 2, s / 2, 4.5, 0, Math.PI * 2); x.lineWidth = 1.5; x.strokeStyle = ring; x.stroke(); }
-        x.beginPath(); x.arc(s / 2, s / 2, 2, 0, Math.PI * 2); x.fillStyle = '#8f8f8f'; x.fill();
-        return x.getImageData(0, 0, c.width, c.height);
+    // flag-in-circle sprites are made on demand from the bundled SVGs (html/flags/3x2) when a layer first asks for an id (styleimagemissing)
+    function installFlagHook(m) {
+        if (MLR._flagHook) return;
+        MLR._flagHook = true;
+        const S = AIRPIN.SPRITE;
+        m.on('styleimagemissing', (e) => {
+            const mm = AIRPIN.ID_RE.exec(e.id);
+            if (!mm || m.hasImage(e.id)) return;
+            m.addImage(e.id, {width: 1, height: 1, data: new Uint8Array(4)});
+            const ring = mm[2] === 'N' ? S.neutralRing : AIRPIN.CAT_COLOR[mm[2]];
+            const img = new Image();
+            const draw = (withFlag) => {
+                const W = S.size, H = S.size, c = document.createElement('canvas'); c.width = W; c.height = H;
+                const x = c.getContext('2d');
+                x.save(); x.beginPath(); x.arc(W / 2, H / 2, W / 2 - S.clipInset, 0, Math.PI * 2);
+                x.fillStyle = S.fill; x.fill(); x.clip();
+                if (withFlag) { const r = img.width / img.height, w = H * r; x.drawImage(img, (W - w) / 2, 0, w, H); }
+                x.restore();
+                x.beginPath(); x.arc(W / 2, H / 2, W / 2 - S.ringInset, 0, Math.PI * 2); x.lineWidth = S.ringWidth; x.strokeStyle = ring; x.stroke();
+                try { m.removeImage(e.id); m.addImage(e.id, x.getImageData(0, 0, W, H), {pixelRatio: S.pixelRatio}); } catch (er) { /* style changing */ }
+            };
+            if (mm[1] === 'XX') { draw(false); return; }          // no country: a neutral circle
+            img.onload = () => draw(true);
+            img.onerror = () => draw(false);                       // country without a flag asset: neutral circle, never a broken icon
+            img.src = 'flags/3x2/' + mm[1] + '.svg';
+        });
     }
 
     // zoom range and label steps of every tier layer, from the density and the device
@@ -37,8 +54,7 @@
             if (!m.getLayer(id)) continue;
             const z = AIRTIERS.tierZooms(t, o);
             m.setLayerZoomRange(id, z.dot, 24);
-            const field = z.code >= z.name ? ['step', ['zoom'], '', z.name, ['get', 'n']] : ['step', ['zoom'], '', z.code, ['get', 'c'], z.name, ['get', 'n']];
-            m.setLayoutProperty(id, 'text-field', field);
+            m.setLayoutProperty(id, 'text-field', AIRPIN.textField(z.dot, z.name));
         }
     };
     MLR.setAirportDensity = function (v) {
@@ -51,35 +67,28 @@
         const m = this.map;
         if (!m || m.getSource('tar-apts')) return;
         const gs = (typeof globalScale == 'number' && globalScale) || 1;
-        m.addImage('ap-dot', dotImage(null), {pixelRatio: 2});
-        for (const k of Object.keys(AIRPORT_CAT_COLOR)) m.addImage('ap-dot-' + k, dotImage(AIRPORT_CAT_COLOR[k]), {pixelRatio: 2});
+        installFlagHook(m);
         m.addSource('tar-apts', {type: 'geojson', data: {type: 'FeatureCollection', features: []}});
         const before = ['tar-plane-glow', 'tar-plane-labels', 'tar-planes'].find(id => m.getLayer(id));
         for (const t of AIRTIERS.ORDER) {
             m.addLayer({id: LAYER(t), type: 'symbol', source: 'tar-apts', filter: ['==', ['get', 't'], t],
-                layout: {
-                    'icon-image': 'ap-dot', 'icon-allow-overlap': false, 'icon-padding': 1,
-                    'text-field': '', 'text-font': ML_FONT, 'text-size': 11 * gs, 'text-anchor': 'left', 'text-justify': 'left',
-                    'text-offset': [0.85, 0], 'text-optional': true, 'text-allow-overlap': false, 'text-padding': 2, 'text-max-width': 14,
-                    'symbol-sort-key': ['get', 's'],
-                },
-                paint: {'text-color': '#cfcfcf', 'text-halo-color': 'rgba(0,0,0,0.6)', 'text-halo-width': 1}}, before);
+                layout: AIRPIN.layout(ML_FONT, gs, AIRPIN.textField(0, 99)), paint: Object.assign({}, AIRPIN.PAINT)}, before);
         }
         this.applyAirportTiers();
-        this._pinWxKey = null;
         this.applyPinWeather();
         this.installPinCard();
         if (typeof AIRPT != 'undefined' && AIRPT.load) AIRPT.load().then(db => { if (db) MLR.setAirportPinData(db); });
         if (!this._tierMq && window.matchMedia) { this._tierMq = window.matchMedia(MQ); const f = () => MLR.applyAirportTiers(); this._tierMq.addEventListener ? this._tierMq.addEventListener('change', f) : this._tierMq.addListener(f); }
     };
 
-    // one feature per airport; properties are what the layers need (t tier, c code, n "CODE  Name", s importance, icao)
+    // one feature per airport; properties are what the layers need (t tier, c code, nm short name, s importance, icao, f flag country, w category or N)
     MLR.airportFeatures = function (db) {
         const feats = new Array(db.a.length);
         for (let i = 0; i < db.a.length; i++) {
             const r = db.a[i];
             feats[i] = {type: 'Feature', id: i, geometry: {type: 'Point', coordinates: [r[5], r[4]]},
-                properties: {t: AIRTIERS.tierOf(r), c: AIRTIERS.code(r), n: AIRTIERS.nameText(r), s: AIRTIERS.sortKey(r), icao: r[0]}};
+                properties: {t: AIRTIERS.tierOf(r), c: AIRTIERS.code(r), nm: AIRTIERS.shortName(r), s: AIRTIERS.sortKey(r), icao: r[0],
+                    f: /^[A-Z]{2}$/.test(r[7] || '') ? r[7] : 'XX', w: (this._pinCats && AIRPIN.CAT_COLOR[this._pinCats[r[0]]]) ? this._pinCats[r[0]] : 'N'}};
         }
         return feats;
     };
@@ -87,28 +96,28 @@
         const src = this.map && this.map.getSource('tar-apts');
         if (!src) return;
         this._aptDb = db;
+        this._aptIdx = new Map(db.a.map((r, i) => [r[0], i]));
         src.setData({type: 'FeatureCollection', features: this.airportFeatures(db)});
     };
 
-    // ----- weather rings on the dots -----
-    // One data-driven expression per wx.json refresh (never per frame): the dot image is 'ap-dot' plus a category suffix looked up by ICAO.
+    // ----- weather rings -----
+    // The ring colour is the feature's 'w' property. It changes ONLY when wx.json is refreshed: the airports whose category changed are updated in
+    // place (updateData, a few features) - never per frame, never a per-feature paint expression over the whole source.
     MLR.applyPinWeather = function () {
-        const m = this.map;
-        if (!m || !m.getLayer(LAYER('large'))) return;
+        const m = this.map, src = m && m.getSource('tar-apts');
+        if (!src) return;
         const on = typeof airportPinWx == 'undefined' || airportPinWx;
         const cats = on && typeof AIRPT != 'undefined' && typeof AIRPT.weatherCats == 'function' ? AIRPT.weatherCats() : {};
-        const keys = Object.keys(cats).sort();
-        const key = keys.map(k => k + cats[k]).join(',');
-        if (key === this._pinWxKey) return;
-        this._pinWxKey = key;
-        let expr = 'ap-dot';
-        if (keys.length) {
-            const match = ['match', ['get', 'icao']];
-            for (const k of keys) match.push(k, '-' + cats[k]);
-            match.push('');
-            expr = ['concat', 'ap-dot', match];
+        const prev = this._pinCats || {};
+        this._pinCats = cats;
+        if (!this._aptIdx) return;                       // the database is not loaded yet: the first setData carries the categories
+        const update = [];
+        for (const k of new Set(Object.keys(prev).concat(Object.keys(cats)))) {
+            if (prev[k] === cats[k]) continue;
+            const id = this._aptIdx.get(k);
+            if (id !== undefined) update.push({id, addOrUpdateProperties: [{key: 'w', value: AIRPIN.CAT_COLOR[cats[k]] ? cats[k] : 'N'}]});
         }
-        for (const id of this.airportTierLayers()) if (m.getLayer(id)) m.setLayoutProperty(id, 'icon-image', expr);
+        if (update.length) src.updateData({update});
     };
 
     // Hover (long-press on touch) card on a dot: code, name and, when a METAR is known, the weather. textContent only.

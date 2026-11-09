@@ -20,7 +20,8 @@
   const UK = [-2.0, 53.0];
   await at(5, UK);
   let r5 = rendered();
-  const want5 = ['EGLL', 'EGKK', 'EGGW', 'EGSS', 'EGCC', 'EGPH', 'EGPF'];
+  // the restored marker is a 24 px flag circle with 6 px padding and allow-overlap false, so close neighbours of a more important airport yield to it
+  const want5 = ['EGLL', 'EGCC', 'EGPH'];
   for (const i of want5) check('zoom 5 renders ' + i, r5.has(i), {present: byIcao.has(i)});
   numbers.z5 = {count: r5.size, tiers: tiersOf(r5), missing: want5.filter(i => !r5.has(i))};
 
@@ -35,7 +36,7 @@
   const r7 = rendered();
   const med7 = ['EGGD', 'EGNX', 'EGTC'].filter(i => byIcao.has(i));
   numbers.z7 = {count: r7.size, tiers: tiersOf(r7), candidates: med7.map(i => [i, AIRTIERS.tierOf(db.a[byIcao.get(i)]), r7.has(i)])};
-  check('zoom 7 renders a nearby airport of the next tier (EGGD, EGNX or EGTC)', med7.some(i => r7.has(i)), numbers.z7.candidates);
+  check('zoom 7 renders at least one nearby airport (EGGD, EGNX or EGTC)', med7.some(i => r7.has(i)), numbers.z7.candidates);
 
   await at(9.5, [-0.76, 52.04]);
   const r95 = rendered();
@@ -62,6 +63,33 @@
   const order = m.getStyle().layers.map(l => l.id);
   const lastApt = Math.max(...L.map(id => order.indexOf(id))), firstAc = Math.min(...['tar-plane-glow', 'tar-plane-labels', 'tar-plane-labels-top', 'tar-planes'].filter(id => order.includes(id)).map(id => order.indexOf(id)));
   check('airport dots and labels draw below the aircraft icons and pills', lastApt < firstAc, {lastApt, firstAc});
+
+  // ---- marker: flag in a circle, ring = category or neutral, code below, name only at the detail zoom ----
+  await at(5, UK);
+  const lay = m.getLayer('tar-apt-large');
+  check('marker layout: icon-size 1, text-anchor top, offset [0,1], optional text, padding 6/3', m.getLayoutProperty('tar-apt-large', 'icon-size') === 1 && m.getLayoutProperty('tar-apt-large', 'text-anchor') === 'top' && JSON.stringify(m.getLayoutProperty('tar-apt-large', 'text-offset')) === '[0,1]' && m.getLayoutProperty('tar-apt-large', 'text-optional') === true && m.getLayoutProperty('tar-apt-large', 'icon-padding') === 6 && m.getLayoutProperty('tar-apt-large', 'text-padding') === 3);
+  const ids = new Set(); for (const f of m.queryRenderedFeatures({layers: L})) ids.add('flagc-' + f.properties.f + '-' + f.properties.w);
+  await w(800);
+  const have = [...ids].filter(i => m.hasImage(i));
+  check('every rendered marker has its flag-in-circle sprite', have.length === ids.size, {missing: [...ids].filter(i => !m.hasImage(i)).slice(0, 5)});
+  const px = (id) => { const im = m.style.getImage(id) || m.style.imageManager.images[id]; const d = im && (im.data.data || im.data); return im && {w: im.data.width, h: im.data.height, d}; };
+  const gb = px('flagc-GB-N') || px([...ids][0]);
+  if (gb) {
+    const at2 = (x, y) => { const i = (y * gb.w + x) * 4; return [gb.d[i], gb.d[i + 1], gb.d[i + 2], gb.d[i + 3]]; };
+    const mid = gb.w / 2;
+    check('sprite is 48x48 (24 css px at pixelRatio 2)', gb.w === 48 && gb.h === 48, [gb.w, gb.h]);
+    check('sprite corner is transparent (circle, not square)', at2(1, 1)[3] === 0);
+    check('sprite centre is opaque (flag or dark fill)', at2(mid, mid)[3] === 255);
+    check('neutral ring is grey, R=G=B', gb && (() => { const r = at2(mid, 1); return r[3] > 200 && r[0] === r[1] && r[1] === r[2]; })());
+  } else check('sprite readable', false);
+  MLR._pinCats = {}; const tgt = 'EGLL'; AIRPT.weatherCats = (() => { const o = AIRPT.weatherCats; return () => Object.assign({}, o(), {EGLL: 'IFR'}); })(); MLR.applyPinWeather(); await w(1500); await at(5, UK); await w(1500);
+  const ifr = m.queryRenderedFeatures({layers: L}).find(f => f.properties.icao === tgt);
+  check('weather update changes only the w property of the airport (IFR)', !!ifr && ifr.properties.w === 'IFR', ifr && ifr.properties.w);
+  await w(800); const ip = px('flagc-GB-IFR');
+  check('IFR ring sprite uses the IFR colour', !!ip && (() => { const i = (1 * ip.w + ip.w / 2) * 4; return Math.abs(ip.d[i] - 255) < 3 && Math.abs(ip.d[i + 1] - 107) < 3 && Math.abs(ip.d[i + 2] - 107) < 3; })(), ip && [ip.d[(ip.w / 2 + ip.w) * 4], ip.d[(ip.w / 2 + ip.w) * 4 + 1]]);
+  // label text: code below the detail zoom, name only from it
+  const tf = m.getLayoutProperty('tar-apt-large', 'text-field');
+  check('label is the code until the detail zoom, then code + name', JSON.stringify(tf).indexOf('"step"') > -1 && JSON.stringify(tf).indexOf('nm') > -1 && Math.abs(tf[3] - 8) < 0.001, tf && tf[3]);
 
   // ---- 2. per-frame cost (software GL) ----
   async function frame(zoom) {

@@ -11,12 +11,15 @@ ui/map-adapter.js
 ui/maplibre-layers.js
 ui/label-sprite.js
 ui/maplibre.js
+ui/models-calc.js
 ui/airport-tiers.js
+ui/airport-pin-style.js
 ui/maplibre-airports.js
 ui/maplibre-airport-pins.js
 ui/maplibre-route.js
 ui/maplibre-motion.js
 ui/maplibre-lift.js
+ui/maplibre-models.js
 ui/maplibre-radar.js
 ui/aircraft-color.js
 ui/maplibre-land.js
@@ -56,6 +59,7 @@ ui/palette-rank.js
 ui/palette.js
 ui/sheet-snap.js
 ui/flight-status.js
+ui/control-stack.js
 ui/phone.js
 ui/alerts.css
 ui/alerts-calc.js

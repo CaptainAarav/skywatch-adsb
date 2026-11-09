@@ -2947,6 +2947,16 @@ function displayPhoto() {
     adjustInfoBlock();
 }
 
+// Photo lookup failure memory. The browser itself logs the blocked request once (that line cannot be suppressed from script);
+// after the first failure nothing is requested again for 30 minutes, tracked in sessionStorage so reloads do not retry either.
+function photoProviderBlocked(now) {
+    try { const t = +sessionStorage.getItem('photoFailedAt'); return !!t && now - t < 30 * 60 * 1000; } catch (e) { return false; }
+}
+function photoProviderFailed(status) {
+    try { sessionStorage.setItem('photoFailedAt', String(Date.now())); } catch (e) { /* storage blocked */ }
+    console.debug('photo lookup unavailable (' + (status || 'network/CORS') + '); using the silhouette for this session');
+}
+
 function refreshPhoto(selected) {
     if (!showPictures || selected.icao[0] == '~' || (!planespottingAPI && !planespottersAPI)) {
         displaySil();
@@ -2974,6 +2984,12 @@ function refreshPhoto(selected) {
 
 
     const ts = new Date().getTime();
+    // a failed photo provider is remembered for the session: no retry on every selection, silhouette shown instead
+    if (photoProviderBlocked(ts) || (selected.psAPIresponse && selected.psAPIresponse.failed)) {
+        selected.psAPIresponse = {'photos': [], failed: true};
+        displayPhoto();
+        return;
+    }
     if (param == selected.psAPIparam) {
         if (selected.psAPIresponse) {
             displayPhoto();
@@ -3004,8 +3020,9 @@ function refreshPhoto(selected) {
             }
         });
         // Skywatch ADS-B: without this the panel kept showing "Loading image..." forever
-        req.fail(function() {
-            this.plane.psAPIresponse = {'photos': []};
+        req.fail(function(xhr) {
+            photoProviderFailed(xhr && xhr.status);
+            this.plane.psAPIresponse = {'photos': [], failed: true};
             if (SelectedPlane == this.plane) {
                 displayPhoto();
             }

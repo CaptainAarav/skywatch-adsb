@@ -1,0 +1,10 @@
+{
+  "restoredFromCommit": "8577ca7",
+  "file": "html/ui/maplibre-airports.js (airport pin block and the styleimagemissing flag hook)",
+  "layout": {"icon-size": 1, "icon-allow-overlap": false, "text-size": "11*gs", "text-anchor": "top", "text-offset": [0, 1.0], "text-optional": true, "text-max-width": 12, "icon-padding": 6, "text-padding": 3},
+  "paint": {"text-color": "#8f8f8f", "text-halo-color": "rgba(0,0,0,0.6)", "text-halo-width": 0.8},
+  "sprite": {"size": 48, "pixelRatio": 2, "fill": "#1c1c1c", "clipInset": 2, "ringInset": 2.5, "ringWidth": 5},
+  "ringColours": {"VFR": "#3DDC97", "MVFR": "#F5B94A", "IFR": "#FF6B6B", "LIFR": "#B07BFF"},
+  "nameLine": {"codeScale": 0.95, "nameScale": 0.85, "nameColor": "#aaaaaa", "separator": "\n"},
+  "imagePrefix": "flagc-"
+}

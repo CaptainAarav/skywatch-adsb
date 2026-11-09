@@ -14,11 +14,11 @@ body.phone { height: 100dvh; overflow: hidden; touch-action: manipulation; }
 body.phone #map_container, body.phone #map_canvas { overscroll-behavior: none; touch-action: none; }
 
 /* old chrome is replaced by the sheet and the round controls */
-body.phone #topbar, body.phone #controlStack, body.phone #toolbar, body.phone #dimSwitch,
+body.phone #topbar, body.phone #toolbar,
 body.phone #wordmark, body.phone #viewPill, body.phone #altitude_chart, body.phone .ol-zoom { display: none !important; }
 body.phone .ol-attribution.ol-control { display: none !important; }
 body.phone.attrOpen .ol-attribution.ol-control {
-    display: block !important; position: fixed !important; left: 16px !important; right: 16px !important; bottom: calc(var(--sheet-h, 140px) + 76px) !important;
+    display: block !important; position: fixed !important; left: 16px !important; right: 16px !important; bottom: calc(var(--bottom-inset, 140px) + 12px) !important;
     max-width: none; z-index: 46; background: var(--bg-sheet); border: 1px solid var(--line); border-radius: 16px; padding: 10px 14px;
     font: 12px/1.5 Inter, system-ui, sans-serif; color: var(--text-2);
 }
@@ -34,7 +34,7 @@ body.phone.attrOpen .ol-attribution.ol-control a { color: var(--text); }
 .psSheet.psAnim { transition: height .25s cubic-bezier(.2,.8,.2,1); }
 .psHandle { position: relative; z-index: 2; flex: none; height: 44px; margin-bottom: -16px; align-items: flex-start; padding-top: 8px !important; width: 100%; background: none; border: 0; padding: 0; cursor: grab; touch-action: none; display: flex; justify-content: center; color: var(--handle); }
 .psGrip { width: 40px; height: 5px; border-radius: 3px; background: var(--handle); }
-.psHandle:focus-visible, .psSearch:focus-visible, .psTab:focus-visible, .pcBtn:focus-visible, .pcMenuItem:focus-visible, .setBack:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.psHandle:focus-visible, .psSearch:focus-visible, .psTab:focus-visible, .setBack:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 .psBody { flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
 .psFoot { flex: none; display: flex; flex-direction: column; gap: 8px; padding: 4px 12px calc(env(safe-area-inset-bottom, 0px) + 8px); background: var(--bg-sheet); touch-action: none; }
 .psSearch { display: flex; align-items: center; gap: 10px; width: 100%; height: 48px; padding: 0 16px; border-radius: 24px; background: var(--bg-control); border: 1px solid var(--line); color: var(--text-2); font: 500 15px Inter, system-ui, sans-serif; text-align: left; cursor: pointer; }
@@ -93,29 +93,28 @@ body.phone[data-snap="peek"] #selected_infoblock .ibInstGrid > .ibCard { padding
 body.phone[data-snap="peek"] #selected_infoblock .ibScroll { padding-bottom: 8px; }
 body.phone[data-snap="peek"] #phoneSheetBody { overflow: hidden; }
 
-/* ---------- round glass controls ---------- */
-.pcCol, .pcLeft { position: fixed; z-index: 44; display: flex; gap: 10px; transition: opacity .2s; }
-.pcCol { right: calc(env(safe-area-inset-right, 0px) + 12px); bottom: calc(var(--sheet-h, 140px) + 12px); flex-direction: column-reverse; }
-.pcLeft { left: calc(env(safe-area-inset-left, 0px) + 12px); bottom: calc(var(--sheet-h, 140px) + 12px); align-items: flex-end; }
-body:not(.phone) .pcCol, body:not(.phone) .pcLeft { display: none; }
-body.phone.sheetHigh .pcCol, body.phone.sheetHigh .pcLeft { opacity: 0; pointer-events: none; }
-body.phone.settingsOpen .pcCol, body.phone.settingsOpen .pcLeft, body.phone.settingsOpen .psSheet { visibility: hidden; }
-.pcBtn { display: inline-flex; align-items: center; justify-content: center; gap: 4px; width: 48px; height: 48px; padding: 0; border-radius: 50%; border: 1px solid var(--line); background: var(--bg-control); color: var(--text); cursor: pointer; -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); }
-.pcBtn[hidden] { display: none; }
-.pcBtn.on { background: #fff; color: #000; }
-.pcCompass svg { transition: transform .15s linear; }
-.pcCycle { width: auto; min-width: 48px; padding: 0 14px; border-radius: 24px; }
-.pcCycleLabel { font: 600 13px Inter, system-ui, sans-serif; }
-.pcMenu { position: absolute; left: 0; bottom: 58px; display: flex; flex-direction: column; gap: 4px; padding: 6px; background: var(--bg-sheet); border: 1px solid var(--line); border-radius: 18px; }
-.pcMenu[hidden] { display: none; }
-.pcMenuItem { min-height: 44px; min-width: 96px; padding: 0 16px; border: 0; border-radius: 14px; background: none; color: var(--text); font: 600 14px Inter, system-ui, sans-serif; text-align: left; cursor: pointer; }
-.pcMenuItem:hover { background: var(--bg-control-hover); }
-.pcLeft .pcInfo { margin-left: 0; }
-@media (prefers-reduced-motion: reduce) { .psSheet.psAnim, .pcCol, .pcLeft, .pcCompass svg { transition: none; } }
+/* ---------- the shared control stack as the floating cluster ---------- */
+/* ONE component (#controlStack, ui/control-stack.js). On phones it floats above whatever bottom surface is open: --bottom-inset is written by
+   BOTTOMINSET.update() whenever the sheet, replay panel or history bar changes height. Wider than one column of buttons: wraps leftwards. */
+body.phone #controlStack {
+    position: fixed; z-index: 44; top: auto; left: auto; width: auto; height: auto; padding: 0; border: 0; border-radius: 0; box-shadow: none; background: none !important;
+    right: calc(env(safe-area-inset-right, 0px) + 12px); bottom: calc(var(--bottom-inset, 140px) + 12px);
+    flex-direction: column-reverse; flex-wrap: wrap-reverse; align-content: flex-end; gap: 10px;
+    max-height: calc(100dvh - var(--bottom-inset, 140px) - 24px - env(safe-area-inset-top, 0px)); transition: opacity .2s;
+    -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+body.phone #controlStack .btn { flex: none; width: 48px; height: 48px; border: 1px solid var(--line); background: var(--bg-control) !important; color: var(--text); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
+body.phone #controlStack .btn[hidden] { display: none; }
+body.phone #controlStack .btn.on { background: #fff !important; color: #000; }
+body.phone .desktopOnly { display: none !important; }
+body.phone #north_up:not(.on) { display: none; }
+body.phone.sheetHigh #controlStack { opacity: 0; pointer-events: none; }
+body.phone.settingsOpen #controlStack, body.phone.settingsOpen .psSheet { visibility: hidden; }
+@media (prefers-reduced-motion: reduce) { .psSheet.psAnim, body.phone #controlStack { transition: none; } }
 
 /* map-side overlays that would collide with the sheet */
-body.phone #filterPopover { left: 8px; right: 8px; top: auto; bottom: calc(var(--sheet-h, 140px) + 8px); width: auto; max-height: 60dvh; z-index: 47; }
-body.phone .rdBar { bottom: calc(var(--sheet-h, 140px) + 76px); }
+body.phone #filterPopover { left: 8px; right: 8px; top: auto; bottom: calc(var(--bottom-inset, 140px) + 8px); width: auto; max-height: 60dvh; z-index: 47; }
+body.phone .rdBar { bottom: calc(var(--bottom-inset, 140px) + 12px); }
 
 /* ---------- settings: grouped list that drills into pages ---------- */
 body.phone #settings_infoblock {

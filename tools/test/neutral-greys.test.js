@@ -9,7 +9,7 @@ const SKIP_DIR = /(^|\/)(libs|flags|fonts|geojson|airport-db|images|db|aircraft_
 const SKIP_FILE = /(^html\/(jquery|jquery-ui|ol|markers|flags|layers|early|script|planeObject|formatter|registrations|dbloader|uat|replay|filters|footer|configure|config|libs)[^/]*\.js$)|\.min\.|_[0-9a-f]{8,}\./;
 const ALLOW_HEX = new Set(['#0b0b0d']);                                  // icon outline from the brief
 // status colours, flight categories, source colours: intentionally coloured, allowed at any alpha
-const ALLOW_BASE = [[61,220,151],[245,185,74],[255,107,107],[95,182,217],[201,160,240],[255,0,0],[255,69,58],[255,59,48],[255,149,0],[255,204,0],[52,199,89],[10,132,255],[191,90,242],[255,45,85],[48,209,88],[100,210,255],[255,159,10],[255,214,10]];
+const ALLOW_BASE = [[176,123,255],[61,220,151],[245,185,74],[255,107,107],[95,182,217],[201,160,240],[255,0,0],[255,69,58],[255,59,48],[255,149,0],[255,204,0],[52,199,89],[10,132,255],[191,90,242],[255,45,85],[48,209,88],[100,210,255],[255,159,10],[255,214,10]];
 const BASES = [0x0d, 0x1e];                                              // composite over panel and card grey
 const exts = /\.(css|js|html|json)$/;
 const files = [];

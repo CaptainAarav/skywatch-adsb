@@ -116,7 +116,18 @@ body.infoOpen.infoWide:not(.panelsHidden) { --edge: calc(clamp(680px, 62vw, 1040
     color: var(--text2);
     cursor: pointer;
     white-space: nowrap;
+    text-decoration: none;
 }
+span.chip { cursor: default; }
+.chip.k { color: var(--muted); }
+.chip.cat { font-weight: 700; height: 24px; }
+.chip.cat i { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+/* flight categories (the same colours as the airport marker rings) */
+.chip.VFR { color: #3DDC97; background: rgba(61,220,151,.14); border-color: rgba(61,220,151,.35); }
+.chip.MVFR { color: #F5B94A; background: rgba(245,185,74,.14); border-color: rgba(245,185,74,.35); }
+.chip.IFR { color: #FF6B6B; background: rgba(255,107,107,.16); border-color: rgba(255,107,107,.35); }
+.chip.LIFR { color: #B07BFF; background: rgba(176,123,255,.16); border-color: rgba(176,123,255,.35); }
+.chip .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; flex: none; }
 button.chip:hover { color: var(--text); background: rgba(255,255,255,.12); }
 .chip.on, .chip.activeButton { background: var(--accent-bg); color: var(--accent); border-color: rgba(255,255,255,.35); }
 
@@ -299,28 +310,18 @@ button.chip:hover { color: var(--text); background: rgba(255,255,255,.12); }
 }
 .ol-zoom.ol-control button:hover { background: var(--tile) !important; }
 
-#dimSwitch {
-    position: absolute;
-    right: 84px;
-    bottom: 44px;
-    display: flex;
-    padding: 3px;
-    border-radius: 22px;
-    font-size: 13px;
-    font-weight: 600;
-    z-index: 20;
-    user-select: none;
-}
-#dimSwitch span, #dimSwitch button {
-    padding: 9px 14px;
-    border-radius: 19px;
-    line-height: 16px;
-}
-#dimSwitch .on { background: var(--accent-bg); color: var(--accent); }
-#dimSwitch button { border: 0; background: none; color: var(--muted); font: inherit; cursor: pointer; }
-#dimSwitch button:hover { color: var(--text); }
-#dimSwitch .on, #dimSwitch button.on { background: var(--accent-bg); color: var(--accent); }
-#dimSwitch.noRotate3d { display: none; }
+/* view mode: the stack button shows the current mode; the menu lists the three (also reachable by id for hotkeys and the palette) */
+.ctlViewWrap { position: relative; display: flex; }
+#controlStack .ctlView { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; font: 600 11px/1 var(--font-ui, Inter, system-ui, sans-serif); }
+.ctlViewLabel { letter-spacing: 0; }
+#controlStack .ctlView .ctlChevron { width: 8px; height: 8px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; opacity: .7; }
+#viewMenu { position: absolute; right: calc(100% + 10px); bottom: 0; display: flex; flex-direction: column; gap: 2px; padding: 6px; border-radius: 18px; z-index: 30; min-width: 104px; }
+#viewMenu[hidden] { display: none; }
+#viewMenu button { min-height: 40px; padding: 0 16px; border: 0; border-radius: 12px; background: none; color: var(--muted); font: 600 14px var(--font-ui, Inter, system-ui, sans-serif); text-align: left; cursor: pointer; }
+#viewMenu button:hover { color: var(--text); background: var(--bg-control-hover, rgba(255,255,255,.08)); }
+#viewMenu button.on { background: var(--bg-segment-on); color: var(--text); }
+#viewMenu button:focus-visible, #controlStack .btn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.desktopOnly { display: inline-flex; }
 
 .ol-attribution.ol-control {
     position: absolute;
@@ -445,7 +446,6 @@ body.buttonsHidden #searchWrap,
 body.buttonsHidden #settingsCog,
 body.buttonsHidden #controlStack,
 body.buttonsHidden #toolbar,
-body.buttonsHidden #dimSwitch,
 body.buttonsHidden .ol-zoom,
 body.buttonsHidden .popover { display: none !important; }
 
@@ -556,7 +556,7 @@ body.infoOpen #selected_infoblock { display: flex; }
 /* ---------- Elevation (map < panel < tile) ---------- */
 /* every floating control sits on a visible glass surface and lifts off the map with a soft shadow */
 .glass, #sidebar_container, #selected_infoblock, #highlighted_infoblock, #altitude_chart,
-#viewPill, #toolbar, #controlStack, #dimSwitch, .ol-zoom.ol-control, #search_form, #settingsBtn {
+#viewPill, #toolbar, #controlStack, #viewMenu, .ol-zoom.ol-control, #search_form, #settingsBtn {
     border: 1px solid var(--line);
     box-shadow: var(--shadow);
 }
@@ -573,11 +573,9 @@ body.infoOpen #selected_infoblock { display: flex; }
     backdrop-filter: none;
     text-shadow: 0 0 4px rgba(0,0,0,.95), 0 0 10px rgba(0,0,0,.85), 0 1px 2px #000;
 }
-/* the zoom bar and 2D/3D/Globe switch hug their contents (no blank space on the right) */
+/* the zoom bar hugs their contents (no blank space on the right) */
 .ol-zoom.ol-control { box-sizing: border-box; width: fit-content; padding: 3px; }
 .ol-zoom.ol-control button { display: block; }
-#dimSwitch { box-sizing: border-box; width: fit-content; gap: 2px; right: 84px; }
-#dimSwitch button { margin: 0; }
 
 /* north button: compass needle rotates with the map bearing; lit when the view is rotated or tilted */
 #north_up .northIco { overflow: visible; }

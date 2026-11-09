@@ -623,6 +623,35 @@ Desktop and phone render the same components; only layout and density change (CS
 | `html/script.js`, `index.html`, `shell.css`, `elevation.css`, `phone.css` | `#search_warning` banner and its jQuery show/hide: `showSearchWarning` now calls `SKYUI.toast` | ~25 |
 | `html/ui/palette.css`, `palette.js` | `.palEmpty` replaced by `.sk-empty` | 1 |
 
-Not merged, on purpose: the airport panel's `.apChip` / `.apPill` (small status chips with their own density) and the phone `.pcBtn` map buttons versus the desktop control stack (different placement and touch size; same actions and handlers).
+Phase 38 additions (same rule, one implementation each):
+
+| File | What was merged or deleted |
+| --- | --- |
+| `html/index.html`, `html/ui/control-stack.js` (new), `html/ui/shell.css`, `html/ui/phone.css` | The phone map buttons (`.pcBtn`, `#phoneCtl`, `#phoneView`, `#phoneInfo`, the `.pcCycle` view button and its menu) and the desktop `#controlStack` are ONE component, `#controlStack`, with the same element ids and handlers: a glass column at the top right on desktop; on phones the same element becomes the floating cluster, anchored above the open bottom surface by `--bottom-inset` (written only by `CONTROLS.BOTTOMINSET.update()`). The old `#dimSwitch` 2D/3D/Globe pill is the `#viewMenu` of the single `#view_cycle` button, which shows the current mode on every screen. The `#RP` history button moved from the view pill into the stack. `phone_list_button` and `initPhoneLayout()` (dead since the bottom sheet) are gone. |
+| `html/ui/phone.js` | `buildCtl()`, `syncCtl` bodies, `clickId`, `rbtn` and seven icon paths: replaced by the shared stack. |
+| `html/ui/shell.css`, `airport.css`, `airport-panel.js`, `palette.css`, `palette.js` | Chips: `.apChip`, `.apPill`, `.apCat` and `.palChip` are the one `.chip` (with `.k` muted, `.cat` and the flight-category variants `.VFR .MVFR .IFR .LIFR`). Side effect: the airport panel's MVFR and LIFR chips now use the same colours as the airport marker rings (they were blue and a different violet). |
+| `html/ui/maplibre-airport-pins.js`, `airport-pin-style.js` | The tier dot sprites `ap-dot*` are gone; the restored flag-in-circle marker is the only airport marker. |
+
+Still present in more than one form, and why (see the list in the final report of Phase 38): the airport panel's `.apCard`/`.apTile` against the aircraft panel's `.ibCard`/`.ibTile` (different density and container-query behaviour; merging them changes both panels' look), the radar bar's `.rdBtn` (a one-off white pill that is a candidate for `.btn`), and `.apBtn`/`.ibBtn` action buttons.
 
 `tools/test/one-component-set.test.js` fails if any retired class, function or file name above reappears, or if a `data-component` set is duplicated in `index.html`.
+
+## Layout-collision test (phone and desktop)
+
+`tools/cdp-snippets/layout-collision.js` drives one browser page through every UI state (default, list at each snap, aircraft selected at each snap, airport open at each snap, replay open, Settings root and every drill-in page, search focused) and asserts from DOM bounding boxes only: no two visible floating controls overlap; no floating control covers the content box of any text node or interactive element inside an open panel; no label or button is clipped (`scrollWidth > clientWidth` under `overflow: hidden`); and for the replay panel: the LIVE pill reads LIVE and is unclipped, every speed option is inside the panel, the time text is present and the cluster sits above the panel. Run it at 320x640, 360x640, 375x667, 390x844, 412x915 and 430x932 in phone emulation and once at 1440x900:
+
+```
+grep -v '^\s*//' tools/cdp-snippets/layout-collision.js > /tmp/lc.js   # the harness flattens newlines, so line comments must go
+# evaluate /tmp/lc.js with Runtime.evaluate (awaitPromise) in a page loaded from the deployed site; it returns {viewport, states, failures}
+```
+
+## 3D aircraft models
+
+`html/ui/maplibre-models.js` is a MapLibre custom layer (`type: 'custom'`, `renderingMode: '3d'`) that draws with three.js (core only, `html/libs/three-0.170.0.module.min.js`, MIT). It is lazy-loaded with `import()` the first time 3D is entered with the setting on, and removed (with every geometry, material and the renderer disposed) when leaving 3D or switching the setting off. Any failure (no WebGL2, load error, shader error) falls back to icons with one `console.debug` line.
+
+- **Pure maths** is in `html/ui/models-calc.js` (unit tests: `tools/test/models-calc.test.js`): type to archetype, real dimensions, scale, crossfade, orientation, pitch and roll from data, smoothing, nearest-N.
+- **Add an archetype:** add its name to `MODELS.ARCHETYPES` and a default `[span, length]` to `MODELS.DEFAULT`; add types to `MODELS.TYPE_TABLE` (`CODE: [archetype, wingspan m, length m]`); add a branch or a parameter row to `buildGeometry()` in `maplibre-models.js` (geometry is authored in unit span x unit length, +Y nose, +X right wing, +Z up; parts are primitives flagged body 0 or trim 1); extend the tests. Unknown types fall back to engine data (`typeDescription` such as `L2J`, `wtc`, ADS-B category) and then to `generic`.
+- **Scale:** `scaleFactor = max(real length, 28 px x metres per pixel) / real length`. A model is never under 28 px on screen and is true size once the real length exceeds that. Icons and models crossfade over half a zoom level from zoom 9. Only the nearest 300 aircraft to the screen centre are models (`MLR.modelsSelect`, run from `flush`); the others keep their icons.
+- **Position:** the same `MLR.drawnLL(entry)` as the icon (interpolated position plus the 3D altitude lift), on the terrain surface when terrain is on (`map.queryTerrainElevation`, already exaggerated); the shadow is a flat ellipse under the real ground position. Positions are made relative to the map centre in double precision and the centre is folded into the projection matrix, because float32 world coordinates jitter by metres at high zoom.
+- **Orientation:** ENU frame (x east, y north, z up); yaw is true heading else track, clockwise from north; pitch from vertical rate and ground speed (+-15 degrees); roll from the reported roll else the turn rate (+-35 degrees, right wing down positive). MapLibre's world is the ENU frame with y mirrored (north is -y), so the instance matrix is `T * diag(1,-1,1) * Rz(-yaw) * Rx(pitch) * Ry(roll) * S`; the tests pin every sign.
+- **Hit-testing and labels:** the icon is kept as the invisible hit target (`icon-opacity` 0 for model-drawn aircraft) and `MLR.closestPlane` widens its radius to the model's on-screen size, so click, hover, selection, follow and trails are unchanged; the label pill moves to sit above the model.

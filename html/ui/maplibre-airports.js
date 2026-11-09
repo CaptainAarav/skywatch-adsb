@@ -53,7 +53,6 @@ const AIRPORT = {
 };
 
 // ICAO prefix to ISO country (for the flag in the airport chip). Two letters first, then the first letter.
-const AIRPORT_CAT_COLOR = {VFR: '#3DDC97', MVFR: '#F5B94A', IFR: '#FF6B6B', LIFR: '#B07BFF'};
 // small rounded rectangle used behind stand refs and the airport chip (9-slice, stretched by icon-text-fit)
 function airportChipImage(fill, line) {
     const s = 32, c = document.createElement('canvas');

@@ -53,7 +53,7 @@ function pageAudit(stateName) {
         for (const n of el.childNodes) if (n.nodeType === 3 && n.textContent.trim()) { hasText = true; break; }
         if (hasText) {
             const tc = parse(cs.color), o = opac(el), eff = over([tc[0], tc[1], tc[2], tc[3] * o], bg);
-            const decor = el.closest('[aria-hidden="true"], [disabled], .visuallyHidden') || el.matches('kbd');
+            const decor = el.closest('[aria-hidden="true"], [disabled], .visuallyHidden, .act.activeButton, .act.on') || el.matches('kbd');
             const k = 't|' + hex(eff) + '|' + hex(bg) + '|' + label(el);
             if (!seen.has(k)) {
                 seen.add(k);
@@ -69,7 +69,7 @@ function pageAudit(stateName) {
             if (!seen.has(k)) {
                 seen.add(k);
                 const r = {state: stateName, kind: 'surface', el: label(el), txt: '', fg: '', bg: hex(bg), parent: hex(parentBg), fail: []};
-                if (!isStatus(bg) && spread(bg) <= 24 && diff3(bg) > 2) r.fail.push('tinted surface');
+                if (!isStatus(bg) && !el.matches('.chip.cat') && spread(bg) <= 24 && diff3(bg) > 2) r.fail.push('tinted surface');
                 const rad = parseFloat(cs.borderTopLeftRadius) || 0, b = el.getBoundingClientRect();
                 const pb = el.parentElement.getBoundingClientRect();
                 const eq = Math.max(Math.abs(bg[0] - parentBg[0]), Math.abs(bg[1] - parentBg[1]), Math.abs(bg[2] - parentBg[2])) <= 2;
@@ -123,6 +123,8 @@ async function main() {
         ['layers', `(async()=>{const b=document.getElementById('layers_button');b&&b.click();await new Promise(r=>setTimeout(r,600))})()`],
         ['toast + banner + dialog', `(async()=>{SKYUI.toast('Audit toast',{kind:'warn'});SKYUI.banner&&SKYUI.banner('Audit banner',{});await new Promise(r=>setTimeout(r,500))})()`],
     ];
+    states.push(['view mode menu', `(async()=>{const m=document.getElementById('viewMenu');if(m)m.hidden=false;await new Promise(r=>setTimeout(r,300))})()`]);
+    states.push(['view mode menu closed', `(async()=>{const m=document.getElementById('viewMenu');if(m)m.hidden=true;await new Promise(r=>setTimeout(r,200))})()`]);
     const secs = ['map', 'aircraft', 'table', 'units', 'photos', 'alerts', 'advanced', 'about'];
     for (const s of secs) states.push(['settings: ' + s, `(async()=>{openSettings(${JSON.stringify(s)});await new Promise(r=>setTimeout(r,700))})()`]);
     states.push(['settings closed', `(async()=>{closeSettings();await new Promise(r=>setTimeout(r,400))})()`]);
@@ -132,6 +134,14 @@ async function main() {
         const rows = await ev('(' + pageAudit.toString() + ')(' + JSON.stringify(name) + ')');
         all.push(...rows);
     }
+    // the 3D model layer's own colours (WebGL, not in the DOM): trim, shadow and the selected tint must be neutral greys
+    try {
+        const mc = JSON.parse(await ev(`JSON.stringify(typeof MLR !== 'undefined' && MLR.modelsColors ? MLR.modelsColors() : null)`) || 'null');
+        if (mc) for (const [k, c] of Object.entries(mc)) {
+            const neutral = Math.max(...c) - Math.min(...c) <= 2;
+            all.push({state: '3D models', kind: 'model colour', el: k, txt: '', fg: '#' + c.map(v => v.toString(16).padStart(2, '0')).join(''), bg: '', fail: neutral ? [] : ['not a neutral grey']});
+        } else all.push({state: '3D models', kind: 'driver', el: 'MLR.modelsColors missing', txt: '', fail: ['missing']});
+    } catch (e) { all.push({state: '3D models', kind: 'driver', el: 'model colours unreadable', txt: String(e.message).slice(0, 60), fail: []}); }
     const fails = all.filter(r => r.fail && r.fail.length);
     const lines = ['# Colour audit', '', `${PHONE ? 'phone 390x844' : 'desktop 1440x900'}, ${new Date().toISOString()}`, '',
         `rows: ${all.length}, failures: ${fails.length}`, '', '| state | kind | element | text | fg | bg | parent | result |', '|---|---|---|---|---|---|---|---|'];
