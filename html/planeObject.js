@@ -809,7 +809,15 @@ function altitudeColor(altitude) {
 PlaneObject.prototype.updateIcon = function() {
 
     let fillColor = hslToRgb(this.getMarkerColor());
-    let svgKey  = fillColor + '!' + this.shape.name + '!' + this.strokeWidth;
+    // Skywatch ADS-B: aircraft are white by default (Settings > Aircraft colour); tracks stay altitude-coloured.
+    // Stale positions are dimmed as stock does; an emergency squawk keeps its status colour.
+    const whiteIcons = typeof aircraftColor == 'undefined' || aircraftColor !== 'altitude';
+    if (whiteIcons) {
+        const stale = (this.dataSource == 'adsc' && this.seen_pos > 20 * 60) || (!globeIndex && this.dataSource != 'adsc' && this.seen_pos > 15);
+        const emerg = atcStyle && (this.squawk == '7700' || this.squawk == '7600' || this.squawk == '7500');
+        if (!emerg) fillColor = stale ? '#8f8f8f' : '#ffffff';
+    }
+    let svgKey  = (whiteIcons ? 'w' : '') + fillColor + '!' + this.shape.name + '!' + this.strokeWidth;
     let labelText = null;
 
     // Skywatch ADS-B: the selected aircraft always shows its label pill
@@ -903,7 +911,7 @@ PlaneObject.prototype.updateIcon = function() {
             labelText += callsign;
         }
     }
-        MLR.setPlane(this, fillColor, svgKey, labelText);
+        MLR.setPlane(this, fillColor, svgKey, labelText, whiteIcons ? '#0b0b0d' : null);
     return;
 };
 

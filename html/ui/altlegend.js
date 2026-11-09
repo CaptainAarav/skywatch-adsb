@@ -35,5 +35,6 @@ function renderAltitudeLegend(container) {
         '<div class="altLegendHead"><span>Altitude</span><span class="altLegendUnit">' + unit + '</span></div>'
         + '<div class="altLegendBar" role="img" aria-label="Altitude colour scale, 0 to ' + label(max) + ' ' + unit
         + ' and above" style="background:linear-gradient(90deg,' + stops.join(',') + ')"></div>'
-        + '<div class="altLegendTicks" aria-hidden="true">' + tickHtml + '</div>';
+        + '<div class="altLegendTicks" aria-hidden="true">' + tickHtml + '</div>'
+        + '<div class="altLegendNote">Colours track lines' + ((typeof aircraftColor != 'undefined' && aircraftColor === 'altitude') ? ' and aircraft icons.' : '. Aircraft are white (Settings &gt; Aircraft colour).') + '</div>';
 }

@@ -269,9 +269,14 @@ MLR.install = function () {
     m.addLayer({id: 'tar-location', type: 'circle', source: 'tar-location',
         paint: {'circle-radius': 5, 'circle-color': '#fff', 'circle-stroke-color': '#000', 'circle-stroke-width': 2}});
 
+    this.addLabelPillImage();
     // aircraft: icons, then labels in their own layers so label collision has its own priority.
     try { this.installLift && this.installLift(); } catch (e) { console.warn('lift layers:', e); }
     try { this.installSelection && this.installSelection(undefined); } catch (e) { console.warn('selection layers:', e); }
+    // soft white glow ring behind the selected aircraft (everything is white now, so selection must stand out)
+    m.addLayer({id: 'tar-plane-glow', type: 'circle', source: 'tar-planes', filter: ['==', ['get', 'sel'], 1],
+        paint: {'circle-radius': 20, 'circle-color': 'rgba(255,255,255,0.16)', 'circle-blur': 0.7, 'circle-stroke-color': 'rgba(255,255,255,0.35)', 'circle-stroke-width': 1,
+            'circle-pitch-alignment': 'viewport', 'circle-pitch-scale': 'viewport'}});
     m.addLayer({id: 'tar-planes', type: 'symbol', source: 'tar-planes',
         layout: {
             'icon-image': ['get', 'icon'],
@@ -293,8 +298,10 @@ MLR.install = function () {
         'text-font': ML_FONT, 'text-size': fs,
         'text-anchor': labels_top ? 'bottom-left' : 'top-left', 'text-justify': 'left',
         'text-offset': ['get', 'toff'],
+        // dark glass pill behind the text (a stretchable image fitted to the text box)
+        'icon-image': 'sw-label-pill', 'icon-text-fit': 'both', 'icon-text-fit-padding': [2, 5, 2, 5], 'icon-allow-overlap': true, 'icon-ignore-placement': true,
     }, extra);
-    const labelPaint = {'text-color': '#fff', 'text-halo-color': 'rgba(0,0,0,0.85)', 'text-halo-width': 1.5};
+    const labelPaint = {'text-color': '#fff', 'text-halo-color': 'rgba(0,0,0,0.85)', 'text-halo-width': 0};
     // labels are hidden below zoom 6.5 (tar1090 numbering, MapLibre 5.5); the hovered/selected one always shows
     m.addLayer({id: 'tar-plane-labels', type: 'symbol', source: 'tar-planes', filter: ['==', ['get', 'top'], 0], minzoom: 5.5,
         layout: labelLayout({'text-allow-overlap': false, 'text-ignore-placement': false, 'symbol-sort-key': ['get', 'prio']}),
@@ -310,6 +317,18 @@ MLR.install = function () {
     this.dirtyIcons = true;
     this.flush();
     this.updateAttribution();
+};
+
+// 9-slice rounded dark glass rectangle used behind aircraft labels
+MLR.addLabelPillImage = function () {
+    const m = this.map;
+    if (m.hasImage('sw-label-pill')) return;
+    const dpr = 2, w = 20, h = 20, c = document.createElement('canvas');
+    c.width = w * dpr; c.height = h * dpr;
+    const x = c.getContext('2d');
+    x.fillStyle = 'rgba(0,0,0,0.72)'; x.strokeStyle = 'rgba(255,255,255,0.10)'; x.lineWidth = dpr;
+    x.beginPath(); x.roundRect(dpr / 2, dpr / 2, w * dpr - dpr, h * dpr - dpr, 6 * dpr); x.fill(); x.stroke();
+    m.addImage('sw-label-pill', x.getImageData(0, 0, c.width, c.height), {pixelRatio: dpr, stretchX: [[7, 13]], stretchY: [[7, 13]], content: [7, 7, 13, 13]});
 };
 
 MLR.dashArray = function (dash, width) {
@@ -522,16 +541,17 @@ MLR.touch = function (kind) {
 };
 
 // called from PlaneObject.updateIcon(): colour, shape and label are decided by the data layer
-MLR.setPlane = function (p, fillColor, svgKey, labelText) {
+MLR.setPlane = function (p, fillColor, svgKey, labelText, outline) {
     let e = this.planes.get(p.icao);
     if (!e) this.planes.set(p.icao, e = {plane: p, feat: null});
-    if (!this.icons.has(svgKey)) this.icons.set(svgKey, {shape: p.shape, fill: fillColor, sw: p.strokeWidth});
+    if (!this.icons.has(svgKey)) this.icons.set(svgKey, {shape: p.shape, fill: fillColor, sw: p.strokeWidth, outline: outline || null});
     const pill = !!(p.selected && !SelectedAllPlanes);
     e.icon = svgKey;
     e.rot = p.shape.noRotate ? 0 : p.rotation;
     e.scale = p.scale * (pill ? 1.3 : 1);   // the selected aircraft is a little larger
     e.label = labelText || '';
     e.pill = pill && !!labelText;
+    e.sel = pill;
     e.z = p.zIndex || 0;
     e.w = p.shape.w;
     this.touch('planes');
@@ -585,7 +605,7 @@ MLR.loadIcon = function (id) {
         this.touch('planes');
     };
     img.onerror = () => this.pendingIcons.delete(id);
-    img.src = svgShapeToURI(d.shape, d.fill, OutlineADSBColor, d.sw);
+    img.src = svgShapeToURI(d.shape, d.fill, d.outline || OutlineADSBColor, d.sw);
 };
 
 // the selected aircraft's white label pill is a DOM element: MapLibre symbol labels have no background box
@@ -667,7 +687,7 @@ MLR.flush = function () {
             if (label && this.callsignOnly && e !== this.hoverEntry(hov)) label = label.split('\n').pop();
             if (!this.smoothActive() || e.rotDraw == null) e.rotDraw = e.rot;
             feats.push({type: 'Feature', id: e.id, geometry: {type: 'Point', coordinates: lonlat},
-                properties: {hex: p.icao, icon: e.icon, rot: e.rotDraw, scale: e.scale, label, z: e.z, prio: -e.z,
+                properties: {hex: p.icao, icon: e.icon, rot: e.rotDraw, scale: e.scale, label, z: e.z, prio: -e.z, sel: e.sel ? 1 : 0,
                     top: (hov && p === hov) ? 1 : 0, toff: [oxPx / fs, oyPx / fs], logo}});
             e.feat = true;
         }

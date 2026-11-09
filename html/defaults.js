@@ -389,6 +389,8 @@ let airportDetail = true;
 let terrain3d = false;
 // lighten the map land while an aircraft is selected (fades over about 300 ms; off under reduced motion)
 let liftMapOnSelect = true;
+// aircraft icon colour on the map: 'white' (default) or 'altitude'. Tracks are always coloured by altitude.
+let aircraftColor = 'white';
 // Skywatch ADS-B: airport panel. Weather comes from the recorder's wx.json (no third-party request from the browser);
 // links are plain external links. Both can be switched off.
 let airportWeather = true;

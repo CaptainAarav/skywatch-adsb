@@ -648,3 +648,5 @@ body.infoOpen #selected_infoblock { display: flex; }
     #graphsOverlay .gHead { gap: 10px; }
     #graphsOverlay .gTabs button { padding: 7px 11px; font-size: 13px; }
 }
+
+.altLegendNote { font-size: 11px; color: var(--muted); margin-top: 6px; }
