@@ -22,8 +22,8 @@
   const wp = freshList.filter(a => typeof a.lat == 'number' && typeof a.lon == 'number' && (a.seen_pos == null || a.seen_pos < 60)).length;
   const tol = Math.max(4, Math.round(0.2 * Math.max(wp, 1)));                  // aircraft come and go between the two reads
   const counter = TrackedAircraft, onMap = (MLR.planeFeats || []).length;
-  const srcData = MLR.map.getSource('tar-planes') && MLR.map.getSource('tar-planes')._data;
-  const srcN = srcData && srcData.features ? srcData.features.length : -1;
+  let srcN = -1;                                                              // public API: features the aircraft source really holds (unique by hex, tiles can repeat a point)
+  try { srcN = new Set(MLR.map.querySourceFeatures('tar-planes').map(f => f.properties.hex)).size; } catch (e) { /* stays -1 */ }
   numbers.page = {counter, positions: typeof TrackedAircraftPositions != 'undefined' ? TrackedAircraftPositions : null, planeFeats: onMap, sourceFeatures: srcN, jsonAircraft: freshList.length, jsonWithPos: wp, tol};
   if (freshList.length > 0) {
     check('page aircraft counter > 0', counter > 0, numbers.page);
