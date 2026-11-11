@@ -68,6 +68,7 @@ MLR.init = function () {
         pitchWithRotate: true,
         renderWorldCopies: true,
         maxTileCacheSize: 400,
+        canvasContextAttributes: {antialias: MLR.qualityAntialias ? MLR.qualityAntialias() : false},
         transformRequest: mlTransformRequest,
     });
     m.touchZoomRotate.enableRotation();
@@ -76,6 +77,7 @@ MLR.init = function () {
 
     m.on('style.load', () => this.install());
     m.on('zoomend', () => { if (this.isGlobe()) this.applySky(); });
+    m.on('pitchend', () => this.applySky());
     m.on('styleimagemissing', (e) => this.loadIcon(e.id));
     // MapLibre fires moveend synchronously inside jumpTo(), before
     // callers such as PlaneObject.setProjection() finish updating their own state. Defer and coalesce it.
@@ -197,7 +199,7 @@ MLR.onError = function (e) {
     const isTile = !!(e && e.tile) || /HTTP|Failed to fetch|NetworkError|429|Load failed/i.test(msg);
     if (!isTile) { console.warn('map:', msg); return; }
     if (src && /^(tar-|ov-)/.test(src)) return;     // overlay problems don't affect the base map
-    // keep the evidence: URL and HTTP status of recent failures (window.MLR.tileFailures), one console line per 15 s
+    // keep the evidence: URL and HTTP status of recent failures (MLR.tileFailures), one console line per 15 s
     const url = (e.error && e.error.url) || '', status = e.error && e.error.status;
     (this.tileFailures || (this.tileFailures = [])).push({t: Date.now(), status: status == null ? null : status, url: String(url).slice(0, 160), msg: msg.slice(0, 120)});
     if (this.tileFailures.length > 30) this.tileFailures.shift();
@@ -481,18 +483,23 @@ MLR.applyProjection = function () {
 
 // black space; a very faint atmosphere glow that fades out as the globe flattens into the map
 MLR.applySky = function () {
-    // the atmosphere is a full-screen pass: only used while zoomed out, where it is visible
-    if (!this.isGlobe() || this.map.getZoom() >= 6) {
-        if (this.skyOn) { try { this.map.setSky(undefined); } catch (e) {} this.skyOn = false; }
-        return;
-    }
-    if (this.skyOn) return;
-    this.skyOn = true;
+    // Globe, zoomed out: the atmosphere is a full-screen pass, only used where it is visible.
+    // 3D (pitched): a dark sky with a faint lighter horizon band and haze that fades distant terrain into it. Neutral greys only. Skipped from quality level 5.
+    const m = this.map, globe = this.isGlobe();
+    const sky3 = !globe && this.is3D && m.getPitch() > 5 && (!this.q || this.q.level < 5);
+    const sky = globe && m.getZoom() < 6 ? 'globe' : sky3 ? '3d' : null;
+    if (!sky) { if (this.skyOn) { try { m.setSky(undefined); } catch (e) {} this.skyOn = false; } return; }
+    if (this.skyOn === sky) return;
+    this.skyOn = sky;
     try {
-        this.map.setSky({
+        if (sky === 'globe') m.setSky({
             'sky-color': '#000000', 'horizon-color': '#151515', 'fog-color': '#000000',
             'sky-horizon-blend': 0.5, 'horizon-fog-blend': 0.5, 'fog-ground-blend': 0.5,
             'atmosphere-blend': ['interpolate', ['linear'], ['zoom'], 0, 0.6, 4, 0.2, 6, 0],
+        });
+        else m.setSky({
+            'sky-color': '#0a0a0b', 'horizon-color': '#262626', 'fog-color': '#141414',
+            'sky-horizon-blend': 0.65, 'horizon-fog-blend': 0.85, 'fog-ground-blend': 0.55, 'atmosphere-blend': 0,
         });
     } catch (e) {}
 };
@@ -518,6 +525,7 @@ MLR.setView = function (mode, init) {
     this.sync3DLayers();
     this.syncViewButtons();
     this.syncModels && this.syncModels();
+    this.applySky(); this.qualitySync && this.qualitySync(); this.contrailsSync && this.contrailsSync();
     try { loStore['viewMode'] = mode; loStore['view3d'] = this.is3D ? '1' : '0'; } catch (e) {}
     if (typeof checkMovement == 'function') setTimeout(checkMovement, 0);
 };
@@ -1025,6 +1033,8 @@ MLR.flushCalc = function () {
 MLR.onClick = function (e, dbl) {
     const px = [e.point.x, e.point.y];
     const radius = globalScale * (onMobile ? 30 : 20);
+    // an airport marker wins inside its own hit area: the (wider) aircraft hit radius must not steal the click
+    if (!showTrace && typeof AIRPT != 'undefined' && AIRPT.owns && AIRPT.owns(e.point) && AIRPT.mapClick(e)) return;
     const plane = this.closestPlane(px, radius);
     let planeHex = plane ? plane.icao : null;
     let trailHex = null, trailTS = null;
@@ -1111,7 +1121,7 @@ Object.assign(mapa, {
         const m = MLR.map;
         if (MLR.pointerFn) { m.off('mousemove', MLR.pointerFn); MLR.pointerFn = null; }
         if (on) {
-            MLR.pointerFn = (e) => highlightPlane(MLR.closestPlane([e.point.x, e.point.y], globalScale * 20));
+            MLR.pointerFn = MLR.throttleHover((e) => highlightPlane(MLR.closestPlane([e.point.x, e.point.y], globalScale * 20)));
             m.on('mousemove', MLR.pointerFn);
         }
     },

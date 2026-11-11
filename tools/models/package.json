@@ -1,0 +1,6 @@
+{
+  "name": "skywatch-model-tools",
+  "private": true,
+  "description": "Dev-only: validates and optimises dropped-in aircraft models (tools/models/optimise.js). Not part of the web app.",
+  "dependencies": {"@gltf-transform/core": "4.1.0", "@gltf-transform/extensions": "4.1.0", "@gltf-transform/functions": "4.1.0", "meshoptimizer": "0.22.0"}
+}

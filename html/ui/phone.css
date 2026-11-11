@@ -66,8 +66,8 @@ body.phone.infoOpen .psFoot, body.phone.airportOpen .psFoot { display: none; }
    body[data-snap] is peek | half | full (set by ui/phone.js). */
 body.phone.infoOpen #phoneSheetBody > #selected_infoblock { display: flex !important; flex-direction: column; padding: 0 14px !important; min-height: 100%; }
 body.phone #selected_infoblock .ibHead { min-height: 0; padding: 0 0 6px; }
-body.phone #selected_infoblock .ibHeadMain { padding: 0; }
-body.phone #selected_infoblock .ibTitleRow { gap: 10px; }
+body.phone #selected_infoblock .ibHeadMain { padding: 0 100px 0 0; }   /* the two header buttons sit over the right edge of both header lines (absolute, see infoblock.css): the subtitle must stop before them */
+body.phone #selected_infoblock .ibTitleRow { gap: 10px; min-height: 44px; }   /* the header buttons are 44 px tall: the row is as well, so they never reach into the subtitle line */
 body.phone #selected_infoblock .ibCallsign { font-size: 26px; line-height: 1.1; }
 body.phone #selected_infoblock .ibHeadBtns { margin-left: auto; display: flex; gap: 4px; flex: none; }
 body.phone #selected_infoblock .ibBtn#ib_p_share { display: inline-flex; width: 44px; height: 44px; }
@@ -84,6 +84,7 @@ body.phone #selected_infoblock #infoActions {
     border: 0; border-radius: 0; background: var(--bg-sheet); box-shadow: 0 -1px 0 var(--line);
 }
 body.phone #selected_infoblock #infoActions .act { background: var(--bg-control); border: 1px solid var(--line); border-radius: 24px; }
+body.phone #selected_infoblock #infoActions .act.on, body.phone #selected_infoblock #infoActions .act.activeButton { background: #fff; color: #000; border-color: #fff; }   /* the active pill is white with black text, as everywhere else (the rule above had overridden only the fill and left black text on a dark fill) */
 body.phone #selected_infoblock .actMenu { right: 14px; bottom: calc(100% + 4px); }
 /* peek: header, status, the three summaries in one row, the action bar. Nothing else. */
 body.phone[data-snap="peek"] #selected_infoblock .ibScroll > :not(.ibInstGrid) { display: none !important; }
@@ -147,7 +148,7 @@ body.phone .baseTile .baseThumb { display: none; }
 body.phone .baseTile::before { content: ''; flex: none; width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--text-2); box-sizing: border-box; }
 body.phone .baseTile.on::before { border-color: #fff; background: radial-gradient(#fff 0 40%, transparent 45%); }
 body.phone .baseTile .baseName { font: 600 15px Inter, system-ui, sans-serif; }
-body.phone .baseTile .baseSub { flex-basis: 100%; padding-left: 32px; margin-top: -2px; font-size: 12.5px; color: var(--text-2); }
+body.phone .baseTile .baseSub { flex-basis: 100%; padding-left: 32px; margin-top: 0; font-size: 12.5px; color: var(--text-2); }
 body.phone .baseChip { min-height: 44px; }
 
 /* tooltips never show on touch (they stick after a tap) */
@@ -159,8 +160,9 @@ body.phone #settings_infoblock .setBack { display: inline-flex; }
 /* ---------- tap targets: at least 44 x 44 on phones ---------- */
 body.phone :is(#phoneSheet, #settings_infoblock, #filterPopover) :is(button, .chip, .formButton, select, summary, .act, input:not([type=checkbox]):not([type=radio]):not([type=range])) { min-height: 44px; min-width: 44px; box-sizing: border-box; }
 body.phone :is(#phoneSheet, #settings_infoblock, #filterPopover) input[type=range] { height: 44px; margin: 0; }
-body.phone :is(#phoneSheet, #settings_infoblock) a { display: inline-block; padding: 14px 6px; margin: -14px -6px; min-width: 44px; box-sizing: border-box; text-align: center; }
-body.phone :is(#phoneSheet, #settings_infoblock) a.apLink, body.phone #airport_panel a { text-align: left; }
+body.phone :is(#phoneSheet, #settings_infoblock) a:not(.apLink):not(.about a) { display: inline-block; padding: 14px 6px; margin: -14px -6px; min-width: 44px; box-sizing: border-box; text-align: center; }
+/* chart/info link rows are real 44 px rows (no negative-margin hit area that would overlap the row above); links inside prose keep their text box (inline-link exception of WCAG 2.5.8) */
+body.phone #airport_panel a.apLink { display: flex; align-items: center; min-height: 44px; padding: 0; margin: 0; box-sizing: border-box; text-align: left; }
 body.phone #selected_infoblock .ibBtn { width: 44px; height: 44px; }
 body.phone .chip { display: inline-flex; align-items: center; }
 

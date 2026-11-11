@@ -146,6 +146,7 @@ const SKYUI = (function () {
             this.m = BANNERSTATE.create();
             this.timer = setInterval(() => this.render(this.m.tick(Date.now())), 1000);
         },
+        setMap(ok) { this.init(); if (this.m) this.m.setMap(ok); },
         ok(advanced) { this.init(); if (this.m) this.render(this.m.ok(Date.now(), advanced)); },
         fail(detail) { this.init(); if (this.m) this.render(this.m.fail(Date.now(), detail)); },
         render(v) {
@@ -156,7 +157,12 @@ const SKYUI = (function () {
                     action: {label: 'Retry now', run: () => { try { if (typeof fetchData == 'function') fetchData({force: true}); } catch (e) {} }}});
             else if (v.state === 'stale') {
                 const a = v.ageSec, age = a >= 120 ? Math.floor(a / 60) + ' min' : a + ' s';
-                banner('conn', {kind: 'warn', title: 'Data is ' + age + ' old', detail: 'The receiver is answering but nothing new is arriving. Last update ' + clock(v.lastGood)});
+                const map = v.mapOk ? '' : ' The map is unavailable on this screen (no WebGL).';
+                if (v.cause === 'page')
+                    banner('conn', {kind: 'warn', title: 'This page is not receiving updates', detail: "It has not heard from the receiver for a while, so the receiver itself may be fine. Last update " + clock(v.lastGood) + '.' + map,
+                        action: {label: 'Retry now', run: () => { try { if (typeof fetchData == 'function') fetchData({force: true}); } catch (e) {} }}});
+                else
+                    banner('conn', {kind: 'warn', title: 'Receiver data is ' + age + ' old', detail: 'The receiver answers but its data is not advancing. Last update ' + clock(v.lastGood) + '.' + map});
             } else banner('conn', {kind: 'success', title: 'Back online'});
         }};
 

@@ -1,0 +1,4 @@
+{
+  "_comment": "One entry per model file you drop in. The key is the file name WITHOUT .glb (tools/models/optimise.js looks it up). Every field is required; licence must be CC0-1.0 or a CC-BY version, verified on the source page. Royalty-free marketplace models (CGTrader, TurboSquid and similar) are NOT allowed here. Empty until a model is added.",
+  "models": {}
+}

@@ -22,8 +22,13 @@
   check('Map tab has exactly one search affordance', notes.searchMap === 1, notes.searchMap);
   const land0 = () => [MLR.map.getPaintProperty('background', 'background-color'), MLR.map.getPaintProperty('landuse_residential', 'fill-color'), MLR.map.getPaintProperty('landcover_wood', 'fill-color'), MLR.map.getPaintProperty('landuse_park', 'fill-color')];
   const before = land0();
-  const pl = g.planesOrdered.find(p => p.position && typeof p.altitude == 'number' && typeof p.track == 'number' && typeof p.gs == 'number') || g.planesOrdered.find(p => p.position && typeof p.altitude == 'number');
-  if (!pl) return {viewport: [VW, VH], err: 'no aircraft with a position'};
+  // FIXED FIXTURE aircraft with a complete set of fields (position, altitude, speeds, track, heading, wind), injected through the page's own processAircraft() and refreshed every 300 ms:
+  // the compass and tape cards only render for an aircraft that has the data, so a live aircraft with gaps made the half-snap compass checks flaky.
+  const FIXAC = {hex: 'abc123', type: 'adsb_icao', flight: 'FIX123', lat: 51.4700, lon: -0.4543, alt_baro: 36000, alt_geom: 36200, gs: 420, tas: 450, ias: 280, mach: 0.78, track: 90, true_heading: 92, mag_heading: 90, wd: 250, ws: 40, baro_rate: 0, t: 'B738', category: 'A3', seen: 0, seen_pos: 0, messages: 100, rssi: -10};
+  processAircraft(Object.assign({}, FIXAC), false, false); const fixT = setInterval(() => processAircraft(Object.assign({}, FIXAC), false, false), 300);
+  for (let i = 0; i < 40 && !(g.planes['abc123'] && g.planes['abc123'].position); i++) await w(250);
+  const pl = g.planes['abc123'];
+  if (!pl) { clearInterval(fixT); return {viewport: [VW, VH], err: 'the fixture aircraft did not appear'}; }
   selectPlaneByHex(pl.icao, {follow: false}); await w(1600);
   const after = land0();
   check('map land paint identical before/after selecting', JSON.stringify(before) === JSON.stringify(after), {before, after});
@@ -145,5 +150,6 @@
   // ---- same component tree as desktop (compare via notes; the desktop run records the same signature) ----
   notes.componentSignature = $$('#selected_infoblock [data-component], #selected_infoblock [data-part]').map(e => (e.dataset.component || '') + '/' + (e.dataset.part || '') + '/' + e.className.split(' ')[0]).join('|');
   const errs = (window.__errs || []);
+  clearInterval(fixT);
   return {viewport: [VW, VH], checks: ok, failures: fail, notes};
 })()

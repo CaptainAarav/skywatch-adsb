@@ -14,6 +14,8 @@ const MAP_WEBGL = (function () {
             n.setAttribute('role', 'alert');
             n.textContent = 'This map needs WebGL, which is not available in this browser. Enable hardware acceleration or try another browser.';
             document.body.appendChild(n);
+            // fall back to the plain 2D radar (ui/radar2d.js); it removes this notice once it is drawing
+            window.addEventListener('load', () => { try { if (typeof RADAR2D != 'undefined' && typeof g != 'undefined') RADAR2D.start(); } catch (e) { console.error('2D radar fallback failed', e); } });
         });
     }
     return ok;
@@ -42,6 +44,10 @@ const mapgeo = (function () {
             c[0] * 180 / HALF,
             360 * Math.atan(Math.exp(c[1] / R)) / Math.PI - 90,
         ];
+    }
+    function toLonLatInto(c, out) {       // allocation-free toLonLat (per-frame callers)
+        out[0] = c[0] * 180 / HALF; out[1] = 360 * Math.atan(Math.exp(c[1] / R)) / Math.PI - 90;
+        return out;
     }
     function getDistance(a, b) {
         const rad = Math.PI / 180;
@@ -79,5 +85,5 @@ const mapgeo = (function () {
         get() {}
     }
 
-    return {fromLonLat, toLonLat, getDistance, LineString, Point, Feature, R, HALF};
+    return {fromLonLat, toLonLat, toLonLatInto, getDistance, LineString, Point, Feature, R, HALF};
 })();

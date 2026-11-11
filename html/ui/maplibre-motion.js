@@ -140,13 +140,13 @@ MLR.focusStep = function (now) {
 };
 // a panel opened/closed/widened while following: slide the aircraft to the middle of the new free area
 MLR.refocusPadding = function () {
-    if (!this.ready || typeof SelectedPlane == 'undefined' || !SelectedPlane || !FollowSelected) return;
+    if (!this.ready || performance.now() < (this.airportFlyUntil || 0) || typeof SelectedPlane == 'undefined' || !SelectedPlane || !FollowSelected) return;
     this.focusOn(SelectedPlane, {keepZoom: true, dur: 350});
 };
 // leaving the selection: drop the padding without moving what is on screen
 MLR.clearFocus = function () {
     this.focusAnim = null;
-    if (!this.ready) return;
+    if (!this.ready || performance.now() < (this.airportFlyUntil || 0)) return;     // an airport fly is moving the camera: a reset now would cancel it
     const m = this.map, pd = m.getPadding();
     if (!pd.left && !pd.right && !pd.top && !pd.bottom) return;
     const c = m.getContainer();
@@ -257,7 +257,14 @@ MLR.motionTick = function (now) {
     }
 };
 
+// ?fps=N caps the aircraft animation (and so the map redraw rate) at N frames per second, 2..60. For wall displays and weak machines.
+MOTION.minFrameMs = (function () {
+    try { const n = parseInt(new URLSearchParams(location.search).get('fps'), 10); return n >= 2 && n < 60 ? 1000 / n - 3 : 0; } catch (e) { return 0; }
+})();
+MOTION.lastLoop = 0;
 MLR.motionLoop = function (now) {
+    if (MOTION.minFrameMs && now - MOTION.lastLoop < MOTION.minFrameMs) { requestAnimationFrame(MLR.motionLoop); return; }
+    MOTION.lastLoop = now;
     MOTION.frames++;
     try { MLR.focusStep(now); } catch (err) { MLR.focusAnim = null; console.warn('focus:', err); }
     try { MLR.motionTick(now); } catch (err) { if (!MOTION.err) { MOTION.err = 1; console.warn('smooth movement:', err); } }

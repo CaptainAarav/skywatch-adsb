@@ -68,7 +68,7 @@ body:not(.infoWide) #selected_infoblock .wideOnly { display: none !important; }
 }
 .ibSub .mono { font-family: var(--font-mono); }
 /* compact: the back button sits beside both header lines (mockup 01) */
-body:not(.infoWide) .ibHeadMain { padding-right: 56px; }
+body:not(.infoWide) .ibHeadMain { padding-right: 96px; }   /* room for BOTH header buttons (2 x 38 + gap), which sit over the right edge of both header lines */
 body:not(.infoWide) .ibHeadBtns { position: absolute; right: 0; top: 50%; transform: translateY(-50%); }
 body:not(.infoWide) .ibHead { min-height: 44px; }
 

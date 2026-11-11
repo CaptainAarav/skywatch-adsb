@@ -20,6 +20,7 @@
     #selected_infoblock { --card: var(--bg-card); --card-line: var(--line); --mini: var(--bg-row); }
     #selected_infoblock .ibRoute, #selected_infoblock .ibCard, #selected_infoblock .ibCard2, #selected_infoblock .ibDetailsBtn,
     #selected_infoblock .ibTile, #selected_infoblock .ibNote,
+    #airport_panel .ibCard,
     #graphsOverlay .gCard, .alRule, .statTile, .altimeterTile:not(.hidden) {
         background: var(--bg-card);
         border: 1px solid var(--line);

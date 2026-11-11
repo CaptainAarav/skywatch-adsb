@@ -27,11 +27,13 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
         else if (m.method === 'Runtime.exceptionThrown') { const d = m.params.exceptionDetails; logs.push('EXCEPTION: ' + ((d.exception && d.exception.description) || d.text) + ' @' + (d.url || '') + ':' + d.lineNumber); }
         else if (m.method === 'Log.entryAdded' && m.params.entry.level === 'error') logs.push('log.error: ' + m.params.entry.text + ' ' + (m.params.entry.url || ''));
         else if (m.method === 'Fetch.requestPaused') {
-            send('Fetch.fulfillRequest', {requestId: m.params.requestId, responseCode: 200, responseHeaders: [{name: 'Access-Control-Allow-Origin', value: '*'}, {name: 'Content-Type', value: 'application/json'}], body: Buffer.from('{"photos":[]}').toString('base64')});
+            // external services are answered with an empty, CORS-open reply so a test never depends on the network (planespotters photos; the adsb.im route service, which an http page cannot call anyway)
+            const isRoute = /\/\/adsb\.im\//.test(m.params.request.url);
+            send('Fetch.fulfillRequest', {requestId: m.params.requestId, responseCode: 200, responseHeaders: [{name: 'Access-Control-Allow-Origin', value: '*'}, {name: 'Access-Control-Allow-Headers', value: '*'}, {name: 'Access-Control-Allow-Methods', value: 'GET,POST,OPTIONS'}, {name: 'Content-Type', value: 'application/json'}], body: Buffer.from(isRoute ? '[]' : '{"photos":[]}').toString('base64')});
         }
     };
     await send('Runtime.enable'); await send('Log.enable'); await send('Page.enable');
-    await send('Fetch.enable', {patterns: [{urlPattern: 'https://api.planespotters.net/*'}]});
+    await send('Fetch.enable', {patterns: [{urlPattern: 'https://api.planespotters.net/*'}, {urlPattern: 'http://adsb.im/*'}, {urlPattern: 'https://adsb.im/*'}]});
     if (PHONE) {
         await send('Emulation.setDeviceMetricsOverride', {width: W, height: H, deviceScaleFactor: 1, mobile: true});
         await send('Emulation.setUserAgentOverride', {userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1'});

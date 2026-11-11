@@ -1,0 +1,3 @@
+Draco decoder files in this directory (draco_decoder.js, draco_decoder.wasm, draco_wasm_wrapper.js) are copied unchanged from the three@0.170.0 npm package
+(examples/jsm/libs/draco/gltf/). Draco is Copyright 2017 The Draco Authors, licensed under the Apache License, Version 2.0:
+https://www.apache.org/licenses/LICENSE-2.0   Source: https://github.com/google/draco

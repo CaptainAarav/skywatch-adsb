@@ -54,3 +54,26 @@
 .sk-dialog .sk-x, .palBox .sk-x { position: absolute; top: 8px; right: 8px; }
 .sk-dialog .sk-dtitle { padding-right: 36px; }
 .palBox .palInput { padding-right: 52px; }
+
+/* the ONE card header (airport cards, instrument cards): a title and, optionally, chips and a timestamp. It WRAPS instead of overlapping: the meta group
+   (.cardHeadMeta: chip(s) and age) drops under the title when it does not fit, and inside it the age drops under the chip. Nothing in it shrinks the chip. */
+.cardHead, .ibCardTop { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 10px; min-width: 0; }
+.cardHead > .cardHeadMeta { flex: 1 1 auto; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 4px 8px; }
+.cardHead .chip, .cardHeadMeta .chip, .ibCardTop .chip { flex: none; max-width: 100%; }
+.cardHeadMeta .age, .ibCardTop .age { flex: 0 1 auto; min-width: 0; text-align: right; white-space: normal; overflow-wrap: anywhere; }
+.ibCardTop > * { min-width: 0; }
+
+/* performance overlay (ui/perf-overlay.js): off by default; the read-out never takes pointer events, only the Copy button does */
+#perfOverlay { position: fixed; right: 8px; bottom: calc(var(--bottom-inset, 0px) + 40px); z-index: 90; margin: 0; padding: 6px 8px; pointer-events: none; white-space: pre; background: rgba(0,0,0,.72); color: #e6e6e6; border: 1px solid var(--line, rgba(255,255,255,.12)); border-radius: 8px; font: 11px/1.45 var(--font-mono, ui-monospace, monospace); }
+#perfCopy { position: fixed; right: 8px; bottom: calc(var(--bottom-inset, 0px) + 8px); z-index: 90; pointer-events: auto; padding: 4px 10px; min-height: 26px; background: rgba(0,0,0,.72); color: #e6e6e6; border: 1px solid var(--line, rgba(255,255,255,.12)); border-radius: 13px; font: 11px var(--font-mono, ui-monospace, monospace); cursor: pointer; }
+body.phone #perfCopy { min-height: 44px; min-width: 44px; }
+
+/* route ends in the aircraft panel are links to the airport panel (ui/infoblock.js ibRouteLink); an airport that is not in the database stays plain text */
+.ibRouteEnd.ibRouteLink { cursor: pointer; border-radius: 12px; }
+.ibRouteEnd.ibRouteLink:hover .mono { text-decoration: underline; text-underline-offset: 3px; }
+.ibRouteEnd.ibRouteLink:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+body.phone .ibRouteEnd.ibRouteLink { min-height: 44px; min-width: 44px; box-sizing: border-box; }
+/* opened from an aircraft's route: the aircraft stays selected, its panel is hidden behind the airport panel, and a Back chip returns to it */
+body.airportOpen.airportFromAircraft #selected_infoblock,
+body.phone.infoOpen.airportOpen.airportFromAircraft #phoneSheetBody > #selected_infoblock { display: none !important; }
+.apBack { align-self: flex-start; margin: 0 0 8px; cursor: pointer; font-family: var(--font-mono, ui-monospace, monospace); }

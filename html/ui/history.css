@@ -22,6 +22,7 @@
 
 .histRow {
     display: flex;
+    flex-wrap: wrap;                 /* a row that does not fit wraps (nothing is pushed past the bar's edge) */
     align-items: center;
     gap: 8px;
     min-width: 0;
@@ -59,7 +60,7 @@
 .histPlay.playing .ico { fill: none; }
 .histLoading:empty { display: none; }
 
-.histSpeeds { margin-left: auto; display: flex; gap: 2px; flex: none; }
+.histSpeeds { margin-left: auto; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 2px; flex: 0 1 auto; min-width: 0; max-width: 100%; }   /* wraps inside a narrow bar */
 
 /* timeline: 8px rail (white elapsed / 18% white rest), 24px playhead with a 3px line through the bar, a time bubble above it at all times */
 .histTrack {

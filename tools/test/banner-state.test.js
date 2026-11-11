@@ -20,4 +20,16 @@ v = m.ok(t + 41000, false); assert.equal(v.state, 'stale');
 v = m.ok(t + 42000, true); assert.equal(v.state, 'recovered');
 // failure while stale goes to retrying; never stale straight after a recovery
 v = m.fail(t + 60000, 'z'); assert.equal(v.state, 'retrying');
+// cause: the banner must name the real reason and never blame the receiver when this page simply stopped fetching
+m = B.create(); m.ok(t, true);
+v = m.tick(t + 31000);                                          // no fetch completed at all for 31 s (the old no-WebGL bug)
+assert.equal(v.state, 'stale'); assert.equal(v.cause, 'page', 'no completed fetch -> this page, not the receiver');
+m = B.create(); m.ok(t, true);
+for (let i = 1; i < 35; i++) m.ok(t + i * 1000, false);          // fetches keep succeeding, receiver time frozen
+v = m.tick(t + 35000); assert.equal(v.state, 'stale'); assert.equal(v.cause, 'receiver');
+v = m.tick(t + 35000 + B.SILENT_MS + 1); assert.equal(v.cause, 'page', 'fetches then stop -> switches to page');
+assert.equal(m.fail(t + 60000, 'x').cause, 'unreachable');
+assert.equal(B.create().view(t).cause, '');
+// map note
+m = B.create(); assert.equal(m.view(t).mapOk, true); m.setMap(false); assert.equal(m.view(t).mapOk, false); m.setMap(true); assert.equal(m.view(t).mapOk, true);
 console.log('banner-state tests ok');

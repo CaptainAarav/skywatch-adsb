@@ -12,7 +12,12 @@
   check('airport database loaded into the pin source', !!MLR._aptDb);
   const db = MLR._aptDb, byIcao = new Map(db.a.map((r, i) => [r[0], i]));
   const idle = () => new Promise(r => { m.once('idle', r); m.triggerRepaint(); setTimeout(r, 6000); });
-  async function at(zoom, center) { m.jumpTo({center, zoom, pitch: 0, bearing: 0}); await idle(); await w(900); await idle(); }
+  // jump, then wait until symbol placement has SETTLED: the rendered airport set is identical on two consecutive samples (placement runs a beat after 'idle')
+  async function at(zoom, center) {
+    m.jumpTo({center, zoom, pitch: 0, bearing: 0}); await idle(); await w(900); await idle();
+    let prev = null;
+    for (let i = 0; i < 12; i++) { const k = [...new Set(m.queryRenderedFeatures({layers: L}).map(f => f.properties.icao))].sort().join(','); if (k === prev) break; prev = k; await w(700); }
+  }
   const rendered = () => { const s = new Set(); for (const f of m.queryRenderedFeatures({layers: L})) s.add(f.properties.icao); return s; };
   const tiersOf = (set) => { const c = {}; for (const i of set) { const t = AIRTIERS.tierOf(db.a[byIcao.get(i)]); c[t] = (c[t] || 0) + 1; } return c; };
 
@@ -20,8 +25,8 @@
   const UK = [-2.0, 53.0];
   await at(5, UK);
   let r5 = rendered();
-  // the restored marker is a 24 px flag circle with 6 px padding and allow-overlap false, so close neighbours of a more important airport yield to it
-  const want5 = ['EGLL', 'EGCC', 'EGPH'];
+  // original expectation (restored): the flag marker shrinks and its padding tightens at far zoom (FAR ramp in airport-pin-style.js) so these all fit
+  const want5 = ['EGLL', 'EGKK', 'EGGW', 'EGSS', 'EGCC', 'EGPH', 'EGPF'];
   for (const i of want5) check('zoom 5 renders ' + i, r5.has(i), {present: byIcao.has(i)});
   numbers.z5 = {count: r5.size, tiers: tiersOf(r5), missing: want5.filter(i => !r5.has(i))};
 
@@ -64,10 +69,22 @@
   const lastApt = Math.max(...L.map(id => order.indexOf(id))), firstAc = Math.min(...['tar-plane-glow', 'tar-plane-labels', 'tar-plane-labels-top', 'tar-planes'].filter(id => order.includes(id)).map(id => order.indexOf(id)));
   check('airport dots and labels draw below the aircraft icons and pills', lastApt < firstAc, {lastApt, firstAc});
 
+  // ---- before/after: the same UK views with the PREVIOUS marker layout (24 px circle, 6 px padding, labels from each tier's dot zoom) applied temporarily ----
+  {
+    const saved = L.map(id => [id, m.getLayoutProperty(id, 'icon-size'), m.getLayoutProperty(id, 'icon-padding'), m.getLayoutProperty(id, 'text-field')]);
+    for (const [id, , , tf] of saved) { m.setLayoutProperty(id, 'icon-size', 1); m.setLayoutProperty(id, 'icon-padding', 6); m.setLayoutProperty(id, 'text-field', ['step', ['zoom'], tf[4]].concat(tf.slice(5))); }
+    const prev = {};
+    for (const [z, c] of [[5, UK], [6, UK], [7, [-1.5, 52.2]]]) { await at(z, c); const s = rendered(); prev['z' + z] = {count: s.size, missingOf5: z === 5 ? want5.filter(x => !s.has(x)) : undefined}; }
+    for (const [id, a, b, tf] of saved) { m.setLayoutProperty(id, 'icon-size', a); m.setLayoutProperty(id, 'icon-padding', b); m.setLayoutProperty(id, 'text-field', tf); }
+    numbers.previousLayout24px = prev;
+    await at(5, UK);
+  }
   // ---- marker: flag in a circle, ring = category or neutral, code below, name only at the detail zoom ----
   await at(5, UK);
   const lay = m.getLayer('tar-apt-large');
-  check('marker layout: icon-size 1, text-anchor top, offset [0,1], optional text, padding 6/3', m.getLayoutProperty('tar-apt-large', 'icon-size') === 1 && m.getLayoutProperty('tar-apt-large', 'text-anchor') === 'top' && JSON.stringify(m.getLayoutProperty('tar-apt-large', 'text-offset')) === '[0,1]' && m.getLayoutProperty('tar-apt-large', 'text-optional') === true && m.getLayoutProperty('tar-apt-large', 'icon-padding') === 6 && m.getLayoutProperty('tar-apt-large', 'text-padding') === 3);
+  // far-zoom ramp: icon-size 0.5 -> 1 and icon-padding 1 -> 6 between zoom 3.5 and 8 (so the close-zoom look is exactly the old 24 px circle with 6 px padding)
+  const ramp = (a, b) => JSON.stringify(['interpolate', ['linear'], ['zoom'], AIRPIN.FAR.z0, a, AIRPIN.FAR.full, b]);
+  check('marker layout: icon-size ramp 0.5->1, icon padding ramp 0.5->6 (close zoom: 1, 6), text-anchor top, offset [0,1], optional text, text padding 3', JSON.stringify(m.getLayoutProperty('tar-apt-large', 'icon-size')) === ramp(AIRPIN.FAR.size0, 1) && m.getLayoutProperty('tar-apt-large', 'text-anchor') === 'top' && JSON.stringify(m.getLayoutProperty('tar-apt-large', 'text-offset')) === '[0,1]' && m.getLayoutProperty('tar-apt-large', 'text-optional') === true && JSON.stringify(m.getLayoutProperty('tar-apt-large', 'icon-padding')) === ramp(AIRPIN.FAR.pad0, 6) && m.getLayoutProperty('tar-apt-large', 'text-padding') === 3);
   const ids = new Set(); for (const f of m.queryRenderedFeatures({layers: L})) ids.add('flagc-' + f.properties.f + '-' + f.properties.w);
   await w(800);
   const have = [...ids].filter(i => m.hasImage(i));
@@ -89,7 +106,8 @@
   check('IFR ring sprite uses the IFR colour', !!ip && (() => { const i = (1 * ip.w + ip.w / 2) * 4; return Math.abs(ip.d[i] - 255) < 3 && Math.abs(ip.d[i + 1] - 107) < 3 && Math.abs(ip.d[i + 2] - 107) < 3; })(), ip && [ip.d[(ip.w / 2 + ip.w) * 4], ip.d[(ip.w / 2 + ip.w) * 4 + 1]]);
   // label text: code below the detail zoom, name only from it
   const tf = m.getLayoutProperty('tar-apt-large', 'text-field');
-  check('label is the code until the detail zoom, then code + name', JSON.stringify(tf).indexOf('"step"') > -1 && JSON.stringify(tf).indexOf('nm') > -1 && Math.abs(tf[3] - 8) < 0.001, tf && tf[3]);
+  // no label below AIRPIN.FAR.labelZoom (stop 1), the code from there, code + name from the detail zoom (last stop)
+  check('label: none at the far zoom, the code from the label zoom, then code + name at the detail zoom', JSON.stringify(tf).indexOf('"step"') > -1 && tf[2] === '' && Math.abs(tf[3] - AIRPIN.FAR.labelZoom) < 0.001 && JSON.stringify(tf).indexOf('nm') > -1 && Math.abs(tf[tf.length - 2] - 8) < 0.001, tf && [tf[2], tf[3], tf[tf.length - 2]]);
 
   // ---- 2. per-frame cost (software GL) ----
   async function frame(zoom) {

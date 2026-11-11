@@ -53,7 +53,7 @@ function pageAudit(stateName) {
         for (const n of el.childNodes) if (n.nodeType === 3 && n.textContent.trim()) { hasText = true; break; }
         if (hasText) {
             const tc = parse(cs.color), o = opac(el), eff = over([tc[0], tc[1], tc[2], tc[3] * o], bg);
-            const decor = el.closest('[aria-hidden="true"], [disabled], .visuallyHidden, .act.activeButton, .act.on') || el.matches('kbd');
+            const decor = el.closest('[aria-hidden="true"], [disabled], .visuallyHidden') || el.matches('kbd');
             const k = 't|' + hex(eff) + '|' + hex(bg) + '|' + label(el);
             if (!seen.has(k)) {
                 seen.add(k);
@@ -69,7 +69,8 @@ function pageAudit(stateName) {
             if (!seen.has(k)) {
                 seen.add(k);
                 const r = {state: stateName, kind: 'surface', el: label(el), txt: '', fg: '', bg: hex(bg), parent: hex(parentBg), fail: []};
-                if (!isStatus(bg) && !el.matches('.chip.cat') && spread(bg) <= 24 && diff3(bg) > 2) r.fail.push('tinted surface');
+                // a status colour at partial alpha (the flight-category chips, rgba(61,220,151,.14)) composites to a low-saturation tint: judge the surface's own colour
+                if (!isStatus(bg) && !isStatus(own) && spread(bg) <= 24 && diff3(bg) > 2) r.fail.push('tinted surface');
                 const rad = parseFloat(cs.borderTopLeftRadius) || 0, b = el.getBoundingClientRect();
                 const pb = el.parentElement.getBoundingClientRect();
                 const eq = Math.max(Math.abs(bg[0] - parentBg[0]), Math.abs(bg[1] - parentBg[1]), Math.abs(bg[2] - parentBg[2])) <= 2;
@@ -112,12 +113,12 @@ async function main() {
     const first = () => `(()=>{const h=g.planesOrdered.find(p=>p.position&&p.altitude!=null);return h?h.icao:null})()`;
     const states = [['map', '1'],
         ['selected aircraft', `(async()=>{const i=${first()};if(i)selectPlaneByHex(i,{});await new Promise(r=>setTimeout(r,1500))})()`],
-        ['selected, full', `(async()=>{if(window.PHONE&&PHONE.goto)PHONE.goto(2);document.body.classList.add('sheetFull');await new Promise(r=>setTimeout(r,600))})()`],
+        ['selected, full', `(async()=>{if(typeof PHONE!='undefined'&&PHONE.goto)PHONE.goto(2);document.body.classList.add('sheetFull');await new Promise(r=>setTimeout(r,600))})()`],
         ['deselected', `(async()=>{deselectAllPlanes();document.body.classList.remove('sheetFull');await new Promise(r=>setTimeout(r,600))})()`],
         ['aircraft list', `(async()=>{const b=document.getElementById('view_list');if(b)b.click();else{const t=document.querySelector('.psTab:nth-child(2)');t&&t.click()}await new Promise(r=>setTimeout(r,900))})()`],
         ['list back to map', `(async()=>{const b=document.getElementById('view_map');if(b)b.click();else{const t=document.querySelector('.psTab:nth-child(1)');t&&t.click()}await new Promise(r=>setTimeout(r,700))})()`],
         ['airport', `(async()=>{await AIRPT.searchAndOpen('EGLL');await new Promise(r=>setTimeout(r,2500))})()`],
-        ['airport closed', `(async()=>{if(window.AIRPT&&AIRPT.close)AIRPT.close();await new Promise(r=>setTimeout(r,500))})()`],
+        ['airport closed', `(async()=>{if(typeof AIRPT!='undefined'&&AIRPT.close)AIRPT.close();await new Promise(r=>setTimeout(r,500))})()`],
         ['command palette', `(async()=>{PALETTE.show();await new Promise(r=>setTimeout(r,600))})()`],
         ['palette closed', `(async()=>{PALETTE.close();await new Promise(r=>setTimeout(r,300))})()`],
         ['layers', `(async()=>{const b=document.getElementById('layers_button');b&&b.click();await new Promise(r=>setTimeout(r,600))})()`],
@@ -131,6 +132,9 @@ async function main() {
     const all = [];
     for (const [name, js] of states) {
         try { await ev(js); } catch (e) { all.push({state: name, kind: 'driver', el: '(state not reachable)', txt: String(e.message).slice(0, 80), fail: []}); continue; }
+        // sample only settled colours: wait for every running CSS transition/animation to finish (a button that has just become .on passes through
+        // intermediate greys such as #131313 while its colour transitions; that is a timing artifact of the sampler, not a style)
+        await ev('(async()=>{const raf=()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));await raf();for(let i=0;i<5;i++){const a=document.getAnimations().filter(x=>(x.playState==="running"||x.playState==="pending")&&x.effect&&x.effect.getComputedTiming().iterations!==Infinity);if(!a.length)break;await Promise.race([Promise.all(a.map(x=>x.finished.catch(()=>{}))),new Promise(r=>setTimeout(r,1500))]);await raf();}await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));})()');
         const rows = await ev('(' + pageAudit.toString() + ')(' + JSON.stringify(name) + ')');
         all.push(...rows);
     }

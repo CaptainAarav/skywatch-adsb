@@ -145,12 +145,12 @@
           <!-- compact -->
           <section class="ibRoute" id="ib_route" aria-label="Route" hidden>
             <div class="ibRouteCodes">
-              <span class="ibRouteEnd"><img class="ibFlag ibRouteFlag" id="ib_route_from_f" alt="" hidden><span class="mono" id="ib_route_from"></span></span>
+              <span class="ibRouteEnd" id="ib_route_from_e"><img class="ibFlag ibRouteFlag" id="ib_route_from_f" alt="" hidden><span class="mono" id="ib_route_from"></span></span>
               <span class="ibRouteMid" aria-hidden="true">
                 <svg class="ibRouteArc" viewBox="0 0 100 24" preserveAspectRatio="none"><path d="M2 20C28 -2 72 -2 98 20" fill="none" stroke="rgba(255,255,255,.45)" stroke-width="1.5" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"/></svg>
                 <svg class="ibRoutePlane" width="22" height="22" viewBox="0 0 24 24"><path fill="#fff" d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg>
               </span>
-              <span class="ibRouteEnd"><span class="mono" id="ib_route_to"></span><img class="ibFlag ibRouteFlag" id="ib_route_to_f" alt="" hidden></span>
+              <span class="ibRouteEnd" id="ib_route_to_e"><span class="mono" id="ib_route_to"></span><img class="ibFlag ibRouteFlag" id="ib_route_to_f" alt="" hidden></span>
             </div>
             <div class="ibRouteNames lbl"><span id="ib_route_from_n"></span><span id="ib_route_via"></span><span id="ib_route_to_n"></span></div>
             <div class="ibRouteNone lbl" id="ib_route_none" hidden>Route unavailable</div>
@@ -609,6 +609,7 @@
                   </div>
                   <p class="setNote">Airline logos are loaded from <span class="mono airlineLogoHost"></span>. They belong to their owners, and loading
                     them shares your IP address with that service; they can be turned off under Photos &amp; routes. Airline codes: Wikidata (CC0).</p>
+                  <p class="setNote" id="modelCredits" hidden></p>
                 </div>
               </section>
             </div>
@@ -907,6 +908,8 @@
 
     <!-- JS_ANCHOR2 -->
     <script src="ui/banner-state.js"></script>
+    <script src="ui/radar2d.js"></script>
+    <script src="ui/quality-calc.js"></script>
     <script src="ui/components.js"></script>
     <script src="project.js"></script>
     <script src="early.js"></script>
@@ -937,11 +940,18 @@
     <script src="ui/maplibre-route.js"></script>
     <script src="ui/maplibre-motion.js"></script>
     <script src="ui/maplibre-lift.js"></script>
+    <script src="ui/models-norm.js"></script>
     <script src="ui/maplibre-models.js"></script>
+    <script src="ui/maplibre-gltf.js"></script>
+    <script src="ui/maplibre-contrails.js"></script>
+    <script src="ui/perf-stats.js"></script>
+    <script src="ui/perf-counters.js"></script>
+    <script src="ui/perf-overlay.js"></script>
     <script src="ui/maplibre-radar.js"></script>
     <script src="ui/aircraft-color.js"></script>
     <script src="ui/maplibre-land.js"></script>
     <script src="ui/maplibre-terrain.js"></script>
+    <script src="ui/maplibre-quality.js"></script>
     <script src="ui/altlegend.js"></script>
     <script src="ui/graphs.js"></script>
     <script src="ui/shell.js"></script>

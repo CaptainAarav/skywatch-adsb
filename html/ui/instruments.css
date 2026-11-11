@@ -28,7 +28,7 @@
 #selected_infoblock .ibRoute { padding: 16px 18px; }
 #selected_infoblock .ibDetailsBtn { height: 56px; padding: 0 18px; }
 #selected_infoblock .ibDetailsBtn:hover { background: rgba(255,255,255,.09); }
-.ibCardTop { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+/* .ibCardTop is a .cardHead too (see components.css) */
 .ibCard2 h3 { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .2px; }
 .ibTiny { font-size: 10px; color: var(--muted); }
 
@@ -42,7 +42,7 @@
 .ibBigV .na { color: var(--text-2); font-weight: 400; }
 .ibBigV > span:first-child { min-width: 0; }
 @container ibcard (max-width: 150px) {
-    .ibBigV { font-size: 18px; }
+    .ibBigV, #selected_infoblock .ibInst .ibBigV { font-size: 18px; }   /* the id rule in elevation.css (22px) would otherwise win and a 5-digit altitude overflows a 91 px card */
     .ibBigV .unit { display: block; margin: 0; font-size: 10px; line-height: 1.2; white-space: nowrap; }
     .ibVs { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .ibSum .lbl { font-size: 11px; white-space: nowrap; }

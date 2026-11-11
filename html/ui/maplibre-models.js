@@ -17,13 +17,13 @@
 //   all clamped and exponentially smoothed. Conventions: ui/models-calc.js header.
 // A failure at any point (no WebGL2, the lazy load fails, a shader error) falls back to icons with one console.debug line.
 (function () {
-    const KEY = 'models3d', CAP = 300, Z0 = 9, BAND = 0.5, MIN_PX = 28, LAYER = 'tar-models3d';
+    const KEY = 'models3d', CAP = 300, Z0 = 9, BAND = 0.5, MIN_PX = 28, LOD_PX = 90, LAYER = 'tar-models3d';   // LOD_PX: a real glTF model is drawn from this on-screen length (px); smaller ones use the simple archetype geometry
     const SRC = 'libs/three-0.170.0.module.min.js';
     let wanted = true;
     try { const v = localStorage.getItem(KEY); if (v === '0' || v === 'false') wanted = false; } catch (e) { /* private mode: default on */ }
     let T = null, loading = null, failed = false, layer = null, dimOn = false;
     const stats = {drawn: 0, byArchetype: {}, loaded: false, active: false, lastFrameMs: 0, builds: 0, disposals: 0,
-        frames: 0, skipped: 0, culled: 0, tris: 0, measureAlloc: false, allocBytes: 0, allocMax: 0, gpuMs: null, gpuState: 'not measured'};
+        frames: 0, skipped: 0, culled: 0, tris: 0, measureAlloc: false, allocBytes: 0, allocMax: 0, allocPrep: 0, gpuMs: null, gpuState: 'not measured'};
     // per-frame CPU timing of the layer (prepare = placement and buffer writes, render = three.js submit), ring buffers filled when stats.timing is on
     const RING = 1024, ring = {prep: new Float64Array(RING), rend: new Float64Array(RING), n: 0};
     stats.timing = false; stats.ring = ring;
@@ -32,7 +32,7 @@
     MLR.modelSet = new Map();                     // icao -> {arch, ai, span, length, f, px}
     MLR.modelArr = [];                            // the same entries as an array (the frame loop walks it without allocating)
 
-    MLR.modelsWanted = function () { return wanted && !failed && this.is3D && !this.isGlobe(); };
+    MLR.modelsWanted = function () { return wanted && !failed && this.is3D && !this.isGlobe() && (!this.q || this.q.models); };
     MLR.modelsActive = function () { return !!layer && this.modelsWanted(); };
     MLR.setModelsWanted = function (on) {
         wanted = !!on;
@@ -107,7 +107,7 @@
                 add(new T.BoxGeometry(1, 1, 1), [s * 0.12, P.ty, 0.0], [0, 0, -s * 0.3], [0.17, 0.07, 0.01], 0);   // tailplane
             }
             const fin = (arch === 'regionalJet' || arch === 'businessJet');
-            box(0.012 * ar, 0.1, 0.16, [0, P.ty - 0.01, fin ? r + 0.07 : r + 0.06], [0, 0, 0], 0);              // fin
+            box(0.012 * ar, 0.1, 0.16, [0, P.ty - 0.01, fin ? r + 0.07 : r + 0.06], [0, 0, 0], 2);              // fin (part 2: takes the tail tint)
             if (fin) box(0.26, 0.07, 0.01, [0, P.ty - 0.02, r + 0.14], [0, 0, 0], 0);                            // T-tail
             for (const [x, y, len, er] of P.eng) {
                 const pod = arch === 'regionalJet' || arch === 'businessJet';
@@ -138,19 +138,29 @@
         return new T.ShaderMaterial({
             transparent: false, depthWrite: true, depthTest: true, side: T.BackSide,    // opaque and depth-tested; the Mercator mirror flips winding, so BackSide culls the far faces
             
-            uniforms: {uAlpha: {value: 1}, uTrim: {value: new T.Color(107 / 255, 107 / 255, 107 / 255)}},
+            uniforms: {uAlpha: {value: 1}, uTrim: {value: new T.Color(107 / 255, 107 / 255, 107 / 255)}, uRealistic: {value: 1}, uBody: {value: new T.Color(0.9, 0.9, 0.9)}},
             vertexShader: 'attribute float part; varying vec3 vN; varying float vPart; varying vec3 vTint;\n' +
                 'void main() { vPart = part;\n#ifdef USE_INSTANCING_COLOR\n vTint = instanceColor;\n#else\n vTint = vec3(1.0);\n#endif\n' +
                 ' mat3 nm = mat3(instanceMatrix); vN = normalize(nm * normal);\n gl_Position = projectionMatrix * instanceMatrix * vec4(position, 1.0); }',
-            fragmentShader: 'precision highp float; uniform float uAlpha; uniform vec3 uTrim; varying vec3 vN; varying float vPart; varying vec3 vTint;\n' +
-                'void main() { vec3 base = mix(vTint, uTrim, vPart); vec3 L = normalize(vec3(0.35, -0.45, 0.82));\n' +
-                ' float d = abs(dot(normalize(vN), L)); float shade = 0.5 + 0.5 * d;\n gl_FragColor = vec4(base * shade, uAlpha); }',
+            // ONE hemisphere light (sky above, dark ground below) plus ONE directional light with a soft specular term; no textures, no environment map.
+            // Realistic: neutral light-grey body, grey trim, the fin takes the instance tint (airline tail colour when known, else the same grey); a pure white tint = selected.
+            // Altitude: the whole body takes the instance tint (the altitude gradient), as before.
+            fragmentShader: 'precision highp float; uniform float uAlpha, uRealistic; uniform vec3 uTrim, uBody; varying vec3 vN; varying float vPart; varying vec3 vTint;\n' +
+                'void main() { vec3 N = normalize(vN); if (!gl_FrontFacing) N = N; vec3 L = normalize(vec3(0.35, -0.45, 0.82));\n' +
+                ' bool sel = vTint.r > 0.995 && vTint.g > 0.995 && vTint.b > 0.995;\n' +
+                ' vec3 body = uRealistic > 0.5 ? (vPart > 1.5 ? vTint : uBody) : vTint; vec3 base = vPart > 0.5 && vPart < 1.5 ? uTrim : body;\n' +
+                ' float up = 0.5 + 0.5 * N.z; vec3 hemi = mix(vec3(0.20), vec3(0.62), up);\n' +
+                ' float dif = max(dot(N, L), 0.0) * 0.55 + max(dot(-N, L), 0.0) * 0.18;\n' +
+                ' vec3 R = reflect(-L, N); float spec = pow(max(R.z, 0.0), 24.0) * 0.18 * (vPart > 0.5 && vPart < 1.5 ? 1.4 : 1.0);\n' +
+                ' vec3 col = base * (hemi + dif) + vec3(spec);\n' +
+                ' if (sel && uRealistic > 0.5) col = mix(col, vec3(1.0), 0.45);\n' +
+                ' gl_FragColor = vec4(col, uAlpha); }',
         });
     }
 
     // ----- the custom layer -----
     function createLayer() {
-        const state = {meshes: {}, meshesByIndex: [], shadow: null, scene: null, camera: null, renderer: null, mats: [], geos: [], tmp: null};
+        const state = {meshes: {}, meshesByIndex: [], hiByIndex: [], hiGeos: [], shadow: null, scene: null, camera: null, renderer: null, mats: [], geos: [], tmp: null};
         const mat4 = () => new T.Matrix4();
         return {
             id: LAYER, type: 'custom', renderingMode: '3d', _s: state,
@@ -161,6 +171,7 @@
                 state.renderer.autoClear = false;
                 state.scene = new T.Scene(); state.camera = new T.Camera();
                 state.mat = makeMaterial(); state.mats.push(state.mat);
+                state.mat.uniforms.uRealistic.value = colourMode === 'realistic' ? 1 : 0;
                 for (const a of MODELS.ARCHETYPES) {
                     const g = buildGeometry(a); state.geos.push(g);
                     (stats.trisByArchetype || (stats.trisByArchetype = {}))[a] = g.attributes.position.count / 3;
@@ -176,6 +187,7 @@
                 state.scene.add(state.shadow);
                 stats.builds++; stats.loaded = true;
                 state.ok = true;
+                if (MLR.gltfAttachAll) MLR.gltfAttachAll(state, T);
             },
             render(gl, args) {
                 if (!state.ok) return;
@@ -186,12 +198,14 @@
             onRemove() {
                 try {
                     for (const m of Object.values(state.meshes)) { m.dispose && m.dispose(); }
+                    for (const m of state.hiByIndex) m && m.dispose && m.dispose();
+                    for (const g of state.hiGeos) g.dispose();
                     if (state.shadow) state.shadow.dispose();
                     for (const g of state.geos) g.dispose();
                     for (const m of state.mats) m.dispose();
                     state.renderer && state.renderer.dispose();
                 } catch (e) { /* already gone */ }
-                state.ok = false; state.meshes = {}; state.meshesByIndex = []; state.geos = []; state.mats = []; stats.disposals++; stats.loaded = false;
+                state.ok = false; state.meshes = {}; state.meshesByIndex = []; state.hiByIndex = []; state.hiGeos = []; state.geos = []; state.mats = []; stats.disposals++; stats.loaded = false;
             },
         };
     }
@@ -204,6 +218,23 @@
     const HKEY = 'modelHeight';
     let heightMode = 'compressed';
     try { const v = localStorage.getItem(HKEY); if (v === 'realistic' || v === 'compressed') heightMode = v; } catch (e) { /* default */ }
+    // "Aircraft colour": realistic (default) = neutral light-grey bodies, altitude = the gradient. Airline tail tint only when a brand colour is known (window.AIRLINE_TAIL_COLOURS[icao]).
+    const CKEY = 'modelColour';
+    let colourMode = 'realistic';
+    try { const v = localStorage.getItem(CKEY); if (v === 'realistic' || v === 'altitude') colourMode = v; } catch (e) { /* default */ }
+    MLR.modelColourMode = function () { return colourMode; };
+    MLR.setModelColourMode = function (v) {
+        colourMode = v === 'altitude' ? 'altitude' : 'realistic';
+        try { localStorage.setItem(CKEY, colourMode); } catch (e) { /* not persisted */ }
+        const st = layer && layer._s; if (st && st.mat) st.mat.uniforms.uRealistic.value = colourMode === 'realistic' ? 1 : 0;
+        for (const e of this.planes.values()) if (e.mo) e.mcSrc = null;
+        this.touch && this.touch('planes'); this.map && this.map.triggerRepaint();
+    };
+    function tailHex(p) {
+        const t = window.AIRLINE_TAIL_COLOURS, f = p && typeof p.flight === 'string' ? p.flight.trim() : '';
+        const c = t && /^[A-Z]{3}\d/.test(f) ? t[f.slice(0, 3)] : null;
+        return /^#[0-9a-f]{6}$/i.test(c || '') ? c : '#c4c4c4';
+    }
     MLR.modelHeightMode = function () { return heightMode; };
     MLR.setModelHeightMode = function (v) {
         heightMode = v === 'realistic' ? 'realistic' : 'compressed';
@@ -212,6 +243,9 @@
         this.touch && this.touch('planes');
         this.map && this.map.triggerRepaint();
     };
+    // per-aircraft smoothing state with every numeric field present from the start: V8 then updates the double fields in place (a field that starts
+    // undefined is stored tagged and allocates a HeapNumber on every write, which showed up as per-frame garbage)
+    function newMotion(now) { return {t: now, yaw: NaN, pitch: NaN, roll: NaN, el: 0.5, elT: -1e9}; }
     const G = {}, PO = {}, ELL = {x: 0, y: 0}, R = new Float64Array(9), R2 = new Float64Array(9);
     const CAM = {w: 1, h: 1, pitch: 0, mpp: 1};
     function meters(p) {
@@ -232,7 +266,7 @@
     MLR.modelPose = function (e, ll, now) {
         const map = this.map, t = map.transform, M = t.mercatorMatrix, c = map.getContainer();
         const W = c.clientWidth, H = c.clientHeight, p = e.plane;
-        const s = e.mo || (e.mo = {t: now});
+        const s = e.mo || (e.mo = newMotion(now));
         MODELS.ground(M, ll[0], ll[1], terrainM(map, s, ll[0], ll[1], now), G);
         if (!G.ok) { PO.ok = false; return PO; }
         const altM = meters(p);
@@ -261,26 +295,32 @@
         const heap = stats.measureAlloc && performance.memory ? performance.memory.usedJSHeapSize : 0;
         const src = this.modelTestPlanes || this.planes;
         stats.frames++;
-        if (!TMP.q) { TMP.counts = new Int32Array(MODELS.ARCHETYPES.length); TMP.p = new T.Matrix4(); }
+        if (!TMP.q) { TMP.q = 1; TMP.ll = [0, 0]; TMP.counts = new Int32Array(MODELS.ARCHETYPES.length); TMP.countsHi = new Int32Array(MODELS.ARCHETYPES.length); TMP.p = new T.Matrix4(); }
         const c = map.getContainer(), W = c.clientWidth, H = c.clientHeight;
         const pitch = map.getPitch() * D2R, maxPx = Math.min(LIFT.max, H * 0.3), kx = LIFT.k;
         // origin: the map centre in Mercator (double precision) folded into the projection matrix; instance positions are relative to it
         const cc = t.center, cs = Math.sin(cc.lat * D2R), ox = (cc.lng + 180) / 360, oy = 0.5 - Math.log((1 + cs) / (1 - cs)) / (4 * Math.PI);
-        const counts = TMP.counts; counts.fill(0);
+        const counts = TMP.counts, countsHi = TMP.countsHi; counts.fill(0); countsHi.fill(0);
+        const realistic = colourMode === 'realistic', hiOk = !this.q || this.q.modelLod === 'high';
         let shadows = 0, drawn = 0;
         const arr = this.modelArr, n = arr.length, margin = 120;
         let culled = 0;
+        const smooth = this.smoothActive();
         for (let q = 0; q < n; q++) {
             const d = arr[q], e = src.get(d.icao);
             if (!e || !e.plane.proj) continue;
-            const p = e.plane, ai = d.ai, mesh = state.meshesByIndex[ai];
-            if (!mesh || counts[ai] >= CAP) continue;
-            const ll = this.baseLL(e);
-            const s = e.mo || (e.mo = {t: now});
+            const p = e.plane, ai = d.ai, hiM = state.hiByIndex[ai], useHi = !!hiM && hiOk && d.px >= LOD_PX, mesh = useHi ? hiM : state.meshesByIndex[ai], cnt = useHi ? countsHi : counts;
+            if (!mesh || cnt[ai] >= CAP) continue;
+            const ll = smooth && e.dLL ? e.dLL : mapgeo.toLonLatInto(p.proj, TMP.ll);
+            const s = e.mo || (e.mo = newMotion(now));
             MODELS.ground(M, ll[0], ll[1], terrainM(map, s, ll[0], ll[1], now), G);
             if (!G.ok) continue;
             // cheap cull before any further maths: the ground point and the (compressed or true) top of the model must be near the screen
-            const altM = meters(p), mpp = MODELS.metresPerPixel(ll[1], zoom);
+            // altitude (m) and metres per pixel inlined: a double returned from a non-inlined call is a boxed heap number, i.e. per-aircraft garbage
+            let altM = 0;
+            if (MLR.testAltM != null) altM = MLR.testAltM;
+            else if (p.altitude !== 'ground' && !p.onGround) { const ft = typeof p.alt_geom === 'number' ? p.alt_geom : (typeof p.altitude === 'number' ? p.altitude : 0); if (ft > 0) altM = ft * 0.3048; }
+            const mpp = 40075016.686 * Math.cos(ll[1] * D2R) / (512 * Math.pow(2, zoom));
             const raw = pitch < 0.01 ? 0 : altM * kx / mpp * Math.sin(pitch);
             MODELS.pose(M, G, altM, heightMode, raw, maxPx, W, H, PO);
             if (!PO.ok) continue;
@@ -295,17 +335,18 @@
             s.roll = MODELS.smoothAngle(s.roll, onG ? 0 : MODELS.rollFrom(typeof p.roll == 'number' ? p.roll : null, p.track_rate, gs), dt, 0.7);
             MODELS.orientationInto(R, s.yaw, s.pitch, s.roll);
             const sc = G.k * d.f, sx = d.span * sc, sy = d.length * sc, sz = d.length * sc;
-            const i = counts[ai]++, a = mesh.instanceMatrix.array, o = i * 16;
+            const i = cnt[ai]++, a = mesh.instanceMatrix.array, o = i * 16;
             // T(rel) * diag(1,-1,1) * R_enu * S  (Mercator y runs south; the belly of the model is its origin, so it pivots about the belly)
             a[o] = R[0] * sx; a[o + 1] = -R[3] * sx; a[o + 2] = R[6] * sx; a[o + 3] = 0;
             a[o + 4] = R[1] * sy; a[o + 5] = -R[4] * sy; a[o + 6] = R[7] * sy; a[o + 7] = 0;
             a[o + 8] = R[2] * sz; a[o + 9] = -R[5] * sz; a[o + 10] = R[8] * sz; a[o + 11] = 0;
             a[o + 12] = G.mx - ox; a[o + 13] = G.my - oy; a[o + 14] = G.zg + PO.dz; a[o + 15] = 1;
             const ca = mesh.instanceColor.array, co = i * 3;
-            if (e.mcSrc !== (e.sel ? '#ffffff' : e.fillColor)) { e.mcSrc = e.sel ? '#ffffff' : e.fillColor; parseHex(e.mcSrc || '#cfcfcf', e); }
+            const csrc = e.sel ? '#ffffff' : (realistic ? tailHex(p) : e.fillColor);
+            if (e.mcSrc !== csrc) { e.mcSrc = csrc; parseHex(csrc || '#cfcfcf', e); }
             ca[co] = e.mcR; ca[co + 1] = e.mcG; ca[co + 2] = e.mcB;
             drawn++;
-            if (shadows < CAP) {   // soft blob on the surface at the TRUE ground point
+            if (shadows < CAP && (!MLR.q || MLR.q.shadows)) {   // soft blob on the surface at the TRUE ground point
                 MODELS.orientationInto(R2, s.yaw, 0, 0);
                 const sa = state.shadow.instanceMatrix.array, so = shadows * 16, ssx = d.span * sc * 0.55, ssy = d.length * sc * 0.55;
                 sa[so] = R2[0] * ssx; sa[so + 1] = -R2[3] * ssx; sa[so + 2] = 0; sa[so + 3] = 0;
@@ -317,14 +358,17 @@
         }
         const meshes = state.meshesByIndex;
         for (let ai = 0; ai < meshes.length; ai++) {
-            const mesh = meshes[ai]; mesh.count = counts[ai];
+            const mesh = meshes[ai], hi = state.hiByIndex[ai]; mesh.count = counts[ai];
             if (counts[ai]) { mesh.instanceMatrix.needsUpdate = true; mesh.instanceColor.needsUpdate = true; }
-            stats.byArchetype[MODELS.ARCHETYPES[ai]] = counts[ai];
+            if (hi) { hi.count = countsHi[ai]; if (countsHi[ai]) { hi.instanceMatrix.needsUpdate = true; hi.instanceColor.needsUpdate = true; } }
+            stats.byArchetype[MODELS.ARCHETYPES[ai]] = counts[ai] + countsHi[ai];
         }
         stats.drawn = drawn;
+        stats.hiDrawn = countsHi.reduce((a, b) => a + b, 0);
         state.shadow.count = shadows; if (shadows) state.shadow.instanceMatrix.needsUpdate = true;
         stats.culled = culled;
         const t1 = stats.timing ? performance.now() : 0;
+        if (heap) { const d = performance.memory.usedJSHeapSize - heap; if (d > 0) stats.allocPrep += d; }
         if (!drawn && !shadows) { stats.skipped++; if (heap) trackAlloc(heap); return; }
         state.mat.uniforms.uAlpha.value = w; state.mat.transparent = w < 1;
         state.shadow.material.opacity = 0.3 * w;
@@ -377,7 +421,7 @@
             if (q.x < -60 || q.y < -60 - 260 || q.x > cw + 60 || q.y > ch + 60 + 260) continue;     // the model may stand well above its ground point
             items.push({x: q.x, y: q.y, e});
         }
-        for (const it of MODELS.nearest(items, ctr.x, ctr.y, CAP)) {
+        for (const it of MODELS.nearest(items, ctr.x, ctr.y, this.q && this.q.modelLod === 'low' ? 60 : CAP)) {
             const e = it.e, p = e.plane;
             const code = p.icaoType, arch = MODELS.archetypeFor(code, {desc: p.typeDescription, wtc: p.wtc, category: p.category}), dm = MODELS.dimsFor(code, arch);
             const lat = p.position[1], f = MODELS.scaleFactor(dm.length, lat, m.getZoom(), MIN_PX), mpp = MODELS.metresPerPixel(lat, m.getZoom());

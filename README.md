@@ -152,7 +152,7 @@ Options added or changed by this fork:
 | `airportDetail` | `true` | Airport detail overlay (OpenFreeMap tiles). |
 | `terrain3d` | `false` in `defaults.js`; the first-run default is on for desktop with a hardware GPU | Real terrain in the 3D view (elevation tiles from AWS Open Data). Settings has an exaggeration slider. |
 | `planespottersAPI` | `true` | Aircraft photos from planespotters.net. |
-| `useRouteAPI`, `routeApiUrl` | `false`, adsb.im | Route lookup. Off by default; set `routeApiUrl = ""` to forbid it. |
+| `useRouteAPI`, `routeApiUrl` | `true`, adsb.im | Route lookup (origin and destination for the selected aircraft). On by default; it sends the callsign and position. Set `useRouteAPI = false` or `routeApiUrl = ""` to forbid it. |
 | `airportWeather`, `airportLinks` | `true` | Weather cards and external link buttons in the airport panel. |
 | `airportPinWx` | `true` | Flight-category rings on airport pins and the hover card (needs the weather feed). |
 | `aircraftColor` | `white` | Map aircraft icon colour: `white` or `altitude`. Settings > Aircraft & labels. Tracks always use the altitude gradient. |
@@ -180,7 +180,7 @@ gone on phones; their switches live under Settings > Aircraft & labels. Desktop 
 | RainViewer | rain radar frames, only while that overlay is on | off by default |
 | pics.avs.io | airline logos (sends airline codes) | yes (`airlineLogos`) |
 | planespotters.net | aircraft photos | yes (`planespottersAPI`) |
-| adsb.im | flight routes (sends callsign and position) | off by default (`useRouteAPI`) |
+| adsb.im | flight routes (sends callsign and position, selected aircraft only) | on by default (`useRouteAPI`) |
 | SkyVector, NATS AIP, Wikipedia | only when a visitor clicks a link in the airport panel | `airportLinks = false` |
 
 **Your server contacts** aviationweather.gov (the recorder, for weather) and, only if you configure it, your ntfy server (alerts).
@@ -230,7 +230,7 @@ Public tile servers are shared and can rate-limit you. When your site has regula
 - Airport detail depends on OpenStreetMap quality (stands, taxiway letters and runway numbers can be missing). Runway-in-use is inferred from a few minutes of traffic and can be wrong; the TAF strip is an approximation; the UK AIP link goes to the NATS landing page.
 - Recent movements are inferred from what the receiver hears and can miss or mislabel flights (a low go-around that leaves coverage can look like a landing).
 - Browser notifications work only while the page is open.
-- The dashed route line has not been checked with a real looked-up route. Phone replay-bar touch scrubbing, long-press on pins and the phone layout were not tried on a real device.
+- The dashed route line is covered by a recorded-response fixture test, not by a live lookup on a real device. Phone replay-bar touch scrubbing, long-press on pins and the phone layout were not tried on a real device.
 - Only Chromium (headless) has been tested. The standalone `install.sh` path and docker-tar1090 are untested.
 - The aircraft icons are the stock tar1090 shapes.
 

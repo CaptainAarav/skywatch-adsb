@@ -88,12 +88,13 @@
   numbers.collision = {selected: {shown: A.rects.length, of: 6, overlaps: A.overlaps, selectedShown: A.uniq.has('ff0013')}, none: {shown: B.rects.length, of: 6, overlaps: B.overlaps, shown_hex: [...B.uniq.keys()]}};
 
   // ---- 3. 2D, 3D, Globe: the pill is a symbol of the same feature, so it follows the lifted icon ----
-  const real = g.planesOrdered.find(p => p.position && typeof p.altitude == 'number' && p.altitude > 3000);
+  // the HIGHEST aircraft: the lift is proportional to altitude, so a low one (a live aircraft at 3000 ft lifted 1 px at zoom 9) cannot show a lift reliably
+  const real = g.planesOrdered.filter(p => p.position && typeof p.altitude == 'number' && p.altitude > 3000).sort((a, b) => b.altitude - a.altitude)[0];
   selectPlaneByHex(real.icao, {follow: false}); await w(1500);
   const modes = {};
   for (const [mode, btn] of [['2d', 'view2d'], ['3d', 'view3d'], ['globe', 'viewGlobe'], ['2d-back', 'view2d']]) {
     document.getElementById(btn).click(); await w(3500);
-    m.jumpTo({center: [real.position[0], real.position[1]], zoom: mode === 'globe' ? 3 : 9}); await w(2500);
+    m.jumpTo({center: [real.position[0], real.position[1]], zoom: mode === 'globe' ? 3 : (mode === '3d' ? 11 : 9)}); await w(2500);
     const lab = m.queryRenderedFeatures({layers: ['tar-plane-labels-top']}).filter(f => f.properties.hex === real.icao);
     const pl = m.queryRenderedFeatures({layers: ['tar-planes']}).filter(f => f.properties.hex === real.icao);
     const sameCoord = lab.length && pl.length && Math.abs(lab[0].geometry.coordinates[0] - pl[0].geometry.coordinates[0]) < 1e-6 && Math.abs(lab[0].geometry.coordinates[1] - pl[0].geometry.coordinates[1]) < 1e-6;

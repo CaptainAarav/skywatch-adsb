@@ -55,6 +55,7 @@ function ibSub(id, v) {
     const s = (v == null) ? '' : String(v);
     if (e.textContent !== s)
         e.textContent = s;
+    if (e.title !== s) e.title = s;                  // the line is one ellipsised row: the full text stays reachable
     e.hidden = (s === '');
 }
 function ibHtml(id, html) {
@@ -145,6 +146,28 @@ function ibRouteFlag(id, a) {
     if (/^[A-Z]{2}$/.test(cc)) { const u = 'flags/3x2/' + cc + '.svg'; if (e.getAttribute('src') !== u) e.setAttribute('src', u); e.hidden = false; }
     else { e.removeAttribute('src'); e.hidden = true; }
 }
+// a route end is a button that opens that airport's panel (exactly as its map marker does) when the airport is in the database, plain text when it is not
+function ibRouteLink(id, a) {
+    const e = ibEl(id);
+    if (!e) return;
+    const row = a && (typeof AIRPT != 'undefined') && AIRPT.find ? AIRPT.find(a) : null;
+    if (row) {
+        e.setAttribute('role', 'button'); e.tabIndex = 0; e.dataset.icao = a.icao || ''; e.dataset.iata = a.iata || '';
+        e.setAttribute('aria-label', 'Open airport ' + (row[3] || row[0]) + ' (' + row[0] + ')');
+        e.classList.add('ibRouteLink');
+    } else {
+        e.removeAttribute('role'); e.removeAttribute('tabindex'); e.removeAttribute('aria-label'); e.removeAttribute('data-icao'); e.removeAttribute('data-iata');
+        e.classList.remove('ibRouteLink');
+    }
+}
+function ibRouteLinkGo(e) {
+    const p = typeof SelectedPlane != 'undefined' ? SelectedPlane : null;
+    if (!p || !(typeof AIRPT != 'undefined')) return;
+    const nm = (p.name && p.name !== 'no callsign' && String(p.name).trim()) || String(p.icao).toUpperCase();
+    AIRPT.openFromAircraft({icao: e.dataset.icao, iata: e.dataset.iata}, p.icao, nm);
+}
+document.addEventListener('click', ev => { const e = ev.target.closest && ev.target.closest('.ibRouteLink'); if (e) ibRouteLinkGo(e); });
+document.addEventListener('keydown', ev => { if (ev.key !== 'Enter' && ev.key !== ' ') return; const e = ev.target.closest && ev.target.closest('.ibRouteLink'); if (e) { ev.preventDefault(); ibRouteLinkGo(e); } });
 function ibCode(a) {
     return a.iata || a.icao || '';
 }
@@ -208,6 +231,7 @@ function ibRender(p) {
         ibSub('ib_route_to_n', ibAirportName(last));
         ibSub('ib_route_via', a.length > 2 ? 'via ' + a.slice(1, -1).map(ibCode).join(', ') : '');
         ibRouteFlag('ib_route_from_f', first); ibRouteFlag('ib_route_to_f', last);
+        ibRouteLink('ib_route_from_e', first); ibRouteLink('ib_route_to_e', last);
         ibEl('ib_route_warn').hidden = route.plausible !== false;
         ibEl('ib_route_none').hidden = true;
         rc.classList.remove('ibRouteEmpty');
@@ -215,7 +239,7 @@ function ibRender(p) {
         rc.hidden = false;
     } else if (rc && ibRouteNone(p)) {
         ibSub('ib_route_from', ''); ibSub('ib_route_to', ''); ibSub('ib_route_from_n', ''); ibSub('ib_route_to_n', ''); ibSub('ib_route_via', '');
-        ibRouteFlag('ib_route_from_f', null); ibRouteFlag('ib_route_to_f', null);
+        ibRouteFlag('ib_route_from_f', null); ibRouteFlag('ib_route_to_f', null); ibRouteLink('ib_route_from_e', null); ibRouteLink('ib_route_to_e', null);
         ibEl('ib_route_warn').hidden = true;
         ibEl('ib_route_none').hidden = false;
         rc.classList.add('ibRouteEmpty');

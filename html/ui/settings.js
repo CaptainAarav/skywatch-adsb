@@ -52,6 +52,7 @@ const SET_ROWS = {
     updateLocation:  ['set_advanced', 'Update receiver location from GPS'],
     debugTracks:     ['set_advanced', 'Debug tracks'],
     debugAll:        ['set_advanced', 'Debug: show all'],
+    perfOverlay:     ['set_advanced', 'Performance overlay'],
 };
 
 // curated base maps for the thumbnail grid (mockup 04); everything else is under "More..."
@@ -130,7 +131,7 @@ function setBuildBaseMaps() {
         const name = p.names.find(n => byName[n] && setRegionUsable(setLayerRegion(byName[n])));
         if (!name) continue;
         used.add(name);
-        html += `<button type="button" class="baseTile" role="radio" data-base="${setEsc(name)}"><span class="baseThumb" style="background:${p.bg}"></span><span class="baseName">${setEsc(p.title)}</span><span class="lbl baseSub">${setEsc(p.sub)}</span></button>`;
+        html += `<button type="button" class="baseTile" role="radio" data-base="${setEsc(name)}"><span class="baseThumb" style="background:${p.bg}"></span><span class="baseName" title="${setEsc(p.title)}">${setEsc(p.title)}</span><span class="lbl baseSub">${setEsc(p.sub)}</span></button>`;
     }
     const rest = all.filter(l => !used.has(l.get('name')) && setRegionUsable(setLayerRegion(l)));
     if (rest.length) {

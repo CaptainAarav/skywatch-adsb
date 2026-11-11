@@ -54,7 +54,7 @@
             if (!m.getLayer(id)) continue;
             const z = AIRTIERS.tierZooms(t, o);
             m.setLayerZoomRange(id, z.dot, 24);
-            m.setLayoutProperty(id, 'text-field', AIRPIN.textField(z.dot, z.name));
+            m.setLayoutProperty(id, 'text-field', AIRPIN.labelField(z.dot, z.name));
         }
     };
     MLR.setAirportDensity = function (v) {
@@ -72,7 +72,7 @@
         const before = ['tar-plane-glow', 'tar-plane-labels', 'tar-planes'].find(id => m.getLayer(id));
         for (const t of AIRTIERS.ORDER) {
             m.addLayer({id: LAYER(t), type: 'symbol', source: 'tar-apts', filter: ['==', ['get', 't'], t],
-                layout: AIRPIN.layout(ML_FONT, gs, AIRPIN.textField(0, 99)), paint: Object.assign({}, AIRPIN.PAINT)}, before);
+                layout: AIRPIN.layout(ML_FONT, gs, AIRPIN.labelField(0, 99)), paint: Object.assign({}, AIRPIN.PAINT)}, before);
         }
         this.applyAirportTiers();
         this.applyPinWeather();
@@ -156,9 +156,18 @@
             card = el;
         };
         MLR._pinCardShow = show; MLR._pinCardClose = close;
+        // hover: ONE map-level handler (not one per tier layer, which ran a query per layer per mouse event), once per animation frame, a small box, pin layers only,
+        // and nothing while the camera is moving
+        let over = false;
+        const hover = MLR.throttleHover((e) => {
+            const ids = this.airportTierLayers().filter(id => m.getLayer(id));
+            const f = ids.length ? m.queryRenderedFeatures([[e.point.x - 6, e.point.y - 6], [e.point.x + 6, e.point.y + 6]], {layers: ids}) : [];
+            if (f.length) { over = true; m.getCanvas().style.cursor = 'pointer'; show(f[0], e.point); }
+            else if (over) { over = false; m.getCanvas().style.cursor = ''; close(); }
+        });
+        m.on('mousemove', hover);
+        m.getCanvas().addEventListener('mouseleave', () => { over = false; m.getCanvas().style.cursor = ''; close(); });
         for (const id of this.airportTierLayers()) {
-            m.on('mousemove', id, (e) => { m.getCanvas().style.cursor = 'pointer'; if (e.features && e.features[0]) show(e.features[0], e.point); });
-            m.on('mouseleave', id, () => { m.getCanvas().style.cursor = ''; close(); });
             m.on('touchstart', id, (e) => { clearTimeout(lp); const f = e.features && e.features[0], pt = e.point; lp = setTimeout(() => f && show(f, pt), 500); });
         }
         m.on('touchend', () => clearTimeout(lp)); m.on('touchmove', () => clearTimeout(lp));

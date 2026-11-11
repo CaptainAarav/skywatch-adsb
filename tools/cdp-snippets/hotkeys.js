@@ -43,6 +43,8 @@
   document.activeElement.blur();
   // r again then Escape deselect
   key('r'); await sleep(400);
+  // setup for the Escape check only (the 'r' key itself is asserted above): if the random pick selected nothing (live traffic), select an aircraft directly and say so
+  if (!SelectedPlane) { const q = g.planesOrdered.find(x => x.position); if (q) { selectPlaneByHex(q.icao, {follow: false}); await sleep(400); } out.escapeSetup = 'r selected nothing, aircraft selected directly: ' + (q ? q.icao : 'NONE AVAILABLE'); }
   await chk('Escape', () => [SelectedPlane && SelectedPlane.icao]);
   // buttons by click
   const clickChk = async (id, get) => { const a = JSON.stringify(get()); document.querySelector(id).click(); await sleep(250); out['click ' + id] = (a !== JSON.stringify(get()) ? 'OK ' : 'NOCHANGE ') + a + ' -> ' + JSON.stringify(get()); };

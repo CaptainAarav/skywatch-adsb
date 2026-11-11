@@ -30,10 +30,15 @@
   check('3D: models active', MLR.modelsActive() && MLR.modelsStats.active);
   m.jumpTo({center: pl.position, zoom: 12.4, pitch: 50, bearing: 0}); await idle(); await w(1500); await idle();
   check('3D: the aircraft is in the model set', MLR.modelSet.has(pl.icao), [...MLR.modelSet.keys()].slice(0, 3));
-  const md = MLR.modelSet.get(pl.icao); numbers.archetype = md && md.arch; numbers.screenPx = md && Math.round(md.px);
+  let md = MLR.modelSet.get(pl.icao); numbers.archetype = md && md.arch; numbers.screenPx = md && Math.round(md.px);
   numbers.drawn = MLR.modelsStats.drawn; numbers.byArchetype = MLR.modelsStats.byArchetype;
 
   // ---- gl.readPixels at the aircraft's projected position: models on vs off, icons hidden in both so only the model can be there ----
+  // live traffic: the aircraft chosen a few seconds ago can have left the feed; continue with another one that is in the model set
+  const ensurePl = () => { if (!MLR.planes.get(pl.icao) || !MLR.modelSet.has(pl.icao)) { const alt = [...MLR.modelSet.keys()].find(k => MLR.planes.get(k)); if (alt) { pl = MLR.planes.get(alt).plane; md = MLR.modelSet.get(alt); numbers.replacedAircraft = (numbers.replacedAircraft || 0) + 1; } } };
+  ensurePl();
+  m.jumpTo({center: pl.position, zoom: 12.4, pitch: 50, bearing: 0}); await idle(); await w(800);
+  ensurePl();
   const e = MLR.planes.get(pl.icao), ll = MLR.drawnLL(e), pt = m.project(ll);
   hideIcons(true);
   m.redraw(); const bg = block(pt.x + 140, pt.y + 120, 6);
@@ -47,7 +52,11 @@
   let off = [], offNon = 1e9;
   for (let k = 0; k < 4 && offNon * 3 >= Math.max(onNon, 3); k++) { await w(400); m.redraw(); const b2 = block(pt.x, pt.y, md ? Math.max(4, md.px / 3) : 6), n2 = Math.min(b2.filter(p => dist(p, bgMean) > 30).length, b2.filter(p => dist(p, b2[0]) > 30).length); if (n2 < offNon) { offNon = n2; off = b2; } }
   numbers.nonBackgroundPixelsOff = offNon + '/' + off.length;
-  check('3D toggle off: the layer is gone and the same position is background', !m.getLayer('tar-models3d') && offNon * 3 < Math.max(onNon, 3), numbers.nonBackgroundPixelsOff);
+  // Compare the SAME sample positions on and off. (The earlier form required the off block to be background; live traffic puts labels, trails and other
+  // aircraft there, so that failed by chance, 13/100 non-background with the model gone.) The model is gone when pixels changed (the sample block also covers terrain, so onNon is not the model's own area; the deterministic block below asserts the full count).
+  const onVsOff = on.filter((p, i) => off[i] && dist(p, off[i]) > 30).length;
+  numbers.pixelsChangedWhenModelRemoved = onVsOff + '/' + on.length;
+  check('3D toggle off: the layer is gone and the pixels the model covered changed', !m.getLayer('tar-models3d') && onVsOff >= 3, {onVsOff, onNon});
   check('3D toggle off: icons are the aircraft again (no model term hides them)', JSON.stringify(m.getPaintProperty('tar-planes', 'icon-opacity')).indexOf('"m"') < 0);
   check('toggle off: GPU resources disposed', MLR.modelsStats.disposals >= 1 && !MLR.modelsStats.loaded);
   MLR.setModelsWanted(true); await w(1500); await idle();
@@ -55,6 +64,7 @@
   hideIcons(false);
 
   // ---- selecting a model aircraft: click goes through the icon hit target (closestPlane over the model size) ----
+  ensurePl();
   const px2 = m.project(MLR.drawnLL(MLR.planes.get(pl.icao)));
   const hit = MLR.closestPlane([px2.x + 3, px2.y + 3], 20);
   check('hit-testing finds the aircraft under its model', !!hit && hit.icao === pl.icao);
@@ -69,6 +79,39 @@
   numbers.selIcao = selIcao; numbers.modelSetSize = MLR.modelSet.size;
   check('the selected aircraft keeps its label pill, anchored above the model (when labels are on)', !numbers.hasLabelSpec || sel.length >= 1 && sel[0].properties.m === 1 && JSON.parse(sel[0].properties.loff)[1] < 0, sel[0] && sel[0].properties);
   document.getElementById('infoblock_close').click(); await w(600);
+
+  // ---- DETERMINISTIC pixel test: a fixed camera and ONE synthetic aircraft at the map centre (ground height, so the model stands on its shadow point), no live
+  //      traffic involved. Five consecutive renders; the count of non-background pixels in a fixed sample grid must hold a fixed minimum every time, and be ~0
+  //      with the model removed (same camera, same grid). The range over the five runs is reported. ----
+  {
+    const sel0 = MLR.modelsSelect; MLR.modelsSelect = function () {};
+    const cam0 = {center: m.getCenter(), zoom: m.getZoom(), pitch: m.getPitch(), bearing: m.getBearing()};
+    hideIcons(true);
+    const C = m.getCenter(), ll0 = [C.lng, C.lat];
+    const code = 'A320', arch = MODELS.archetypeFor(code, {category: 'A3'}), dm = MODELS.dimsFor(code, arch), f0 = MODELS.scaleFactor(dm.length, ll0[1], 18, 28), mpp0 = MODELS.metresPerPixel(ll0[1], 18);
+    const plane = {icao: 'det0', proj: mapgeo.fromLonLat(ll0), position: ll0, altitude: 'ground', onGround: true, icaoType: code, true_heading: 90, track: 90, gs: 0, category: 'A3'};
+    const set = new Map([['det0', {plane, dLL: ll0, fillColor: '#ffffff', sel: false}]]);
+    const arr = [{icao: 'det0', arch, ai: MODELS.ARCHETYPES.indexOf(arch), span: dm.span, length: dm.length, f: f0, px: dm.length * f0 / mpp0}];
+    const grid = (x, y, r) => { const o = []; for (let i = -r; i <= r; i += 3) for (let j = -r; j <= r; j += 3) o.push(px(x + i, y + j)); return o; };
+    const counts = [], diffs = [];
+    for (let run = 0; run < 5; run++) {
+      MLR.modelTestPlanes = set; MLR.modelArr = []; MLR.modelSet.clear();
+      m.jumpTo({center: ll0, zoom: 18, pitch: 45, bearing: 0}); m.redraw(); m.redraw();
+      const c = m.project(ll0), R = 60, bgm = grid(c.x + 300, c.y + 200, 12).reduce((a, p) => [a[0] + p[0], a[1] + p[1], a[2] + p[2]], [0, 0, 0]).map(x => x / 81);
+      const nonbg = a => a.filter(p => Math.abs(p[0] - bgm[0]) + Math.abs(p[1] - bgm[1]) + Math.abs(p[2] - bgm[2]) > 30).length;
+      const offG = grid(c.x, c.y, R);                       // same camera, model removed: whatever live labels or trails are here stay in both grids
+      MLR.modelArr = arr; m.redraw(); m.redraw();
+      const onG = grid(c.x, c.y, R);
+      counts.push(nonbg(onG));
+      diffs.push(onG.filter((p, i) => Math.abs(p[0] - offG[i][0]) + Math.abs(p[1] - offG[i][1]) + Math.abs(p[2] - offG[i][2]) > 30).length);
+    }
+    numbers.deterministicPixels = {nonBackgroundOnPerRun: counts, changedByTheModelPerRun: diffs, gridSamples: 41 * 41, minChanged: Math.min(...diffs), maxChanged: Math.max(...diffs)};
+    // The count that matters is the number of grid positions the model CHANGES between two renders of the same camera (on vs off): live traffic cannot move it.
+    // (An earlier form asserted the grid was background without the model; labels of real aircraft near the centre broke that, 17 samples.)
+    check('deterministic: the model changes at least 300 grid samples (measured about 600 in every run) in each of 5 consecutive runs', Math.min(...diffs) >= 300, numbers.deterministicPixels);
+    MLR.modelTestPlanes = null; MLR.modelsSelect = sel0; MLR.modelArr = []; MLR.modelSet.clear(); hideIcons(false);
+    m.jumpTo(cam0); await idle(); await w(800); MLR.modelsSelect(); m.redraw();
+  }
 
   }
   if (window.M3_PART !== 'a') {

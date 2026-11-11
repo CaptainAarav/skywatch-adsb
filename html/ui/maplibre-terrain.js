@@ -21,12 +21,15 @@ MLR.terrainDefault = function () {
         return !!r && !/swiftshader|llvmpipe|softpipe|software|basic render|microsoft basic/i.test(r);
     } catch (e) { return false; }
 };
-MLR.terrainWanted = function () { return typeof terrain3d != 'undefined' && !!terrain3d && TERRAIN.exag > 0; };
+MLR.terrainWanted = function () { return typeof terrain3d != 'undefined' && !!terrain3d && TERRAIN.exag > 0 && (!this.q || this.q.terrain); };
+// effective exaggeration and DEM max zoom at the current quality level (light terrain: x0.7 and DEM zoom 9)
+MLR.terrainExag = function () { return TERRAIN.exag * (this.q && this.q.terrainDetail === 'light' ? 0.7 : 1); };
+MLR.terrainDemMax = function () { return this.q && this.q.terrainDetail === 'light' ? 9 : TERRAIN.maxzoom; };
 MLR.terrainActive = function () { return !!(this.ready && this.is3D && !this.isGlobe() && this.terrainWanted() && this.map && this.map.getTerrain && this.map.getTerrain()); };
 
 // metres above sea level under ll with the exaggeration removed (null when the tile is not loaded yet)
 MLR.terrainElev = function (ll) {
-    try { const e = this.map.queryTerrainElevation(ll); return (typeof e == 'number' && TERRAIN.exag > 0) ? e / TERRAIN.exag : null; } catch (err) { return null; }
+    try { const e = this.map.queryTerrainElevation(ll); return (typeof e == 'number' && TERRAIN.exag > 0) ? e / this.terrainExag() : null; } catch (err) { return null; }
 };
 
 // called from install() on every style load: the DEM source and hillshade are part of the style and must be re-added
@@ -41,7 +44,13 @@ MLR.terrainSync = function () {
     if (!m || !this.ready && !m.isStyleLoaded()) return;
     const want = this.terrainWanted() && this.is3D && !this.isGlobe();
     if (want) {
-        const dem = {type: 'raster-dem', tiles: [TERRAIN.url], tileSize: 256, maxzoom: TERRAIN.maxzoom, encoding: 'terrarium', attribution: ''};
+        const dem = {type: 'raster-dem', tiles: [TERRAIN.url], tileSize: 256, maxzoom: this.terrainDemMax(), encoding: 'terrarium', attribution: ''};
+        if (this._demMax != null && this._demMax !== dem.maxzoom && m.getSource('tar-dem')) {      // DEM detail changed: the sources are re-added
+            try { m.setTerrain(null); } catch (e) { /* ignore */ }
+            if (m.getLayer('tar-hillshade')) m.removeLayer('tar-hillshade');
+            for (const s of ['tar-dem-hs', 'tar-dem']) if (m.getSource(s)) m.removeSource(s);
+        }
+        this._demMax = dem.maxzoom;
         if (!m.getSource('tar-dem')) m.addSource('tar-dem', dem);
         if (!m.getSource('tar-dem-hs')) m.addSource('tar-dem-hs', dem);      // MapLibre advises a separate source for hillshade
         if (!m.getLayer('tar-hillshade')) {
@@ -51,7 +60,8 @@ MLR.terrainSync = function () {
                 'hillshade-exaggeration': 0.35, 'hillshade-illumination-direction': 315,
             }}, first && first.id);
         }
-        m.setTerrain({source: 'tar-dem', exaggeration: TERRAIN.exag});
+        m.setTerrain({source: 'tar-dem', exaggeration: this.terrainExag()});
+        this.terrainElevCacheClear && this.terrainElevCacheClear();
     } else {
         try { if (m.getTerrain()) m.setTerrain(null); } catch (e) { /* ignore */ }
         if (m.getLayer('tar-hillshade')) m.removeLayer('tar-hillshade');

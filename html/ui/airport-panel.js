@@ -35,7 +35,7 @@ const AIRPT = (function () {
     function add(p) { for (let i = 1; i < arguments.length; i++) if (arguments[i]) p.appendChild(arguments[i]); return p; }
     function tile(label, value, mono) { return add(h('div', 'ibTile'), h('small', null, label), h('b', mono === false ? null : 'mono', value)); }
     function card(title, extra) {
-        const c = h('section', 'ibCard'), t = h('h3', null, title);
+        const c = h('section', 'ibCard'), t = h('h3', 'cardHead', title);
         if (extra) t.appendChild(extra);
         c.appendChild(t);
         return c;
@@ -172,7 +172,7 @@ const AIRPT = (function () {
             const d = new Date(m.obs * 1000);
             age.textContent = hhmm(d) + 'Z · ' + ageText(Date.now() / 1000 - m.obs);
         }
-        const c = card('Weather · METAR', add(h('span', 'apSpacer'), cat ? catChip(cat) : null, age));
+        const c = card('Weather · METAR', add(h('span', 'cardHeadMeta'), cat ? catChip(cat) : null, age));
         const g = h('div', 'apGrid');
         if (typeof m.wspd === 'number') {
             let w = (typeof m.wdir === 'number' ? pad3(m.wdir) + '°' : 'VRB') + ' / ' + m.wspd + (typeof m.wgst === 'number' ? 'G' + m.wgst : '') + ' kt';
@@ -193,7 +193,7 @@ const AIRPT = (function () {
     function tafCard(t, m) {
         const start = Math.floor(Date.now() / 1000 / 10800) * 10800;
         const slots = A.tafSlots(t.f, start, 6, 10800);
-        const c = card('Forecast · TAF', add(h('span', 'apSpacer'), t.issue ? h('span', 'age', 'issued ' + t.issue.slice(11, 16) + 'Z') : null));
+        const c = card('Forecast · TAF', add(h('span', 'cardHeadMeta'), t.issue ? h('span', 'age', 'issued ' + t.issue.slice(11, 16) + 'Z') : null));
         if (slots.some(s => s.cat)) {
             const strip = h('div', 'apTaf'), axis = h('div', 'apAxis');
             for (const s of slots) {
@@ -435,6 +435,12 @@ const AIRPT = (function () {
         if (!root || !r) return;
         const scroll = root.querySelector('.apScroll'), keep = scroll ? scroll.scrollTop : 0;
         const body = h('div', 'apScroll');
+        if (st.back) {
+            const bk = h('button', 'chip act apBack', '\u2039 ' + st.back.label); bk.type = 'button';
+            bk.setAttribute('aria-label', 'Back to aircraft ' + st.back.label);
+            bk.addEventListener('click', back);
+            body.appendChild(bk);
+        }
         const head = h('div', 'apHead'), t = h('div', 'apTitle');
         t.appendChild(h('div', 'apIcao mono', r.icao));
         t.appendChild(h('div', 'apName', r.name));
@@ -524,25 +530,44 @@ const AIRPT = (function () {
         if (phone) return {top: 84, bottom: p ? Math.round(window.innerHeight - p.top + 16) : Math.round(window.innerHeight * 0.55), left: 20, right: 20};
         return {top: 84, bottom: 70, left: (p ? Math.round(p.right) : 408) + 28, right: 92};
     }
-    // Ease the camera so the whole airport is in the free area. Never zooms out when the user is already closer
-    // than the fit zoom (it then only centres), unless force is set (the "Zoom to airport" button).
-    function fitAirport(r, force) {
-        if (typeof MLR === 'undefined' || !MLR.map) return;
-        const m = MLR.map, pad = padding(), b = airportBounds(r);
-        const maxZ = 14.5, cur = m.getZoom();
+    // THE fly policy (every entry point goes through open() -> fly()). Target zoom by tier: the airport must be recognisable on arrival, never above the
+    // fit zoom of its runways. The camera is first stopped (a running flyTo/ease or the follow focus would cancel or override this one), the move is always
+    // issued, and when the user is already closer than the target it only centres. `force` = the "Zoom to airport" button: go to the fit zoom even if farther out.
+    const TIER_ZOOM = {large: 11, medium: 12, regional: 13, field: 13.5, water: 13.5};
+    function flyPlan(r, force, cur, fitZoom) {
+        const maxZ = 14.5, row = st.byIcao && st.byIcao.get(String(r.icao).toUpperCase()), tier = (row && typeof AIRTIERS != 'undefined' && AIRTIERS.tierOf) ? AIRTIERS.tierOf(row) : 'field';
+        const want = Math.min(maxZ, Math.max(TIER_ZOOM[tier] || 13, fitZoom == null ? 0 : Math.min(fitZoom, maxZ)));
+        return {zoom: force ? Math.min(fitZoom == null ? want : fitZoom, maxZ) : (cur >= want ? cur : want), tier};
+    }
+    function fly(r, force, opts) {
+        if (typeof MLR === 'undefined' || !MLR.map) return null;
+        const m = MLR.map, pad = padding(), b = airportBounds(r), cur = m.getZoom();
         let fit = null;
-        try { const cam = m.cameraForBounds(b, {padding: pad, bearing: m.getBearing(), pitch: m.getPitch(), maxZoom: maxZ}); fit = cam && typeof cam.zoom == 'number' ? cam.zoom : null; } catch (err) { /* ignore */ }
-        if (fit == null) fit = r.type <= 1 ? 12.5 : 14;
-        const zoom = force ? Math.min(fit, maxZ) : (cur >= fit ? cur : Math.min(fit, maxZ));
+        try { const cam = m.cameraForBounds(b, {padding: pad, bearing: m.getBearing(), pitch: m.getPitch(), maxZoom: 14.5}); fit = cam && typeof cam.zoom == 'number' ? cam.zoom : null; } catch (err) { /* ignore */ }
+        const plan = flyPlan(r, force, cur, fit);
         const center = [(b[0][0] + b[1][0]) / 2, (b[0][1] + b[1][1]) / 2];
         const offset = [(pad.left - pad.right) / 2, (pad.top - pad.bottom) / 2];
         const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        const dur = 1000 + Math.min(200, Math.abs(zoom - cur) * 25);
-        try {
-            if (reduce) m.jumpTo({center, zoom});
-            else m.easeTo({center, zoom, offset, duration: dur, easing: (t) => 1 - Math.pow(1 - t, 3), essential: false});
-            if (reduce) m.panBy([-offset[0], -offset[1]], {duration: 0});
-        } catch (err) { /* ignore */ }
+        const dur = reduce ? 0 : 1000 + Math.min(200, Math.abs(plan.zoom - cur) * 25);
+        // The camera resets that closing the aircraft panel schedules (MLR.clearFocus jumpTo in a setTimeout 0) would cancel an ease started now: the move starts after them,
+        // and MLR.airportFlyUntil makes any later reset/refocus wait (they are no-ops while the airport fly runs).
+        MLR.airportFlyUntil = performance.now() + dur + 400;
+        const go = () => {
+            try {
+                MLR.focusAnim = null;                 // the aircraft-focus ease would jumpTo over this move every frame
+                m.stop();                             // a flyTo/ease already running would otherwise be replaced half way or cancel this one
+                if (reduce) { m.jumpTo({center, zoom: plan.zoom, padding: {left: 0, right: 0, top: 0, bottom: 0}}); m.panBy([-offset[0], -offset[1]], {duration: 0}); }
+                else m.easeTo({center, zoom: plan.zoom, offset, padding: {left: 0, right: 0, top: 0, bottom: 0}, duration: dur, easing: (t) => 1 - Math.pow(1 - t, 3), essential: true});
+            } catch (err) { /* ignore */ }
+        };
+        if (opts && opts.now) go(); else setTimeout(go, 0);
+        st.lastFly = {center, zoom: plan.zoom, tier: plan.tier, offset, at: Date.now()};
+        return st.lastFly;
+    }
+    const fitAirport = fly;
+    // following an aircraft re-centres every frame and would undo the move: opening an airport ends follow, Back restores it
+    function yieldFollow() {
+        if (typeof FollowSelected != 'undefined' && FollowSelected && typeof toggleFollow == 'function') { st.followWas = SelectedPlane ? SelectedPlane.icao : null; toggleFollow(false); }
     }
     function toggleTraffic() {
         const r = st.cur;
@@ -564,8 +589,30 @@ const AIRPT = (function () {
         render();
     }
 
-    function open(row) {
+    // From the aircraft panel's route block: the airport opens exactly as a marker click opens it, but the aircraft STAYS selected (its panel is only hidden behind the airport
+    // panel) and the airport panel gets a Back chip that returns to it.
+    function find(a) {
+        if (!a) return null;
+        if (!st.db) { load(); return null; }
+        return (a.icao && st.byIcao.get(String(a.icao).toUpperCase())) || (a.iata && st.byIata.get(String(a.iata).toUpperCase())) || null;
+    }
+    function openFromAircraft(a, hex, label) {
+        return load().then(() => { const row = find(a); if (!row) return false; open(row, {hex, label}); return true; });
+    }
+    function back() {
+        const b = st.back, fw = st.followWas;
+        close();
+        if (b && !(typeof SelectedPlane != 'undefined' && SelectedPlane && SelectedPlane.icao === b.hex) && typeof selectPlaneByHex == 'function') selectPlaneByHex(b.hex, {follow: false});
+        if (fw && b && fw === b.hex && typeof toggleFollow == 'function' && typeof SelectedPlane != 'undefined' && SelectedPlane && SelectedPlane.icao === fw) toggleFollow(true);
+        st.followWas = null;
+    }
+    // The ONE way to open an airport (marker, route block, search, palette, URL). target: database row, or an ICAO/IATA code (the database is loaded first).
+    function open(target, from, source) {
+        if (target && !Array.isArray(target)) { const t = target; return load().then(() => { const row = find({icao: t, iata: t}); if (row) open(row, from, source); return !!row; }); }
+        const row = target;
         if (!row) return;
+        st.source = source || (from ? 'route' : 'api');
+        yieldFollow();
         const wasOpen = !!st.cur;
         st.cur = rec(row);
         st.samples = [];
@@ -573,12 +620,15 @@ const AIRPT = (function () {
         if (!st.root) st.root = document.getElementById('airport_panel');
         if (!st.root) return;
         const ib = document.getElementById('infoblock_close');
-        if (document.body.classList.contains('infoOpen') && ib) ib.click();     // opening the airport panel closes the aircraft panel
+        const keep = !!(from && typeof SelectedPlane != 'undefined' && SelectedPlane && SelectedPlane.icao === from.hex);
+        st.back = keep ? from : null;
+        document.body.classList.toggle('airportFromAircraft', keep);
+        if (!keep && document.body.classList.contains('infoOpen') && ib) ib.click();     // opening the airport panel closes the aircraft panel (unless it was opened from that aircraft's route)
         document.body.classList.add('airportOpen');
         st.root.hidden = false;
         if (typeof shellSync == 'function') shellSync();
         render();
-        fitAirport(st.cur, false);
+        fly(st.cur, false);
         fetchWx().then(() => { if (st.cur && st.cur.icao === row[0]) render(); });
         fetchMv().then(() => { if (st.cur && st.cur.icao === row[0]) render(); });
         clearInterval(st.timer);
@@ -589,7 +639,8 @@ const AIRPT = (function () {
     }
     function close() {
         if (!st.cur) return;
-        st.cur = null;
+        st.cur = null; st.back = null; st.followWas = null;
+        document.body.classList.remove('airportFromAircraft');
         clearInterval(st.timer); clearInterval(st.wxTimer);
         if (st.isolating) { st.isolating = false; if (typeof toggleIsolation == 'function') toggleIsolation('off'); if (typeof deselectAllPlanes == 'function') deselectAllPlanes(); }
         document.body.classList.remove('airportOpen');
@@ -599,23 +650,47 @@ const AIRPT = (function () {
 
     // opening an aircraft closes the airport panel
     function watchBody() {
-        new MutationObserver(() => { if (st.cur && document.body.classList.contains('infoOpen')) close(); })
+        new MutationObserver(() => {
+            if (!st.cur || !document.body.classList.contains('infoOpen')) return;
+            if (st.back && typeof SelectedPlane != 'undefined' && SelectedPlane && SelectedPlane.icao === st.back.hex) return;   // opened from this aircraft's route: both stay
+            close();
+        })
             .observe(document.body, {attributes: true, attributeFilter: ['class']});
     }
 
     // ---------- entry points ----------
+    // Airport hit test from the DATA, not only from rendered symbols: a pin hidden by label collision still has a hit area. Projects every airport the
+    // current zoom shows (tier zoom) and returns the nearest within `px` screen pixels. Used before the aircraft hit test, so an airport marker wins
+    // inside its own area (aircraft are matched with their own, wider radius only where no airport marker is).
+    const HIT_PX = 16;
+    function hitTest(point, px) {
+        if (typeof MLR === 'undefined' || !MLR.map || !st.db) return null;
+        const m = MLR.map, z = m.getZoom(), o = MLR.airportOpts ? MLR.airportOpts() : {}, lim = px || HIT_PX;
+        let best = null, bd = lim * lim;
+        const b = m.getBounds();
+        for (const r of st.db.a) {
+            const lat = r[4], lon = r[5];
+            if (lat < b.getSouth() - 0.5 || lat > b.getNorth() + 0.5 || lon < b.getWest() - 0.5 || lon > b.getEast() + 0.5) continue;
+            if (typeof AIRTIERS != 'undefined' && z < AIRTIERS.minZooms(r, o).dot) continue;
+            const q = m.project([lon, lat]), dx = q.x - point.x, dy = q.y - point.y, d = dx * dx + dy * dy;
+            if (d < bd) { bd = d; best = r; }
+        }
+        return best;
+    }
     // map click: returns true when the click was handled as an airport click
     function mapClick(e) {
         if (typeof MLR === 'undefined' || !MLR.map) return false;
         const m = MLR.map, x = e.point.x, y = e.point.y;
+        const go = (hit) => { load().then(() => { const row = hit(); if (row) open(row, null, 'marker'); }); return true; };
         const pinIds = (MLR.airportTierLayers ? MLR.airportTierLayers() : []).filter(id => m.getLayer(id));
-        let feats = pinIds.length ? m.queryRenderedFeatures([[x - 16, y - 16], [x + 16, y + 16]], {layers: pinIds}) : [];
-        const go = (hit) => { load().then(() => { const row = hit(); if (row) open(row); }); return true; };
+        const feats = pinIds.length ? m.queryRenderedFeatures([[x - HIT_PX, y - HIT_PX], [x + HIT_PX, y + HIT_PX]], {layers: pinIds}) : [];
         if (feats.length) {
             const pr = feats[0].properties || {};
             return go(() => (pr.icao && st.byIcao.get(String(pr.icao).toUpperCase())) || (pr.iata && st.byIata.get(String(pr.iata).toUpperCase())) ||
                 nearest(e.lngLat.lat, e.lngLat.lng, 5, 1));
         }
+        if (!st.db) { load().then(() => { const row = hitTest(e.point); if (row) open(row, null, 'marker'); }); }
+        else { const row = hitTest(e.point); if (row) { open(row, null, 'marker'); return true; } }
         if (m.getZoom() >= 11) {
             const ids = (m.getStyle().layers || []).map(l => l.id).filter(id => /^tar-ap-/.test(id) && !/pin/.test(id));
             if (ids.length && m.queryRenderedFeatures([[x - 2, y - 2], [x + 2, y + 2]], {layers: ids}).length)
@@ -623,12 +698,19 @@ const AIRPT = (function () {
         }
         return false;
     }
+    // true when a click at `point` is inside an airport marker's hit area (checked BEFORE the aircraft hit test)
+    function owns(point) {
+        if (typeof MLR === 'undefined' || !MLR.map) return false;
+        const m = MLR.map, ids = (MLR.airportTierLayers ? MLR.airportTierLayers() : []).filter(id => m.getLayer(id));
+        if (ids.length && m.queryRenderedFeatures([[point.x - HIT_PX, point.y - HIT_PX], [point.x + HIT_PX, point.y + HIT_PX]], {layers: ids}).length) return true;
+        return !!hitTest(point);
+    }
     function searchAndOpen(term) {
         return load().then(db => {
             if (!db) return false;
             const row = search(term);
             if (!row) return false;
-            open(row);
+            open(row, null, 'search');
             return true;
         });
     }
@@ -637,6 +719,10 @@ const AIRPT = (function () {
     document.addEventListener('DOMContentLoaded', () => {
         st.root = document.getElementById('airport_panel');
         watchBody();
+        // ?airport=EGLL opens that airport (same open() as a marker click) once the map and the database are up
+        let code = null;
+        try { code = (new URLSearchParams(location.search).get('airport') || '').trim(); } catch (e) { /* ignore */ }
+        if (code) { let n = 0; const t = setInterval(() => { if ((typeof MLR !== 'undefined' && MLR.ready) || ++n > 40) { clearInterval(t); if (n <= 40) open(code, null, 'url'); } }, 500); }
     });
     jQuery(function () {
         new Toggle({key: 'airportWeather', display: 'Airport weather (METAR and TAF from the recorder)', container: '#settingsRight', init: airportWeather,
@@ -658,5 +744,5 @@ const AIRPT = (function () {
     onWx(() => { if (typeof MLR != 'undefined' && MLR.map && MLR.applyPinWeather) MLR.applyPinWeather(); });
     setTimeout(refreshWx, 3000);
     setInterval(() => { if (!document.hidden) refreshWx(); }, WX_REFRESH);
-    return {open, close, mapClick, searchAndOpen, load, state: st, weatherCats, onWx, refreshWx, wxFor, catChip, ageText, visText, cloudText};
+    return {open, close, mapClick, hitTest, owns, fly, flyPlan, TIER_ZOOM, back, searchAndOpen, find, openFromAircraft, load, state: st, weatherCats, onWx, refreshWx, wxFor, catChip, ageText, visText, cloudText};
 })();

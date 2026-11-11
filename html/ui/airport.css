@@ -14,8 +14,8 @@ body.panelsHidden #airport_panel { display: none !important; }
 .apName { color: var(--muted); margin-top: 4px; }
 #airport_panel .sk-x { margin-left: auto; }
 .apChips { display: flex; flex-wrap: wrap; gap: 6px; }
-#airport_panel .ibCard h3 { margin: 0 0 10px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; display: flex; align-items: center; gap: 8px; }
-.apSpacer { flex: 1; }
+#airport_panel .ibCard { background: rgba(255,255,255,.06); border-radius: 24px; padding: 14px; }   /* the old airport card surface (desktop elevation.css sets its own fill); keeps the tiles distinct from the card on phones */
+#airport_panel .ibCard h3 { margin: 0 0 10px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
 #airport_panel .ibCard h3 .age { text-transform: none; letter-spacing: 0; font-weight: 500; font-size: 11px; }
 .apGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 #airport_panel .ibTile { padding: 10px 12px; border-radius: 16px; min-height: 0; border: 0; }

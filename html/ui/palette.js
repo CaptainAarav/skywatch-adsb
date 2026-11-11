@@ -58,7 +58,7 @@ const PALETTE = (function () {
                 const ap = PALRANK.rankAirports(q, db.a, view(), 5);
                 if (ap.length) sections.push(['Airports', ap.map(r => ({
                     title: r.row[0] + (r.row[1] ? ' / ' + r.row[1] : ''), sub: r.row[3], chip: cats[r.row[0]] || '',
-                    run: () => AIRPT.open(r.row)}))]);
+                    run: () => AIRPT.open(r.row, null, 'palette')}))]);
             } else if (typeof AIRPT != 'undefined') AIRPT.load();      // first keystroke warms the airport list
         }
         const ac = PALRANK.rankActions(q, actions(), q ? 5 : 8);

@@ -5003,10 +5003,13 @@ let checkMoveCenter = [0, 0];
 let checkMoveDone = 0;
 
 function checkMovement() {
-    if (!mapa.ready())
-        return;
-
+    // The refresh loop must keep running when the map cannot draw (no WebGL): only the map-dependent work below is skipped.
     if (!g.firstFetchDone) {
+        return;
+    }
+    if (!mapa.ready()) {
+        checkRefresh();
+        fetchData();
         return;
     }
 
@@ -6614,7 +6617,7 @@ function loadReplay(ts) {
 
         const ff = () => {
             //console.log(`finally ${rKey}`);
-            delete replay.loadingKey;
+            if (replay) delete replay.loadingKey;     // the replay can be closed (replay = null) while a chunk request is still in flight
             jQuery('#replayLoading').text('');
         };
 
@@ -6635,9 +6638,9 @@ function loadReplay(ts) {
                     }
                     response.arrayBuffer()
                         .then((data) => {
-                            delete replay.abortController;
+                            if (replay) delete replay.abortController;
                             g.replayCache.add(rKey, data);
-                            initReplay(chunk, data);
+                            if (replay) initReplay(chunk, data);
                             //console.log(`loaded: ${rKey}`);
                             ff();
                         })
