@@ -70,6 +70,7 @@ snippet route-fixture-desktop $S/route-fixture.js 1440 900 desktop "$RF" 300
 snippet route-fixture-phone $S/route-fixture.js 390 844 phone "$RF" 300
 snippet route-link-desktop $S/route-link.js 1440 900 desktop "" 300
 snippet route-link-phone $S/route-link.js 390 844 phone "" 300
+snippet live-smoke $S/live-smoke.js 1440 900 desktop "" 200
 snippet perf-overlay $S/perf-overlay.js 1440 900 desktop "" 200
 snippet component-signature-desktop $S/component-signature.js 1440 900 desktop
 snippet component-signature-phone $S/component-signature.js 390 844 phone
