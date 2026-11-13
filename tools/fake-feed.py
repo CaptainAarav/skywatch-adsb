@@ -28,11 +28,16 @@ for i in range(N):
 def aircraft():
     t = time.time() - T0; out = []
     for p in PLANES:
-        hdg = p['hdg'] + (t * 3 if p['circle'] else 0)
-        d = p['gs'] * 0.514444 * t / 1000.0                                      # km flown
-        d = d % 400
-        lat = p['lat0'] + d * math.cos(math.radians(hdg)) / 111.0
-        lon = p['lon0'] + d * math.sin(math.radians(hdg)) / (111.0 * math.cos(math.radians(lat)))
+        if p['circle']:                                                          # a real circle: 3 deg/s turn, radius = speed / turn rate, fixed centre
+            w = math.radians(3); R = p['gs'] * 0.514444 / w / 1000.0; a = math.radians(p['hdg']) + w * t
+            hdg = math.degrees(a) + 90
+            lat = p['lat0'] + R * math.cos(a - math.pi / 2) / 111.0
+            lon = p['lon0'] + R * math.sin(a - math.pi / 2) / (111.0 * math.cos(math.radians(p['lat0'])))
+        else:
+            hdg = p['hdg']
+            d = (p['gs'] * 0.514444 * t / 1000.0) % 400                          # km flown (wraps after 400 km)
+            lat = p['lat0'] + d * math.cos(math.radians(hdg)) / 111.0
+            lon = p['lon0'] + d * math.sin(math.radians(hdg)) / (111.0 * math.cos(math.radians(lat)))
         alt = max(0, p['alt'] + p['vr'] * t / 60.0 % 4000)
         a = dict(hex=p['hex'], type='adsb_icao', flight=p['flight'].ljust(8), alt_baro=int(alt), alt_geom=int(alt + 100), gs=round(p['gs'], 1), track=round(hdg % 360, 1),
                  baro_rate=p['vr'], squawk=p['squawk'], category=p['category'], t=p['t'], messages=int(t * 3) + 100, seen=round(random.uniform(0, 0.8), 1), rssi=round(random.uniform(-28, -8), 1))

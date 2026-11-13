@@ -26,10 +26,13 @@
     const r = cv.width / cv.clientWidth, out = []; const taken = [];
     const fc = new Map((MLR.planeFeats || []).map(f => [f.properties.hex, f.geometry.coordinates]));       // where the icon is DRAWN (smoothed), not the raw position
     for (const [icao, e] of MLR.planes) { const p = e.plane; if (!p.position || e.sel || !fc.has(icao)) continue; const pt = m.project(fc.get(icao)); if (pt.x < 30 || pt.y < 90 || pt.x > cv.clientWidth - 30 || pt.y > cv.clientHeight - 60) continue;
+      const hit = document.elementFromPoint(pt.x, pt.y); if (!hit || hit !== cv) continue;                  // under a panel, the control stack or a popup: not a map pixel
       if (taken.some(t => Math.hypot(t[0] - pt.x, t[1] - pt.y) < 40)) continue; taken.push([pt.x, pt.y]);
       const bx = Math.round((pt.x - 8) * r), by = Math.round((pt.y - 8) * r), bw = Math.round(16 * r), d = x.getImageData(bx, by, bw, bw).data; let best = 0;
       for (let i = 0; i < d.length; i += 4) best = Math.max(best, Math.min(d[i], d[i + 1], d[i + 2]));
-      out.push({icao, best, stale: p.seen_pos > 15}); if (out.length >= 8) break; }
+      const wb = Math.round(40 * r), wx = Math.max(0, Math.round(pt.x * r) - wb), wy = Math.max(0, Math.round(pt.y * r) - wb), ww = Math.min(2 * wb, cv.width - wx), wh = Math.min(2 * wb, cv.height - wy), dd = x.getImageData(wx, wy, ww, wh).data; let bestW = 0, at = null;
+      for (let i = 0; i < dd.length; i += 4) { const v = Math.min(dd[i], dd[i + 1], dd[i + 2]); if (v > bestW) { bestW = v; at = [((i / 4) % ww + wx) / r - pt.x, Math.floor(i / 4 / ww + wy) / r - pt.y]; } }
+      out.push({icao, best, stale: p.seen_pos > 15, wide: bestW, off: at && at.map(Math.round), shape: p.shape && p.shape.name, icon: e.icon && e.icon.slice(0, 20), pt: [Math.round(pt.x), Math.round(pt.y)]}); if (out.length >= 8) break; }
     return out; };
   const opacityOf = () => m.getPaintProperty('tar-planes', 'icon-opacity');
   const origColour = aircraftColor;
