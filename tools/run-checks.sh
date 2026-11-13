@@ -1,13 +1,14 @@
 #!/bin/bash
 # ONE command that runs every check on the exact working tree and exits non-zero if any fails. Every push comes from a full run of this script.
 #   tools/run-checks.sh            full run (deploys the tree first, verifies the served files are the tree's files, then runs everything)
+#   tools/run-checks.sh --device-only   ONLY the checks that need a real GPU (models3d-budget: frame-time budget, cannot finish under software GL). A normal run lists it as NOT RUN, never as PASS.
 #   tools/run-checks.sh --only RE  only checks whose name matches the regex (for iterating; a push needs the full run)
 # Needs: docker (node:22-slim for syntax, unit tests and the CDP driver), chromium-browser (headless, software GL), the local deploy at SITE_URL.
 # Logs: $LOGDIR/<check>.log (default .private/checks). The summary is printed last and written to $LOGDIR/summary.txt.
 cd "$(dirname "$0")/.." || exit 2
 SITE_URL=${SITE_URL:-http://127.0.0.1:8096}
 LOGDIR=${LOGDIR:-.private/checks}; mkdir -p "$LOGDIR"; rm -f "$LOGDIR"/*.log "$LOGDIR"/summary.txt
-ONLY=""; [ "$1" = "--only" ] && ONLY="$2"
+ONLY=""; DEVICE=0; [ "$1" = "--only" ] && ONLY="$2"; [ "$1" = "--device-only" ] && { DEVICE=1; ONLY="^models3d-budget"; }
 NODE=(docker run --rm -v "$PWD":/w:ro -w /w node:22-slim)
 NODEHOST=(docker run --rm --user "$(id -u):$(id -g)" --network host -v "$PWD":/w -w /w node:22-slim)
 PORT=${PORT_BASE:-9400}
@@ -89,7 +90,7 @@ snippet airport-proxy $S/airport-proxy.js 1440 900 desktop "" 400
 snippet models3d-desktop $S/models3d.js 1440 900 desktop "window.M3_PART='a';" 500
 snippet models3d-phone $S/models3d.js 390 844 phone "window.M3_PART='a';" 500
 snippet models3d-height $S/models3d-height.js 1440 900 desktop "" 560
-snippet models3d-budget $S/models3d-budget.js 1440 900 desktop "" 560
+if [ $DEVICE -eq 1 ]; then snippet models3d-budget $S/models3d-budget.js 1440 900 desktop "" 560; elif want "models3d-budget" || [ -z "$ONLY" ]; then record models3d-budget "NOT RUN (device-only: needs a real GPU, run tools/run-checks.sh --device-only)"; fi
 snippet models3d-zoom-soak $S/models3d-soak.js 1440 900 desktop "" 560
 
 for ph in "" phone; do
