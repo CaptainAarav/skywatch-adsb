@@ -29,7 +29,11 @@
     check('page aircraft counter > 0', counter > 0, numbers.page);
     check('page aircraft counter within tolerance of aircraft.json', Math.abs(counter - freshList.length) <= Math.max(tol, 5), numbers.page);
     check('map aircraft source has features (> 0)', srcN > 0, numbers.page);
-    check('map aircraft source count within tolerance of aircraft with a position', Math.abs(srcN - wp) <= tol, numbers.page);
+    // querySourceFeatures only returns features in the loaded tiles around the viewport, so aircraft far outside the view are not in it: expect  inView - tol <= source <= withPos + tol
+    const bnd = MLR.map.getBounds(), inView = freshList.filter(a => typeof a.lat == 'number' && typeof a.lon == 'number' && (a.seen_pos == null || a.seen_pos < 60) && bnd.contains([a.lon, a.lat])).length;
+    numbers.page.inView = inView;
+    check('map aircraft source count matches aircraft with a position (in view - tol <= source <= with position + tol)', srcN >= inView - tol && srcN <= wp + tol, numbers.page);
+    check('the page draws every aircraft with a position (planeFeats within tolerance of aircraft.json)', Math.abs(onMap - wp) <= tol, numbers.page);
   }
   const pageNow = typeof now != 'undefined' ? now : 0, local = Date.now() / 1000;
   numbers.fresh = {pageNow, serverNow: fresh.j.now, local};

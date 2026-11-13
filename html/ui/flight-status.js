@@ -8,8 +8,8 @@ const FLIGHTSTATUS = (function () {
         if (alt === 'ground') return (gs != null && gs > 5) ? 'Taxiing on the ground at ' + fmt(gs) + ' kt' : 'On the ground';
         if (typeof alt !== 'number' || !isFinite(alt)) return '';
         const shown = metric ? fmt(alt * 0.3048) + ' m' : fmt(alt) + ' ft';
-        if (typeof vr === 'number' && vr <= -300) return 'Descending through ' + shown;
-        if (typeof vr === 'number' && vr >= 300) return 'Climbing through ' + shown;
+        if (typeof vr === 'number' && vr <= -300) return 'Descending · ' + shown;
+        if (typeof vr === 'number' && vr >= 300) return 'Climbing · ' + shown;
         if (alt >= 18000 && !metric) return 'Cruising at FL' + String(Math.round(alt / 100)).padStart(3, '0');
         if (alt >= 18000) return 'Cruising at ' + shown;
         return 'Level at ' + shown;

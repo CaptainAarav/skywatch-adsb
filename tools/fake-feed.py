@@ -21,7 +21,7 @@ PLANES = []
 for i in range(N):
     t, cat, _ = TYPES[i % len(TYPES)]
     ang = random.uniform(0, 2 * math.pi); r = random.uniform(5, 140)          # km from the receiver
-    PLANES.append(dict(hex='%06x' % (0x400000 + i * 977), flight='%s%d' % (random.choice(CALL), 100 + i * 7), t=t, category=cat,
+    PLANES.append(dict(hex='%06x' % (0x40A000 + i * 977), flight='%s%d' % (random.choice(CALL), 100 + i * 7), t=t, category=cat,
         lat0=LAT + r * math.cos(ang) / 111.0, lon0=LON + r * math.sin(ang) / (111.0 * math.cos(math.radians(LAT))),
         hdg=random.uniform(0, 360), gs=(90 if cat in ('A1', 'A7') else random.uniform(200, 480)), alt=(1500 if cat in ('A1', 'A7') else random.choice([3000, 8000, 15000, 24000, 33000, 37000, 40000])),
         vr=random.choice([0, 0, 0, 1500, -1800]), circle=(i % 7 == 3), nopos=(i % 11 == 10), squawk='%04d' % random.randint(1000, 7000)))
@@ -39,6 +39,12 @@ def aircraft():
         if not p['nopos']: a.update(lat=round(lat, 5), lon=round(lon, 5), seen_pos=round(random.uniform(0, 0.8), 1), nic=8, rc=186)
         out.append(a)
     return out
+def heat_fallbacks(path):
+    import datetime, re
+    m = re.match(r'^/globe_history/(\d{4})/(\d\d)/(\d\d)/heatmap/(.+)$', path)
+    if not m: return []
+    d = datetime.date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
+    return ['/globe_history/%s/heatmap/%s' % ((d - datetime.timedelta(days=k)).strftime('%Y/%m/%d'), m.group(4)) for k in range(1, 11)]
 class H(http.server.SimpleHTTPRequestHandler):
     def __init__(s, *a, **k): super().__init__(*a, directory=ROOT, **k)
     _head = False
@@ -49,11 +55,18 @@ class H(http.server.SimpleHTTPRequestHandler):
     def do_GET(s):
         p = s.path.split('?')[0]
         if p == '/data/aircraft.json': return s.send_json({'now': time.time(), 'messages': int((time.time() - T0) * 400), 'aircraft': aircraft()})
-        if p == '/data/receiver.json': return s.send_json({'refresh': 1000, 'history': 0, 'lat': LAT, 'lon': LON, 'jaeroTimeout': 720.0, 'readsb': True, 'haveReplay': False, 'binCraft': False, 'zstd': False, 'outlineJson': False, 'version': 'fake-feed'})
+        if p == '/data/receiver.json': return s.send_json({'refresh': 1000, 'history': 0, 'lat': LAT, 'lon': LON, 'jaeroTimeout': 720.0, 'readsb': True, 'haveReplay': True, 'binCraft': False, 'zstd': False, 'outlineJson': False, 'version': 'fake-feed'})
         if p == '/chunks/chunks.json': return s.send_json({'chunks': [], 'chunks_all': [], 'pos_stale': False})
+        if p == '/version.json': return s.send_json({'tar1090Version': 'fake-feed', 'databaseVersion': DBDIR.strip('/').replace('db-', '')})
         if p.startswith(('/db2/', '/globe_history/', '/graphs1090/')):            # static files the real server provides: read-only GET from the real local site
             try:
-                r = urllib.request.urlopen('http://127.0.0.1:8096' + (DBDIR + s.path[5:] if s.path.startswith('/db2/') else s.path), timeout=5); b = r.read(); s.send_response(200); s.send_header('Content-Type', r.headers.get('Content-Type', 'application/octet-stream'))
+                upath = DBDIR + s.path[5:] if s.path.startswith('/db2/') else s.path
+                r = None
+                for cand in [upath] + heat_fallbacks(upath):                    # a heat-map slot the receiver has not written yet (it was off) falls back to the same slot of an earlier day
+                    try: r = urllib.request.urlopen('http://127.0.0.1:8096' + cand, timeout=5); break
+                    except Exception: continue
+                if r is None: raise IOError('missing')
+                b = r.read(); s.send_response(200); s.send_header('Content-Type', r.headers.get('Content-Type', 'application/octet-stream'))
                 if r.headers.get('Content-Encoding'): s.send_header('Content-Encoding', r.headers['Content-Encoding'])
                 s.send_header('Content-Length', str(len(b))); s.end_headers(); s.body(b)
             except Exception: s.send_response(404); s.end_headers()
