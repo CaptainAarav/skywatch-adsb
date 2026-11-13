@@ -669,3 +669,24 @@ grep -v '^\s*//' tools/cdp-snippets/layout-collision.js > /tmp/lc.js   # the har
 - **Intra-panel test** (`tools/cdp-snippets/intra-panel.js`): no two visible sibling text/interactive elements overlap, nothing leaves its container, no clipped text, no boxed element flush against plain text. Disclosed exemptions: `.psHandle`, `.hBubble`, sticky/fixed elements, sr-only, joined `.segmented` buttons, the peek sheet's deliberate clip window (it checks the header instead), elements whose full text is in `title` / `data-tip` / `aria-label`. Text blocks are compared by their text rects clipped to scrolling ancestors; interactive elements by their box. The older `layout-collision` test only compared the floating controls with panel content, which is why it never saw overlaps inside a panel.
 - **Snippet gotcha.** `MLR`, `AIRPT`, `PHONE`, `PERF` are top-level `const`s: they are NOT `window` properties. Use `typeof X != 'undefined'`.
 - **Fixed fixtures.** `models3d-height` and `route-link` inject one aircraft (`abc123`) via `processAircraft()` every 300 ms; they never use live traffic.
+
+## Phase 42 (airport open, 3D quality, glTF pipeline) and V1 defaults
+
+- **Airport open:** one `AIRPT.open(rowOrCode, from, source)` for the marker, route link, search, palette and `?airport=ICAO`, with one fly policy (`AIRPT.fly`). Test: `airport-click-desktop`.
+- **3D is EXPERIMENTAL and OFF by default in V1.** The 2D map is the default experience and the tested one. The 3D view, aircraft models, 3D quality (Auto / High / Balanced / Low), 3D aircraft colour and the contrail option are all labelled experimental in the UI. 3D is not tuned for weak GPUs.
+- `?perf=1` shows device-independent counters (draw calls, triangles, texture uploads, tiles in flight, symbol layers, queries per second, canvas size, GPU renderer); `?fps=N` caps the frame rate; `?airport=ICAO` opens an airport. Checks: `perf-counters`, `perf-overlay`, `quality-calc` (unit), `models-gltf`, `contrails-sky`.
+- **2D icon colour:** `icon-colour` reads the bitmap MapLibre holds for every aircraft icon (and the drawn pixels) under every combination of the 2D "Aircraft colour" and the 3D-only settings, and asserts that 3D settings never change a 2D icon. A grey icon in 2D is the stale-position rule (no position for more than 15 s draws `#8f8f8f`).
+- **Live smoke:** `live-smoke` loads the page against the real `aircraft.json` and asserts the aircraft counter and the map's aircraft source are above 0 and match the JSON, and that the data is fresh. A feed with no aircraft FAILS it with "SOURCE EMPTY" (that is the receiver, not the page).
+- **Fake feed for testing without a receiver:** `python3 tools/fake-feed.py [port=8098] [count=30]` serves `html/` plus synthetic moving aircraft; point any check at it with `SITE_URL=http://127.0.0.1:8098 tools/run-checks.sh --only <name>`.
+
+## Known issues / roadmap
+
+3D performance work is parked for V1. Known and not done:
+- 3D label collision handling (only collision freezing while the camera moves exists).
+- Tile and DEM churn in 3D with terrain.
+- Repaint only on change, and proof of zero per-frame allocation.
+- Draw-call reduction beyond hiding empty overlay sources.
+- Aircraft model engine and light accents, crisp 3D labels.
+- No real aircraft model files are bundled (see `tools/models/README.md`); the 3D view uses procedural shapes.
+- 3D was measured only in software GL; real GPU timing is unmeasured.
+- ACARS and ATC voice are not in V1.

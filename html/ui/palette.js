@@ -9,7 +9,7 @@ const PALETTE = (function () {
     function actions() {
         const a = [
             {title: 'Switch to 2D', keys: ['flat', 'view'], run: click('view2d')},
-            {title: 'Switch to 3D', keys: ['tilt', 'pitch', 'view', 'buildings'], run: click('view3d')},
+            {title: 'Switch to 3D (experimental)', keys: ['tilt', 'pitch', 'view', 'buildings'], run: click('view3d')},
             {title: 'Switch to Globe', keys: ['world', 'view'], run: click('viewGlobe')},
             {title: 'North up', keys: ['reset', 'rotation', 'compass'], run: click('north_up')},
             {title: 'Open settings', keys: ['preferences', 'options', 'cog'], run: click('settingsCog')},

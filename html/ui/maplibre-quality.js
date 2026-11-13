@@ -148,7 +148,7 @@ MLR.q = QUALITY.settings(0);
         if (list) {
             const row = document.createElement('div'); row.className = 'setSlider';
             const lab = document.createElement('label'); lab.htmlFor = 'quality3dSel';
-            const t = document.createElement('span'); t.textContent = '3D quality'; lab.appendChild(t);
+            const t = document.createElement('span'); t.textContent = '3D quality (experimental)'; lab.appendChild(t);
             const sel = document.createElement('select'); sel.id = 'quality3dSel'; sel.className = 'searchInput';
             for (const [v, n] of [['auto', 'Auto'], ['high', 'High'], ['balanced', 'Balanced'], ['low', 'Low']]) { const o = document.createElement('option'); o.value = v; o.textContent = n; sel.appendChild(o); }
             sel.value = mode;

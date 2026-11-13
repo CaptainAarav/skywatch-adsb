@@ -414,7 +414,7 @@
           <button type="button" class="act inActiveButton" id="I" title="Isolate: only show this aircraft (I)" onclick="toggleIsolation();"><span id="I_label">Isolate</span></button>
           <button type="button" class="act" id="act_more" aria-haspopup="menu" aria-expanded="false" title="More actions"><span>More</span></button>
           <div class="actMenu" id="act_menu" role="menu" hidden>
-            <button type="button" class="actItem" id="act_3d" role="menuitem" aria-pressed="false" title="Toggle 3D view">3D view</button>
+            <button type="button" class="actItem" id="act_3d" role="menuitem" aria-pressed="false" title="Experimental: toggle the tilted 3D view">3D view <span class="expTag">Experimental</span></button>
             <button type="button" class="actItem" id="history_action" role="menuitem" aria-pressed="false" hidden>Replay</button>
             <button type="button" class="actItem" id="act_track" role="menuitem" hidden>Show track</button>
             <button type="button" class="actItem" id="act_share" role="menuitem">Share</button>
@@ -500,18 +500,18 @@
                         <input type="range" id="iconScaleRange" min="0.25" max="1.95" step="0.05">
                       </div>
                       <div class="setSlider">
-                        <label for="altExagRange"><span>Altitude exaggeration (3D)</span><span class="mono lbl" id="altExagValue"></span></label>
+                        <label for="altExagRange"><span>Altitude exaggeration (3D, experimental)</span><span class="mono lbl" id="altExagValue"></span></label>
                         <input type="range" id="altExagRange" min="0" max="10" step="0.5">
                       </div>
                       <div class="setSlider">
-                        <div class="lbl setLbl">Aircraft height (3D models)</div>
+                        <div class="lbl setLbl">Aircraft height (3D models, experimental)</div>
                         <div class="segmented" id="heightSegmented" role="radiogroup" aria-label="Aircraft height">
                           <button type="button" data-height="compressed" title="Heights are compressed so aircraft stay in view above their shadow; the order by altitude is kept">Compressed</button>
                           <button type="button" data-height="realistic" title="True height above the surface: aircraft climb out of view as you zoom in">Realistic</button>
                         </div>
                       </div>
                       <div class="setSlider">
-                        <label for="terrainExagRange"><span>Terrain exaggeration (3D)</span><span class="mono lbl" id="terrainExagValue"></span></label>
+                        <label for="terrainExagRange"><span>Terrain exaggeration (3D, experimental)</span><span class="mono lbl" id="terrainExagValue"></span></label>
                         <input type="range" id="terrainExagRange" min="0" max="3" step="0.25">
                       </div>
                       <div class="setSlider">
@@ -666,7 +666,7 @@
             <button type="button" class="btn ctlView" id="view_cycle" aria-haspopup="menu" aria-expanded="false" aria-label="Map view: 2D. Tap to change, press and hold for the list" title="Map view (tap to change, hold for the list)"><span class="ctlViewLabel">2D</span><svg aria-hidden="true" class="ico ctlChevron" width="10" height="10" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>
             <div id="viewMenu" class="glass shell" role="menu" aria-label="Map view" hidden>
               <button type="button" class="on" id="view2d" role="menuitem" aria-pressed="true">2D</button>
-              <button type="button" class="off" id="view3d" role="menuitem" aria-pressed="false" title="Tilted view with 3D buildings (drag with the right mouse button to rotate)">3D</button>
+              <button type="button" class="off" id="view3d" role="menuitem" aria-pressed="false" title="Experimental: tilted view with 3D buildings and aircraft models (drag with the right mouse button to rotate). The 2D map is the default and the tested experience.">3D <span class="expTag">Experimental</span></button>
               <button type="button" class="off" id="viewGlobe" role="menuitem" aria-pressed="false" title="Globe view: flattens into the map as you zoom in">Globe</button>
             </div>
           </div>

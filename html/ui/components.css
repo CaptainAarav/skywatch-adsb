@@ -77,3 +77,6 @@ body.phone .ibRouteEnd.ibRouteLink { min-height: 44px; min-width: 44px; box-sizi
 body.airportOpen.airportFromAircraft #selected_infoblock,
 body.phone.infoOpen.airportOpen.airportFromAircraft #phoneSheetBody > #selected_infoblock { display: none !important; }
 .apBack { align-self: flex-start; margin: 0 0 8px; cursor: pointer; font-family: var(--font-mono, ui-monospace, monospace); }
+
+/* "Experimental" tag on the 3D controls: muted text in a hairline pill, no colour */
+.expTag { margin-left: 6px; padding: 1px 6px; border: 1px solid var(--line-strong, rgba(255,255,255,.2)); border-radius: 999px; font: 600 10px/1.4 var(--font-ui, inherit); letter-spacing: .04em; text-transform: uppercase; color: var(--muted, #9a9a9a); vertical-align: middle; }

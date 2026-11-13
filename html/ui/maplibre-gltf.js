@@ -84,7 +84,7 @@
         const list = document.getElementById('set_appearance'); if (!list) return;
         const row = document.createElement('div'); row.className = 'setSlider';
         const lab = document.createElement('label'); lab.htmlFor = 'modelColourSel';
-        const t = document.createElement('span'); t.textContent = 'Aircraft colour (3D)'; lab.appendChild(t);
+        const t = document.createElement('span'); t.textContent = '3D aircraft colour (experimental)'; lab.appendChild(t);
         const sel = document.createElement('select'); sel.id = 'modelColourSel'; sel.className = 'searchInput';
         for (const [v, n] of [['realistic', 'Realistic'], ['altitude', 'Altitude']]) { const o = document.createElement('option'); o.value = v; o.textContent = n; sel.appendChild(o); }
         sel.value = MLR.modelColourMode ? MLR.modelColourMode() : 'realistic';

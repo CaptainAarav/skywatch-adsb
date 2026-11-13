@@ -200,7 +200,7 @@ bar, six stats, Follow / Show track / expand). The sidebar becomes a sheet.
 5. Bottom sheet behaviour on phone.
 6. (done) The 2D / 3D / Globe switch is live.
 
-Deliberately **not** designed: ACARS, weather, flight-schedule timings,
+Deliberately **not** designed (ACARS and ATC voice are not in V1): ACARS, weather, flight-schedule timings,
 "flown today", route progress/ETA, share-link buttons. tar1090 has
 no such data, or the feature is not wanted.
 
