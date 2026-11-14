@@ -1,0 +1,60 @@
+{
+ "steps": [
+  [],
+  [],
+  [
+   {
+    "t": 1700000020,
+    "callsign": "TST1",
+    "reg": "G-TEST",
+    "type": "A320",
+    "airport": "EGGW",
+    "dir": "landing",
+    "rwy": "25"
+   }
+  ],
+  [],
+  [],
+  [
+   {
+    "t": 1700000050,
+    "callsign": "TST2",
+    "reg": "G-TEST",
+    "type": "A320",
+    "airport": "EGGW",
+    "dir": "takeoff",
+    "rwy": "25"
+   }
+  ],
+  [],
+  [
+   {
+    "t": 1700000070,
+    "callsign": "TST3",
+    "reg": "G-TEST",
+    "type": "A320",
+    "airport": "EGKK",
+    "dir": "takeoff",
+    "rwy": "26R"
+   }
+  ],
+  [],
+  [],
+  [],
+  [
+   {
+    "t": 1700000200,
+    "callsign": "TST4",
+    "reg": "G-TEST",
+    "type": "A320",
+    "airport": "EGLL",
+    "dir": "landing",
+    "rwy": "27R"
+   }
+  ],
+  [],
+  [],
+  [],
+  []
+ ]
+}

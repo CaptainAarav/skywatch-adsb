@@ -1,7 +1,7 @@
 // Skywatch ADS-B: airport panel (click an airport, or search ICAO / IATA / name).
 //
 // Data: html/airport-db/airports.json (OurAirports, public domain; built by tools/build-airports.py), loaded lazily on first use.
-// Weather: globe_history/skywatch/wx.json, written by scripts/skywatch-recorder.py (METAR/TAF from aviationweather.gov; the
+// Weather: globe_history/skywatch/wx.json, written by the optional Skywatch server (METAR/TAF from aviationweather.gov; the
 // browser cannot call that API itself, it sends no CORS headers). Traffic: computed here from the aircraft already loaded.
 // Every string from those files or from aircraft is untrusted: the DOM is built with createElement / createElementNS and
 // textContent only, never innerHTML. Links open in a new tab and are never embedded.
@@ -100,7 +100,7 @@ const AIRPT = (function () {
             .then(d => { st.wx = d; st.wxAt = Date.now(); st.wxFail = false; return d; })
             .catch(() => { st.wx = null; st.wxFail = true; return null; });
     }
-    // inferred movements written by the recorder (rolling 24 h); a missing or old file just means no card
+    // inferred movements written by the Skywatch server (rolling 24 h); a missing or old file just means no card
     function fetchMv() {
         return fetch(MV_URL, {cache: 'no-cache'}).then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
             .then(d => { st.mv = d && Array.isArray(d.movements) ? d : null; return st.mv; })
@@ -469,7 +469,7 @@ const AIRPT = (function () {
             if (wx && wx.m) body.appendChild(metarCard(r, wx.m));
             if (wx && wx.t) { const c = tafCard(wx.t, wx.m); if (c) body.appendChild(c); }
             if (!wx) {
-                const why = !st.wx ? (st.wxFail ? 'Weather is not available: the recorder has not written wx.json.' : null)
+                const why = !st.wx ? (st.wxFail ? 'Weather is not available: the Skywatch server has not written wx.json.' : null)
                     : (Date.now() / 1000 - st.wx.fetched_at > WX_MAX_AGE ? 'Weather is hidden: the feed is more than 3 hours old.' : 'No METAR or TAF for this airport in the feed.');
                 if (why) body.appendChild(h('div', 'apNote apWxNote', why));
             }
@@ -725,7 +725,7 @@ const AIRPT = (function () {
         if (code) { let n = 0; const t = setInterval(() => { if ((typeof MLR !== 'undefined' && MLR.ready) || ++n > 40) { clearInterval(t); if (n <= 40) open(code, null, 'url'); } }, 500); }
     });
     jQuery(function () {
-        new Toggle({key: 'airportWeather', display: 'Airport weather (METAR and TAF from the recorder)', container: '#settingsRight', init: airportWeather,
+        new Toggle({key: 'airportWeather', display: 'Airport weather (METAR and TAF from the Skywatch server)', container: '#settingsRight', init: airportWeather,
             setState: function (s) { airportWeather = s; if (st.cur) { st.wx = null; fetchWx().then(render); render(); } refreshWx(); }});
         new Toggle({key: 'airportLinks', display: 'Airport links (SkyVector, AIP, Wikipedia)', container: '#settingsRight', init: airportLinks,
             setState: function (s) { airportLinks = s; st.cur && render(); }});

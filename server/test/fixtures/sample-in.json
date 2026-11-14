@@ -1,0 +1,80 @@
+{
+ "aircraft": {
+  "now": 1700000000.0,
+  "messages": 1,
+  "aircraft": [
+   {
+    "hex": "400001",
+    "flight": "BAW1 ",
+    "lat": 51.5,
+    "lon": -0.1,
+    "r_dst": 12.34,
+    "r_dir": 10.0,
+    "rssi": -20.5,
+    "seen": 0.5,
+    "alt_baro": 30000
+   },
+   {
+    "hex": "400002",
+    "lat": 51.9,
+    "lon": 0.5,
+    "r_dst": 80.0,
+    "r_dir": 370.0,
+    "rssi": -25.2,
+    "seen": 2,
+    "alt_baro": "ground"
+   },
+   {
+    "hex": "400003",
+    "lat": 50.1,
+    "lon": -2.1,
+    "r_dst": 150.678,
+    "r_dir": 200.5,
+    "rssi": -31.0,
+    "seen": 99
+   },
+   {
+    "hex": "400004",
+    "lastPosition": {
+     "lat": 1,
+     "lon": 2
+    },
+    "seen": 3,
+    "rssi": -18.0
+   },
+   {
+    "hex": "400005",
+    "seen": 4
+   },
+   {
+    "hex": "400006",
+    "lat": 52.0,
+    "lon": -0.9,
+    "r_dst": "bad",
+    "r_dir": 50.0
+   },
+   {
+    "hex": "400007",
+    "lat": 52.0,
+    "lon": -0.9,
+    "r_dst": 15.0,
+    "r_dir": 359.99,
+    "rssi": -22.25,
+    "seen": 1
+   }
+  ]
+ },
+ "stats": {
+  "last1min": {
+   "local": {
+    "accepted": [
+     1234,
+     5
+    ],
+    "signal": -17.456
+   },
+   "position_count_total": 321
+  }
+ },
+ "now": 1700000042.7
+}

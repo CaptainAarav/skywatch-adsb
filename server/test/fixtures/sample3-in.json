@@ -1,0 +1,18 @@
+{
+ "aircraft": {
+  "aircraft": []
+ },
+ "stats": {
+  "last1min": {
+   "local": {
+    "accepted": [
+     1234,
+     5
+    ],
+    "signal": -17.456
+   },
+   "position_count_total": 321
+  }
+ },
+ "now": 1700000042.7
+}

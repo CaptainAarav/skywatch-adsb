@@ -1,0 +1,147 @@
+{
+ "metars": [
+  {
+   "icaoId": "EGLL",
+   "obsTime": 1700000000,
+   "rawOb": "METAR EGLL 141120Z 24012KT 9999 FEW040 12/06 Q1012",
+   "wdir": 240,
+   "wspd": 12,
+   "wgst": null,
+   "visib": "6+",
+   "altim": 1012,
+   "temp": 12,
+   "dewp": 6,
+   "clouds": [
+    {
+     "cover": "FEW",
+     "base": 4000
+    }
+   ],
+   "fltCat": "VFR",
+   "wxString": null
+  },
+  {
+   "icaoId": "EGLL",
+   "obsTime": 1700003600,
+   "rawOb": "METAR EGLL 141150Z 25015G27KT 4000 -RA BKN008 11/09 Q1010",
+   "wdir": 250,
+   "wspd": 15,
+   "wgst": 27,
+   "visib": 2.5,
+   "altim": 1010,
+   "temp": 11,
+   "dewp": 9,
+   "clouds": [
+    {
+     "cover": "BKN",
+     "base": 800
+    },
+    {
+     "cover": "OVC",
+     "base": 1500
+    }
+   ],
+   "fltCat": "IFR",
+   "wxString": "-RA"
+  },
+  {
+   "icaoId": "EGGW",
+   "obsTime": 1700001000,
+   "rawOb": "METAR EGGW 141120Z VRB02KT CAVOK 10/05 Q1013",
+   "wdir": "VRB",
+   "wspd": 2,
+   "wgst": null,
+   "visib": "6+",
+   "altim": 1013,
+   "temp": 10,
+   "dewp": 5,
+   "clouds": [],
+   "fltCat": "VFR",
+   "wxString": null
+  },
+  {
+   "icaoId": "EGKK",
+   "rawOb": "METAR EGKK no obs time",
+   "clouds": null
+  },
+  {
+   "rawOb": "no station"
+  },
+  {
+   "icaoId": "LFPG",
+   "obsTime": null,
+   "rawOb": "METAR LFPG",
+   "clouds": [
+    {
+     "cover": "SCT",
+     "base": 3500
+    },
+    "junk"
+   ]
+  }
+ ],
+ "tafs": [
+  {
+   "icaoId": "EGLL",
+   "issueTime": "2023-11-14T11:00:00Z",
+   "rawTAF": "TAF EGLL ...",
+   "validTimeFrom": 1700000000,
+   "validTimeTo": 1700086400,
+   "fcsts": [
+    {
+     "timeFrom": 1700000000,
+     "timeTo": 1700020000,
+     "fcstChange": null,
+     "probability": null,
+     "wdir": 240,
+     "wspd": 12,
+     "wgst": null,
+     "visib": "6+",
+     "clouds": [
+      {
+       "cover": "SCT",
+       "base": 3000
+      }
+     ],
+     "vertVis": null
+    },
+    {
+     "timeFrom": 1700020000,
+     "timeTo": 1700040000,
+     "fcstChange": "TEMPO",
+     "probability": 30,
+     "wdir": 250,
+     "wspd": 18,
+     "wgst": 30,
+     "visib": 3,
+     "clouds": [
+      {
+       "cover": "BKN",
+       "base": 700
+      }
+     ],
+     "vertVis": null
+    }
+   ]
+  },
+  {
+   "icaoId": "EGLL",
+   "issueTime": "2023-11-14T05:00:00Z",
+   "rawTAF": "TAF EGLL older",
+   "validTimeFrom": 1699950000,
+   "validTimeTo": 1700036400,
+   "fcsts": null
+  },
+  {
+   "icaoId": "EGGW",
+   "issueTime": "2023-11-14T11:00:00Z",
+   "rawTAF": "TAF EGGW",
+   "validTimeFrom": 1700000000,
+   "validTimeTo": 1700086400,
+   "fcsts": []
+  },
+  {
+   "rawTAF": "no station"
+  }
+ ]
+}

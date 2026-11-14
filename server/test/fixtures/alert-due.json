@@ -1,0 +1,61 @@
+{
+ "cfg": {
+  "dedupe_minutes": 30,
+  "max_per_hour": 3,
+  "quiet_hours": {
+   "start": "22:00",
+   "end": "06:00",
+   "tz": "Europe/London"
+  }
+ },
+ "seq": [
+  {
+   "hex": "a",
+   "reason": "r1",
+   "now": 1700000000,
+   "due": false
+  },
+  {
+   "hex": "a",
+   "reason": "r1",
+   "now": 1699956000,
+   "due": true
+  },
+  {
+   "hex": "a",
+   "reason": "r1",
+   "now": 1699956060,
+   "due": false
+  },
+  {
+   "hex": "a",
+   "reason": "r1",
+   "now": 1699957860,
+   "due": true
+  },
+  {
+   "hex": "b",
+   "reason": "r1",
+   "now": 1699957920,
+   "due": true
+  },
+  {
+   "hex": "c",
+   "reason": "r1",
+   "now": 1699957980,
+   "due": false
+  },
+  {
+   "hex": "d",
+   "reason": "r1",
+   "now": 1699958040,
+   "due": false
+  },
+  {
+   "hex": "d",
+   "reason": "r1",
+   "now": 1699959700,
+   "due": true
+  }
+ ]
+}

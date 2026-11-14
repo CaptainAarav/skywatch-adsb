@@ -1,0 +1,69 @@
+[
+ {
+  "q": {
+   "start": "22:00",
+   "end": "06:00"
+  },
+  "now": 1699956000,
+  "out": false
+ },
+ {
+  "q": {
+   "start": "22:00",
+   "end": "06:00",
+   "tz": "UTC"
+  },
+  "now": 1700000000,
+  "out": true
+ },
+ {
+  "q": {
+   "start": "22:00",
+   "end": "06:00",
+   "tz": "UTC"
+  },
+  "now": 1699970000,
+  "out": false
+ },
+ {
+  "q": {
+   "start": "09:00",
+   "end": "17:00",
+   "tz": "Europe/London"
+  },
+  "now": 1699956000,
+  "out": true
+ },
+ {
+  "q": {
+   "start": "09:00",
+   "end": "17:00",
+   "tz": "America/New_York"
+  },
+  "now": 1699956000,
+  "out": false
+ },
+ {
+  "q": {
+   "start": "09:00",
+   "end": "17:00",
+   "tz": "UTC"
+  },
+  "now": 1699990000,
+  "out": false
+ },
+ {
+  "q": {
+   "start": "bad",
+   "end": "17:00",
+   "tz": "UTC"
+  },
+  "now": 1699956000,
+  "out": false
+ },
+ {
+  "q": null,
+  "now": 1699956000,
+  "out": false
+ }
+]

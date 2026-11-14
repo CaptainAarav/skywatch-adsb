@@ -1,0 +1,51 @@
+[
+ {
+  "ac": {
+   "hex": "400001",
+   "flight": "BAW1 ",
+   "r": "G-ABCD",
+   "t": "A320",
+   "alt_baro": 31000,
+   "squawk": "7700"
+  },
+  "reason": "emergency squawk 7700 (general emergency)",
+  "out": [
+   "BAW1: emergency squawk 7700 (general emergency)",
+   "BAW1 | G-ABCD A320 | 31000 ft"
+  ]
+ },
+ {
+  "ac": {
+   "hex": "40000a",
+   "alt_baro": "ground"
+  },
+  "reason": "military aircraft",
+  "out": [
+   "40000A: military aircraft",
+   "40000A | on the ground"
+  ]
+ },
+ {
+  "ac": {
+   "hex": "40000b",
+   "t": "B738"
+  },
+  "reason": "type B738",
+  "out": [
+   "40000B: type B738",
+   "40000B | B738 | altitude unknown"
+  ]
+ },
+ {
+  "ac": {
+   "hex": "40000c",
+   "r": "G-X",
+   "alt_baro": 12345.9
+  },
+  "reason": "registration G-X",
+  "out": [
+   "40000C: registration G-X",
+   "40000C | G-X | 12345 ft"
+  ]
+ }
+]

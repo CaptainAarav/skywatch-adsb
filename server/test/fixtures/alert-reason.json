@@ -1,0 +1,140 @@
+{
+ "rules": [
+  {
+   "type": "emergency"
+  },
+  {
+   "type": "military"
+  },
+  {
+   "type": "interesting"
+  },
+  {
+   "type": "hex",
+   "value": "ABC123"
+  },
+  {
+   "type": "reg",
+   "value": "g-ezba"
+  },
+  {
+   "type": "callsign_prefix",
+   "value": "rra"
+  },
+  {
+   "type": "type",
+   "value": "a388"
+  },
+  {
+   "type": "hex",
+   "value": ""
+  }
+ ],
+ "cases": [
+  {
+   "ac": {
+    "hex": "400001",
+    "squawk": "7700"
+   },
+   "reason": "emergency squawk 7700 (general emergency)"
+  },
+  {
+   "ac": {
+    "hex": "400002",
+    "squawk": "7600"
+   },
+   "reason": "emergency squawk 7600 (radio failure)"
+  },
+  {
+   "ac": {
+    "hex": "400003",
+    "squawk": "7500"
+   },
+   "reason": "emergency squawk 7500 (hijack)"
+  },
+  {
+   "ac": {
+    "hex": "400004",
+    "squawk": "1200",
+    "emergency": "lifeguard"
+   },
+   "reason": "emergency squawk 1200"
+  },
+  {
+   "ac": {
+    "hex": "400005",
+    "squawk": "1200",
+    "emergency": "none"
+   },
+   "reason": null
+  },
+  {
+   "ac": {
+    "hex": "400006",
+    "dbFlags": 1
+   },
+   "reason": "military aircraft"
+  },
+  {
+   "ac": {
+    "hex": "400007",
+    "dbFlags": 2
+   },
+   "reason": "interesting aircraft"
+  },
+  {
+   "ac": {
+    "hex": "400008",
+    "dbFlags": 3
+   },
+   "reason": "military aircraft"
+  },
+  {
+   "ac": {
+    "hex": "~abc123"
+   },
+   "reason": "hex ABC123"
+  },
+  {
+   "ac": {
+    "hex": "ABC123"
+   },
+   "reason": "hex ABC123"
+  },
+  {
+   "ac": {
+    "hex": "400009",
+    "r": "G-EZBA"
+   },
+   "reason": "registration G-EZBA"
+  },
+  {
+   "ac": {
+    "hex": "40000a",
+    "flight": "RRA123 "
+   },
+   "reason": "callsign RRA*"
+  },
+  {
+   "ac": {
+    "hex": "40000b",
+    "t": "A388"
+   },
+   "reason": "type A388"
+  },
+  {
+   "ac": {
+    "hex": "40000c",
+    "t": "A320",
+    "flight": "BAW1"
+   },
+   "reason": null
+  },
+  {
+   "ac": {
+    "hex": "40000d"
+   },
+   "reason": null
+  }
+ ]
+}

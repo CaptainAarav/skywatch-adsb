@@ -93,6 +93,13 @@ snippet models3d-height $S/models3d-height.js 1440 900 desktop "" 560
 if [ $DEVICE -eq 1 ]; then snippet models3d-budget $S/models3d-budget.js 1440 900 desktop "" 560; elif want "models3d-budget" || [ -z "$ONLY" ]; then record models3d-budget "NOT RUN (device-only: needs a real GPU, run tools/run-checks.sh --device-only)"; fi
 snippet models3d-zoom-soak $S/models3d-soak.js 1440 900 desktop "" 560
 
+if want "server-tests"; then
+  # the optional Node server: tsc build + node:test (proxy allow list, traversal, schema parity with the Python fixtures, movements, alerts off by default, publicDemo, integration against a fake readsb)
+  if nice -n 15 ionice -c3 docker build -f server/Dockerfile --target test --no-cache-filter test -t skywatch-server-test --progress=plain . >"$LOGDIR/server-tests.log" 2>&1 && grep -qE '# fail 0$' "$LOGDIR/server-tests.log"; then
+    record "server-tests ($(grep -oE '# pass [0-9]+' "$LOGDIR/server-tests.log" | tail -1 | cut -c3-) tests)" PASS
+  else record server-tests "FAIL (log: $LOGDIR/server-tests.log)"; grep -E 'not ok|error' "$LOGDIR/server-tests.log" | head -5 | cut -c1-200 | sed 's/^/      /'; fi
+fi
+
 for ph in "" phone; do
   want "audit-colours${ph:+-phone}" || continue
   PORT=$((PORT+1)); chrome $PORT 1440 900

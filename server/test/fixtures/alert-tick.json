@@ -1,0 +1,113 @@
+{
+ "cfg": {
+  "enabled": true,
+  "ntfy": {
+   "topic": "x"
+  },
+  "rules": [
+   {
+    "type": "emergency"
+   },
+   {
+    "type": "military"
+   },
+   {
+    "type": "interesting"
+   },
+   {
+    "type": "hex",
+    "value": "ABC123"
+   },
+   {
+    "type": "reg",
+    "value": "g-ezba"
+   },
+   {
+    "type": "callsign_prefix",
+    "value": "rra"
+   },
+   {
+    "type": "type",
+    "value": "a388"
+   },
+   {
+    "type": "hex",
+    "value": ""
+   }
+  ],
+  "dedupe_minutes": 30,
+  "max_per_hour": 10
+ },
+ "aircraft": [
+  {
+   "hex": "400001",
+   "flight": "BAW1",
+   "squawk": "7700",
+   "alt_baro": 31000,
+   "r": "G-ABCD",
+   "t": "A320"
+  },
+  {
+   "hex": "400006",
+   "dbFlags": 1,
+   "alt_baro": "ground"
+  },
+  {
+   "hex": "40000d"
+  }
+ ],
+ "ticks": [
+  {
+   "now": 1699956000,
+   "out": [
+    [
+     "BAW1: emergency squawk 7700 (general emergency)",
+     "BAW1 | G-ABCD A320 | 31000 ft"
+    ],
+    [
+     "400006: military aircraft",
+     "400006 | on the ground"
+    ]
+   ]
+  },
+  {
+   "now": 1699956100,
+   "out": []
+  },
+  {
+   "now": 1699958000,
+   "out": [
+    [
+     "BAW1: emergency squawk 7700 (general emergency)",
+     "BAW1 | G-ABCD A320 | 31000 ft"
+    ],
+    [
+     "400006: military aircraft",
+     "400006 | on the ground"
+    ]
+   ]
+  }
+ ],
+ "sent": [
+  [
+   "BAW1: emergency squawk 7700 (general emergency)",
+   "BAW1 | G-ABCD A320 | 31000 ft",
+   5
+  ],
+  [
+   "400006: military aircraft",
+   "400006 | on the ground",
+   3
+  ],
+  [
+   "BAW1: emergency squawk 7700 (general emergency)",
+   "BAW1 | G-ABCD A320 | 31000 ft",
+   5
+  ],
+  [
+   "400006: military aircraft",
+   "400006 | on the ground",
+   3
+  ]
+ ]
+}

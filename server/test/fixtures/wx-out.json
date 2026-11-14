@@ -1,0 +1,129 @@
+{
+ "EGKK": {
+  "m": {
+   "raw": "METAR EGKK no obs time",
+   "obs": null,
+   "wdir": null,
+   "wspd": null,
+   "wgst": null,
+   "vis": null,
+   "qnh": null,
+   "temp": null,
+   "dew": null,
+   "clouds": [],
+   "cat": null,
+   "wx": null
+  }
+ },
+ "LFPG": {
+  "m": {
+   "raw": "METAR LFPG",
+   "obs": null,
+   "wdir": null,
+   "wspd": null,
+   "wgst": null,
+   "vis": null,
+   "qnh": null,
+   "temp": null,
+   "dew": null,
+   "clouds": [
+    [
+     "SCT",
+     3500
+    ]
+   ],
+   "cat": null,
+   "wx": null
+  }
+ },
+ "EGLL": {
+  "m": {
+   "raw": "METAR EGLL 141150Z 25015G27KT 4000 -RA BKN008 11/09 Q1010",
+   "obs": 1700003600,
+   "wdir": 250,
+   "wspd": 15,
+   "wgst": 27,
+   "vis": 2.5,
+   "qnh": 1010,
+   "temp": 11,
+   "dew": 9,
+   "clouds": [
+    [
+     "BKN",
+     800
+    ],
+    [
+     "OVC",
+     1500
+    ]
+   ],
+   "cat": "IFR",
+   "wx": "-RA"
+  },
+  "t": {
+   "raw": "TAF EGLL ...",
+   "issue": "2023-11-14T11:00:00Z",
+   "from": 1700000000,
+   "to": 1700086400,
+   "f": [
+    {
+     "from": 1700000000,
+     "to": 1700020000,
+     "chg": null,
+     "prob": null,
+     "wdir": 240,
+     "wspd": 12,
+     "wgst": null,
+     "vis": "6+",
+     "clouds": [
+      [
+       "SCT",
+       3000
+      ]
+     ],
+     "vv": null
+    },
+    {
+     "from": 1700020000,
+     "to": 1700040000,
+     "chg": "TEMPO",
+     "prob": 30,
+     "wdir": 250,
+     "wspd": 18,
+     "wgst": 30,
+     "vis": 3,
+     "clouds": [
+      [
+       "BKN",
+       700
+      ]
+     ],
+     "vv": null
+    }
+   ]
+  }
+ },
+ "EGGW": {
+  "m": {
+   "raw": "METAR EGGW 141120Z VRB02KT CAVOK 10/05 Q1013",
+   "obs": 1700001000,
+   "wdir": "VRB",
+   "wspd": 2,
+   "wgst": null,
+   "vis": "6+",
+   "qnh": 1013,
+   "temp": 10,
+   "dew": 5,
+   "clouds": [],
+   "cat": "VFR",
+   "wx": null
+  },
+  "t": {
+   "raw": "TAF EGGW",
+   "issue": "2023-11-14T11:00:00Z",
+   "from": 1700000000,
+   "to": 1700086400,
+   "f": []
+  }
+ }
+}

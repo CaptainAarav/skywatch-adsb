@@ -1,5 +1,5 @@
 // Skywatch ADS-B: live charts for the Graphs overlay (canvas, no library).
-// Data: /globe_history/skywatch/history.json + polar.json, written once a minute by scripts/skywatch-recorder.py.
+// Data: /globe_history/skywatch/history.json + polar.json, written once a minute by the optional Skywatch server (server/).
 // Without it the overlay falls back to the graphs1090 images. Only distances / bearings relative to the receiver are used:
 // no coordinates are ever stored or drawn.
 "use strict";
@@ -262,7 +262,7 @@ const GRAPHS = (function () {
                 for (const c of CARDS) charts.push(makeCard(grid, c));
                 if (polar) charts.push(makePolar(grid));
             } else {
-                const note = el('div', 'gNote', grid, 'Live charts need the Skywatch recorder (scripts/skywatch-recorder.py); showing the classic graphs1090 images instead.');
+                const note = el('div', 'gNote', grid, 'Live charts need the optional Skywatch server (see the README); showing the classic graphs1090 images instead.');
                 for (const [k, l] of CLASSIC) {
                     const c = el('figure', 'gCard', grid); c.dataset.g = k;
                     el('figcaption', null, c, l);

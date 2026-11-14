@@ -1,0 +1,263 @@
+{
+ "steps": [
+  {
+   "now": 1700000000,
+   "aircraft": [
+    {
+     "hex": "a00001",
+     "lat": 51.88,
+     "lon": -0.3,
+     "alt_baro": 1500,
+     "gs": 140,
+     "baro_rate": -700,
+     "seen_pos": 0,
+     "flight": "TST1 ",
+     "r": "G-TEST",
+     "t": "A320",
+     "track": 254
+    }
+   ]
+  },
+  {
+   "now": 1700000010,
+   "aircraft": [
+    {
+     "hex": "a00001",
+     "lat": 51.877,
+     "lon": -0.34,
+     "alt_baro": 700,
+     "gs": 125,
+     "baro_rate": -600,
+     "seen_pos": 0,
+     "flight": "TST1 ",
+     "r": "G-TEST",
+     "t": "A320",
+     "track": 254
+    }
+   ]
+  },
+  {
+   "now": 1700000020,
+   "aircraft": [
+    {
+     "hex": "a00001",
+     "lat": 51.8747,
+     "lon": -0.36,
+     "alt_baro": "ground",
+     "gs": 100,
+     "baro_rate": 0,
+     "seen_pos": 0,
+     "flight": "TST1 ",
+     "r": "G-TEST",
+     "t": "A320",
+     "track": 254
+    }
+   ]
+  },
+  {
+   "now": 1700000030,
+   "aircraft": [
+    {
+     "hex": "a00001",
+     "lat": 51.8747,
+     "lon": -0.37,
+     "alt_baro": "ground",
+     "gs": 20,
+     "baro_rate": 0,
+     "seen_pos": 0,
+     "flight": "TST1 ",
+     "r": "G-TEST",
+     "t": "A320",
+     "track": 254
+    }
+   ]
+  },
+  {
+   "now": 1700000040,
+   "aircraft": [
+    {
+     "hex": "a00002",
+     "lat": 51.8747,
+     "lon": -0.375,
+     "alt_baro": "ground",
+     "gs": 5,
+     "baro_rate": 0,
+     "seen_pos": 0,
+     "flight": "TST2 ",
+     "r": "G-TEST",
+     "t": "A320",
+     "track": 254
+    }
+   ]
+  },
+  {
+   "now": 1700000050,
+   "aircraft": [
+    {
+     "hex": "a00002",
+     "lat": 51.8745,
+     "lon": -0.39,
+     "alt_baro": 900,
+     "gs": 150,
+     "baro_rate": 2000,
+     "seen_pos": 0,
+     "flight": "TST2 ",
+     "r": "G-TEST",
+     "t": "A320",
+     "track": 254
+    }
+   ]
+  },
+  {
+   "now": 1700000060,
+   "aircraft": [
+    {
+     "hex": "a00002",
+     "lat": 51.87,
+     "lon": -0.45,
+     "alt_baro": 2500,
+     "gs": 170,
+     "baro_rate": 2200,
+     "seen_pos": 0,
+     "flight": "TST2 ",
+     "r": "G-TEST",
+     "t": "A320",
+     "track": 254
+    }
+   ]
+  },
+  {
+   "now": 1700000070,
+   "aircraft": [
+    {
+     "hex": "a00003",
+     "lat": 51.1487,
+     "lon": -0.18,
+     "alt_baro": 1300,
+     "gs": 160,
+     "baro_rate": 1800,
+     "seen_pos": 0,
+     "flight": "TST3 ",
+     "r": "G-TEST",
+     "t": "A320",
+     "track": 260
+    }
+   ]
+  },
+  {
+   "now": 1700000080,
+   "aircraft": [
+    {
+     "hex": "a00004",
+     "lat": 51.47,
+     "lon": -0.5,
+     "alt_baro": 1400,
+     "gs": 150,
+     "baro_rate": -700,
+     "seen_pos": 0,
+     "flight": "TST4 ",
+     "r": "G-TEST",
+     "t": "A320",
+     "track": 270
+    }
+   ]
+  },
+  {
+   "now": 1700000090,
+   "aircraft": [
+    {
+     "hex": "a00004",
+     "lat": 51.47,
+     "lon": -0.47,
+     "alt_baro": 500,
+     "gs": 140,
+     "baro_rate": -650,
+     "seen_pos": 0,
+     "flight": "TST4 ",
+     "r": "G-TEST",
+     "t": "A320",
+     "track": 270
+    }
+   ]
+  },
+  {
+   "now": 1700000100,
+   "aircraft": []
+  },
+  {
+   "now": 1700000200,
+   "aircraft": []
+  },
+  {
+   "now": 1700000800,
+   "aircraft": []
+  },
+  {
+   "now": 1700000810,
+   "aircraft": [
+    {
+     "hex": "a00005",
+     "lat": 51.8747,
+     "lon": -0.36,
+     "alt_baro": "ground",
+     "gs": 10,
+     "baro_rate": 0,
+     "seen_pos": 40,
+     "flight": "TST1 ",
+     "r": "G-TEST",
+     "t": "A320",
+     "track": 254
+    },
+    {
+     "hex": "a00006",
+     "lat": 52.5,
+     "lon": 0.5,
+     "alt_baro": 35000,
+     "gs": 450,
+     "baro_rate": 0,
+     "seen_pos": 0,
+     "flight": "TST1 ",
+     "r": "G-TEST",
+     "t": "A320",
+     "track": 90
+    }
+   ]
+  },
+  {
+   "now": 1700000820,
+   "aircraft": [
+    {
+     "hex": "a00001",
+     "lat": 51.88,
+     "lon": -0.3,
+     "alt_baro": 1500,
+     "gs": 140,
+     "baro_rate": -700,
+     "seen_pos": 0,
+     "flight": "TST1 ",
+     "r": "G-TEST",
+     "t": "A320",
+     "track": 254
+    }
+   ]
+  },
+  {
+   "now": 1700000830,
+   "aircraft": [
+    {
+     "hex": "a00001",
+     "lat": 51.8747,
+     "lon": -0.36,
+     "alt_baro": "ground",
+     "gs": 100,
+     "baro_rate": 0,
+     "seen_pos": 0,
+     "flight": "TST1 ",
+     "r": "G-TEST",
+     "t": "A320",
+     "track": 254
+    }
+   ]
+  }
+ ]
+}

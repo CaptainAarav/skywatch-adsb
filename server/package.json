@@ -1,0 +1,17 @@
+{
+  "name": "skywatch-server",
+  "version": "1.0.0",
+  "description": "Optional Skywatch ADS-B server: serves the web UI, a GET-only allow-listed proxy to your readsb/tar1090, and the weather, movements and history recorders. No runtime dependencies.",
+  "private": true,
+  "license": "GPL-3.0-or-later",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "tsc -p tsconfig.json && node --test \"dist/test/*.test.js\"",
+    "start": "node dist/src/main.js"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.0"
+  }
+}

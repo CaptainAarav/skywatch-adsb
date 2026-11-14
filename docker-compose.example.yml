@@ -1,0 +1,33 @@
+# Skywatch ADS-B server: ONE container that serves the web UI, a read-only proxy to your readsb / tar1090 data, and the optional
+# weather / movements / history recorders. Copy this file, set READSB_URL, then:  docker compose -f docker-compose.example.yml up -d --build
+#
+# READSB_URL is the address of the web server that already serves your readsb data (for example the ultrafeeder container's web port).
+# It is fixed here: the server never fetches a URL a visitor sends it.
+services:
+  skywatch:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    image: skywatch-adsb:latest
+    container_name: skywatch
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      READSB_URL: "http://ultrafeeder:80"        # <- the ONE setting you must change
+      # PUBLIC_DEMO: "1"                          # public instance: alerts stay off whatever files exist
+      # TRUST_PROXY: "1"                          # only behind your own reverse proxy: per-IP limits then use X-Forwarded-For
+      # WEATHER: "0"                              # no METAR/TAF fetching (it calls aviationweather.gov)
+      # MOVEMENTS: "0"
+      # HISTORY: "0"
+    volumes:
+      - skywatch-data:/data                       # the only writable place: recorder files, optional skywatch-alerts.json
+    read_only: true                               # everything except /data (and a small tmpfs) is read-only
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    # networks: put it on the same network as your readsb / ultrafeeder container so the name above resolves
+volumes:
+  skywatch-data:

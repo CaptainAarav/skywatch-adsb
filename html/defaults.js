@@ -393,7 +393,7 @@ let brightenMapOnSelect = false;   // off everywhere: the map never changes colo
 let dimOthers = false;
 // aircraft icon colour on the map: 'white' (default) or 'altitude'. Tracks are always coloured by altitude.
 let aircraftColor = 'white';
-// Skywatch ADS-B: airport panel. Weather comes from the recorder's wx.json (no third-party request from the browser);
+// Skywatch ADS-B: airport panel. Weather comes from the Skywatch server's wx.json (no third-party request from the browser);
 // links are plain external links. Both can be switched off.
 let airportWeather = true;
 let airportLinks = true;

@@ -1,0 +1,43 @@
+[
+ {
+  "cfg": {
+   "ntfy": {
+    "topic": "t"
+   }
+  },
+  "on": true
+ },
+ {
+  "cfg": {
+   "enabled": false,
+   "ntfy": {
+    "topic": "t"
+   }
+  },
+  "on": false
+ },
+ {
+  "cfg": {
+   "ntfy": {}
+  },
+  "on": false
+ },
+ {
+  "cfg": {
+   "ntfy": {
+    "topic": ""
+   }
+  },
+  "on": false
+ },
+ {
+  "cfg": {
+   "enabled": true
+  },
+  "on": false
+ },
+ {
+  "cfg": [],
+  "on": false
+ }
+]

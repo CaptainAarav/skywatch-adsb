@@ -1,0 +1,9 @@
+.git
+.private
+node_modules
+server/node_modules
+server/dist
+tools
+docs
+new-designs
+design
