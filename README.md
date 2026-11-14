@@ -7,6 +7,7 @@
 **A map-first web interface for your own ADS-B receiver: airports with live weather, a command palette, alerts, 3D with real terrain, and nothing that leaves your receiver you did not choose.**
 
 <!-- demo: short GIF/MP4 goes here (not recorded yet) -->
+<img width="2560" height="1319" alt="image" src="https://github.com/user-attachments/assets/188bee11-3c9a-43c6-878e-31de32785264" />
 
 > **Built on [tar1090](https://github.com/wiedehopf/tar1090) by [wiedehopf](https://github.com/wiedehopf).** Skywatch ADS-B is a fork:
 > the decoder integration, history, traces and data handling are wiedehopf's and the tar1090 contributors' work, and the
