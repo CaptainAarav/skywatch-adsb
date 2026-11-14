@@ -1,0 +1,9 @@
+Skywatch ADS-B
+Created by Aarav Sahni · Based on tar1090 by wiedehopf
+
+This project is a redesign of tar1090 (https://github.com/wiedehopf/tar1090) by wiedehopf and its contributors, which is itself based on dump1090 by
+FlightAware and earlier work. It is distributed under the GNU General Public License, version 2 or later: see LICENSE (identical to upstream's).
+
+Third-party components that are bundled or used at run time, with their licences and attribution requirements, are listed in THIRD_PARTY.md.
+Licence texts that ship with a vendored component sit next to it (html/libs/*-LICENSE.txt, html/libs/draco/LICENSE.txt, html/flags/LICENSE, html/fonts/*-OFL.txt).
+Components whose licence could not be confirmed are marked as such in THIRD_PARTY.md.

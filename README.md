@@ -4,9 +4,11 @@
   <img alt="Skywatch ADS-B" src="docs/logo/skywatch-lockup-dark.svg" height="96">
 </picture>
 
+Created by Aarav Sahni · Based on tar1090 by wiedehopf
+
 **A map-first web interface for your own ADS-B receiver: airports with live weather, a command palette, alerts, 3D with real terrain, and nothing that leaves your receiver you did not choose.**
 
-<!-- demo: short GIF/MP4 goes here (not recorded yet) -->
+<!-- PLACEHOLDER: demo GIF/MP4 goes here (not recorded yet) -->
 <img width="2560" height="1319" alt="image" src="https://github.com/user-attachments/assets/188bee11-3c9a-43c6-878e-31de32785264" />
 
 > **Built on [tar1090](https://github.com/wiedehopf/tar1090) by [wiedehopf](https://github.com/wiedehopf).** Skywatch ADS-B is a fork:
@@ -21,7 +23,7 @@ Each item names what to look for; screenshots will be added.
 - **Airports at night**: a dark airfield with runway markings, taxiways, stop bars, runway, approach and taxiway lights and PAPI, drawn on the GPU from OpenStreetMap and OurAirports data. <!-- screenshot: airport at night -->
 - **Pins with weather**: each airport is a round country flag with its code beneath; the ring is the flight category (green VFR, amber MVFR, red IFR, purple LIFR, grey when there is no METAR under 3 hours old); the name appears at the airport's detail zoom; hover or long-press for a mini METAR. Settings > Map & layers > "Airport labels" (Fewer / Normal / More) shifts every tier's zoom. <!-- screenshot: pins with weather -->
 - **Instrument panel** for the selected aircraft: altitude and speed gauges, wind compass, attitude and autopilot cards when broadcast, altitude profile. <!-- screenshot: instrument panel -->
-- **3D view** with altitude lift and optional real terrain (elevation tiles, hillshade), and real **3D aircraft models** (procedural low-poly archetypes: narrowbody, widebody, regional and business jet, turboprop, light single and twin, helicopter; the nearest 300 are drawn as models, the rest as icons; Settings > Map & layers > "3D aircraft models"). The model library (three.js, 690 KB) is only downloaded when you first enter 3D. <!-- screenshot: 3D with terrain -->
+- **3D view (Experimental, off by default)** with altitude lift and optional real terrain (elevation tiles, hillshade), and real **3D aircraft models** (procedural low-poly archetypes: narrowbody, widebody, regional and business jet, turboprop, light single and twin, helicopter; the nearest 300 are drawn as models, the rest as icons; Settings > Map & layers > "3D aircraft models"). The model library (three.js, 690 KB) is only downloaded when you first enter 3D. <!-- screenshot: 3D with terrain -->
 - **Command palette** (Ctrl/Cmd-K): aircraft by callsign, registration, hex or type; airports by code or name, nearest first; actions such as 3D, north up, settings. <!-- screenshot: command palette -->
 - **Alerts** (Settings > Alerts): watch a registration, hex, callsign prefix, type, military, emergency squawks. <!-- screenshot: alerts -->
 - **Graphs** with a Coverage plot (range by bearing), and a two-hour **rain radar** playback (off by default). <!-- screenshot: graphs -->
@@ -33,7 +35,14 @@ Anything that produces the tar1090 data format: [readsb](https://github.com/wied
 [ultrafeeder](https://github.com/sdr-enthusiasts/docker-adsb-ultrafeeder), dump1090-fa. Developed and tested
 against ultrafeeder (readsb 3.16) and headless Chromium only.
 
-## Install with ultrafeeder
+## Install
+
+Two ways, pick one:
+
+- **A. Static mount into ultrafeeder** (no backend, nothing else to run; graphs fall back to graphs1090, no weather or movements).
+- **B. Skywatch server container** (serves the interface and adds live graphs, weather, movements and alerts; one setting, `READSB_URL`).
+
+### A. Static mount into ultrafeeder
 
 1. Clone this repository on the host that runs ultrafeeder:
 
@@ -62,6 +71,20 @@ against ultrafeeder (readsb 3.16) and headless Chromium only.
 **Roll back to stock tar1090:** remove the `/var/tar1090_git_source` volume line and run `docker compose up -d --force-recreate ultrafeeder`. The container then installs upstream tar1090 again. Your `TAR1090_*` variables and the receiver data are untouched.
 
 To deploy later changes to this clone without recreating the container: `scripts/deploy-local.sh` (variables `CONTAINER`, default `ultrafeeder`, and `SITE_URL`, default `http://127.0.0.1:8096`).
+
+### B. Skywatch server container
+
+Needs Docker with Compose and a readsb / ultrafeeder web server that this container can reach.
+
+```
+git clone https://github.com/CaptainAarav/skywatch-adsb.git
+cd skywatch-adsb
+cp docker-compose.example.yml docker-compose.yml
+# edit docker-compose.yml: set READSB_URL (for example http://ultrafeeder:80) and, if needed, the network so that name resolves
+docker compose up -d --build
+```
+
+Then open `http://HOST:8080/`. Check it with `curl -s http://HOST:8080/api/health`. The container runs as a non-root user with a read-only filesystem; only the `skywatch-data` volume (`/data`) is writable. For a public site set `PUBLIC_DEMO=1` and put your own TLS reverse proxy in front (then also `TRUST_PROXY=1`). Remove it with `docker compose down` (add `-v` to delete the recorded data).
 
 ## Already running tar1090?
 
@@ -100,44 +123,33 @@ Expect conflicts in `html/index.html`, `html/script.js` and `html/style.css`, wh
 
 - A different interface (floating glass panels, new settings dialog, instrument panel, phone layout) and a MapLibre GL map instead of OpenLayers. Settings are stored per browser under new keys, so your old browser settings do not carry over.
 - Map tiles come from OpenFreeMap through our own style (VersaTiles as automatic fallback; CARTO opt-in). The old OpenStreetMap raster tiles are gone. The stock overlays remain.
-- Extra features: airport panel and night-airfield detail, weather pins, command palette, alerts, terrain, coverage plot, recent movements. The recorder (below) is optional and powers graphs, weather, movements and server alerts.
+- Extra features: airport panel and night-airfield detail, weather pins, command palette, alerts, terrain, coverage plot, recent movements. The Skywatch server (below) is optional and powers graphs, weather, movements and server alerts.
 - Aircraft icons are the stock shapes. Decoder, history, traces, filters and URL options behave as upstream.
 
 ## FAQ
 
 - **The map is blank.** The tile provider may be unreachable or blocking you; a banner says when the map switched provider. Try another base map in Settings > Map. Airport detail needs `tiles.openfreemap.org`. WebGL must be enabled in the browser.
-- **Graphs say "classic graphs1090 images" or nothing.** The recorder is not running. Set it up below, or keep using graphs1090.
-- **The airport panel has no weather.** Weather comes from the recorder's `wx.json`; it is missing, older than 3 hours, or `airportWeather = false`. Check `docker logs skywatch-recorder`.
-- **Recent movements are missing.** The recorder needs the airport list mounted (see below) and movements only appear for aircraft your receiver heard landing or taking off.
-- **Alerts do not fire.** Browser alerts need the page open, the main Alerts switch on, a rule that matches, and are limited to 5 a minute and one per aircraft and rule every 30 minutes. Server alerts need `skywatch-alerts.json` mounted, valid JSON, a topic and an ntfy server that answers; see [docs/ALERTS.md](docs/ALERTS.md).
+- **Graphs say "classic graphs1090 images" or nothing.** The Skywatch server is not running. Set it up (see above), or keep using graphs1090.
+- **The airport panel has no weather.** Weather comes from the server's `wx.json`; it is missing, older than 3 hours, or `airportWeather = false`. Check `docker logs skywatch`.
+- **Recent movements are missing.** Movements need the Skywatch server (`MOVEMENTS` not set to 0) and only appear for aircraft your receiver heard landing or taking off.
+- **Alerts do not fire.** Browser alerts need the page open, the main Alerts switch on, a rule that matches, and are limited to 5 a minute and one per aircraft and rule every 30 minutes. Server alerts need `skywatch-alerts.json` in the server's data folder, valid JSON, a topic and an ntfy server that answers; see [docs/ALERTS.md](docs/ALERTS.md).
 - **3D terrain is off or slow.** It defaults to off on phones and software rendering; turn it on in Settings > Appearance. Measure it on your hardware.
 
-## Recorder (optional)
+## Skywatch server (optional)
 
-`scripts/skywatch-recorder.py` (Python standard library only) runs as a second compose service using the ultrafeeder image. It does four jobs:
+`server/` is one small Node.js + TypeScript program (no runtime dependencies) that serves the web interface and adds the features a static page cannot do on its own. It replaces the earlier Python recorder.
 
-1. **Graphs**: samples the receiver once a minute into `history.json` and `polar.json`. Only counts, message rate, maximum range, average signal and per-hour bearing and distance bins; **no coordinates, hex codes or callsigns**.
-2. **Weather**: METAR and TAF from [aviationweather.gov](https://aviationweather.gov/data/api/) every 5 minutes into `wx.json` (one request each, for a box about 3 degrees around your receiver taken from `receiver.json`; override with `SW_WX_BOX=lat0,lon0,lat1,lon1`). `SW_WX=0` turns it off.
-3. **Recent movements**: inferred landings and take-offs near airports into `movements.json` (rolling 24 hours: time, callsign, registration, type, airport, direction, runway; no receiver position). `SW_MOVES=0` turns it off. It needs the airport list mounted at `/opt/skywatch/airports.json`.
-4. **Server alerts** (ntfy): off unless `skywatch-alerts.json` is mounted, see [docs/ALERTS.md](docs/ALERTS.md).
+- **Serves** the interface from `html/`.
+- **Proxies, read-only**: GET requests for the readsb / tar1090 data (`data/aircraft.json`, `receiver.json`, traces, history chunks, the aircraft database, graphs1090 images; anything else is a 404) from the one address in `READSB_URL`. It never fetches a URL a visitor sends it.
+- **Graphs**: samples the receiver once a minute into `history.json` and `polar.json` (counts, message rate, range, signal; per-hour bearing bins; no coordinates, hex codes or callsigns). Charts start empty; there is no backfill from graphs1090.
+- **Weather**: METAR and TAF from [aviationweather.gov](https://aviationweather.gov/data/api/) every 5 minutes into `wx.json` (a box about 3 degrees around your receiver; `WX_BOX=lat0,lon0,lat1,lon1` overrides). `WEATHER=0` turns it off.
+- **Recent movements**: inferred landings and take-offs near airports into `movements.json` (rolling 24 h: time, callsign, registration, type, airport, direction, runway; no receiver position). `MOVEMENTS=0` turns it off.
+- **Alerts** (ntfy): off until you create `skywatch-alerts.json` in the data folder, see [docs/ALERTS.md](docs/ALERTS.md).
+- `GET /api/health` for a health check.
 
-```yaml
-  skywatch-recorder:
-    image: ghcr.io/sdr-enthusiasts/docker-adsb-ultrafeeder
-    restart: unless-stopped
-    depends_on: [ultrafeeder]
-    entrypoint: ["python3", "-u", "/opt/skywatch/skywatch-recorder.py"]
-    environment:
-      - SW_SRC=http://ultrafeeder/data
-      - SW_OUT=/var/globe_history/skywatch
-    volumes:
-      - /path/to/skywatch-adsb/scripts/skywatch-recorder.py:/opt/skywatch/skywatch-recorder.py:ro
-      - /path/to/skywatch-adsb/html/airport-db/airports.json:/opt/skywatch/airports.json:ro   # for movements
-      - ./globe_history:/var/globe_history
-      - ./graphs1090:/var/lib/collectd:ro   # optional: seeds the first week of graphs from graphs1090 data
-```
+Environment variables (all optional except `READSB_URL`): `READSB_URL`, `PORT` (8080), `DATA_DIR` (`/data`), `PUBLIC_DEMO=1` (alerts stay off whatever files exist), `TRUST_PROXY=1` (only behind your own reverse proxy), `WEATHER`, `MOVEMENTS`, `HISTORY`, `WX_BOX`, `WX_INTERVAL`, `MOVE_INTERVAL`, `SAMPLE_INTERVAL`, `KEEP_DAYS`, `ALERTS_FILE`, `NTFY_TOKEN`. The polar plot shows the bearing and range pattern around your receiver, so only publish it if that is acceptable.
 
-Other variables: `SW_INTERVAL`, `SW_KEEP_DAYS`, `SW_RRD`, `SW_MOVE_INTERVAL`, `SW_ALERTS`. The polar plot reveals the bearing and range pattern around your receiver, so only publish it if that is acceptable.
+If you do not run the server, the interface works as before: the Graphs panel falls back to the classic graphs1090 images, the airport panel has no weather card and no movements card.
 
 ## Configuration reference
 
@@ -184,7 +196,7 @@ gone on phones; their switches live under Settings > Aircraft & labels. Desktop 
 | adsb.im | flight routes (sends callsign and position, selected aircraft only) | on by default (`useRouteAPI`) |
 | SkyVector, NATS AIP, Wikipedia | only when a visitor clicks a link in the airport panel | `airportLinks = false` |
 
-**Your server contacts** aviationweather.gov (the recorder, for weather) and, only if you configure it, your ntfy server (alerts).
+**Your server contacts** aviationweather.gov (the Skywatch server, for weather) and, only if you configure it, your ntfy server (alerts).
 
 **Owner-only features and their risks**
 - `receiver.json` and `aircraft.json` are public if your site is. `receiver.json` contains the receiver position unless your decoder hides it. Keep `SiteShow` and the range outline off if you do not want your location known.
@@ -205,7 +217,7 @@ The terms found for each service, what was checked and what stayed unverified ar
 | CARTO | opt-in map | key and fair-use limits; never automatic |
 | AWS Open Data Terrain Tiles | 3D terrain | keyless; attribution to the underlying elevation datasets required |
 | RainViewer | rain radar | personal, educational and small community use; attribution; not for busy or commercial sites without asking |
-| aviationweather.gov | METAR and TAF | rate-limited, fetched by your recorder only |
+| aviationweather.gov | METAR and TAF | rate-limited, fetched by your Skywatch server only |
 | pics.avs.io | airline logos | **no terms found** |
 | planespotters.net | photos | credit shown; hotlinking volume not addressed |
 
@@ -223,6 +235,12 @@ Public tile servers are shared and can rate-limit you. When your site has regula
 1. OpenFreeMap publishes self-hosting instructions and images (https://github.com/hyperknot/openfreemap); it needs a server with a lot of disk (the planet is hundreds of GB).
 2. For one region, create a PMTiles extract with the `pmtiles` CLI from a planet build and serve the single file from any static host that supports HTTP range requests.
 3. Copy `html/styles/skywatch-dark.json`, change the `openmaptiles` source URL, `glyphs` and `sprite` to your server, then set `MapType_tar1090` to that layer. Not tested here; a starting point.
+
+## Known issues and roadmap
+
+- **3D is Experimental and off by default** (Settings > Appearance/Map; labelled Experimental). Known problems: label collisions, tile and elevation-tile churn while flying the camera, no proof yet that it only repaints on change with zero allocation, many draw calls, engine accents and crisp 3D labels missing, no real aircraft models bundled (procedural shapes only), and 3D has been measured only in software rendering, not on a real GPU (`tools/run-checks.sh --device-only` measures the frame budget on a device that has one).
+- ACARS and ATC voice are not part of V1.
+- Screenshots and a demo GIF are not in this README yet.
 
 ## Known limitations
 

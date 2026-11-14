@@ -1,6 +1,17 @@
 # Changelog
 
-## Unreleased
+## 1.0.0
+
+First V1 release. Honest summary of what changed since 0.1.0 (details in the entries below, kept as written during development):
+
+- **Optional Skywatch server** (`server/`, Node.js + TypeScript, no runtime dependencies, Docker image, `docker-compose.example.yml`) replaces the Python recorder: serves the interface, a read-only allow-listed proxy to your readsb data (`READSB_URL`), `history.json` / `polar.json` / `wx.json` / `movements.json` at the same URLs as before, optional ntfy alerts (off until `skywatch-alerts.json` exists), `PUBLIC_DEMO`, `/api/health`. 45 tests (parity fixtures produced by the old Python recorder). Not carried over: backfill of graphs from graphs1090 rrd files; `SW_*` variables are replaced by the names in the README. **If you ran `skywatch-recorder`, replace that container with the server (README, path B).**
+- **3D is Experimental and off by default**, labelled so in Settings. Known 3D problems are listed in the README under Known issues and roadmap.
+- Fixed grey 2D aircraft icons (the stale-position grey leaked onto fresh aircraft in some colour modes); new `icon-colour` check reads the real icon pixels.
+- Flight status line shortened ("Descending · 5,000 ft") so it fits at 320 px; its unit test expectations were updated to match.
+- New checks: `live-smoke` (real feed vs map source), `icon-colour`, `server-tests`, and `--device-only` for the 3D frame budget; `tools/fake-feed.py` serves synthetic aircraft for testing without a receiver.
+- Docs: README rewritten, NOTICE added, THIRD_PARTY.md completed (some licences remain unconfirmed and are marked so).
+
+## Development history before 1.0.0
 
 - **Airport click reliability.** Cause: opening an airport from a map marker while an aircraft panel was open closed that panel, and the close scheduled `MLR.clearFocus()` (a `jumpTo`) in a `setTimeout(0)` that cancelled the airport `easeTo` that had just started; follow mode also re-centred over the move, and the camera padding left by the aircraft focus doubled the airport offset. Fix: ONE `AIRPT.open(rowOrCode, from, source)` for the marker, the route block, search, the palette and `?airport=ICAO`, with ONE fly policy (`AIRPT.fly`: target zoom by tier, panel padding, camera stopped first, follow ended and restored by the Back chip, camera resets blocked while it runs). Markers are also hit-tested from the airport DATA, so a label-hidden marker still opens, and an airport marker wins over the (wider) aircraft hit radius. New test `airport-click` (both entry points, 20+ states).
 - **3D performance.** Device-independent counters (`ui/perf-counters.js`: draw calls, triangles, texture uploads, tiles in flight, symbol layers/instances, query rates, canvas size) in the `?perf=1` overlay and its JSON report, with the GPU renderer string and a software-renderer notice that forces the Low tier. Settings > Map "3D quality": Auto / High / Balanced / Low, an Auto controller (p95 over 3 s, hysteresis, no flapping) over an 8-step ladder (`ui/quality-calc.js`, `ui/maplibre-quality.js`). Pixel ratio capped for 3D and big canvases; hover work throttled to one pass per frame and skipped while the camera moves; terrain elevation cached per ground cell; empty GeoJSON overlay sources no longer cost tile clipping-mask draws (884 to 650 mask draws per frame at zoom 13, pitch 55); basemap labels useless at pitch hidden in 3D. New tests `perf-counters`, `quality-calc`, extended `perf-stats`.
@@ -24,7 +35,7 @@
 - Own base map style on OpenFreeMap tiles with VersaTiles fallback and a banner; CARTO opt-in; no OpenStreetMap raster tiles.
 - Shared components (toast, banner, dialog, empty state, tooltip) and a connection banner.
 - Airport night look, weather rings on airport pins with hover card, command palette (Ctrl/Cmd-K).
-- Alerts: browser watchlist (Settings > Alerts) and an optional ntfy sender in the recorder.
+- Alerts: browser watchlist (Settings > Alerts) and an optional ntfy sender in the Skywatch server.
 - Real terrain in 3D (AWS Open Data elevation tiles) with terrain-aware altitude lift.
 - Coverage plot, inferred recent movements, rain radar playback (off by default).
 - Neutral grey palette, white aircraft icons by default (Settings > Aircraft colour), selection glow, dark glass label pills, optional map lift on selection.
@@ -37,6 +48,6 @@ First public release of Skywatch ADS-B, a fork of tar1090 by wiedehopf.
 
 - New floating glass interface, aircraft list, settings, phone layout.
 - MapLibre GL JS map: 2D, 3D with altitude lift, Globe; select to zoom and follow; altitude-gradient tracks.
-- Instrument panel with wind compass; airport detail overlay; replay bar; live receiver graphs with an optional recorder.
+- Instrument panel with wind compass; airport detail overlay; replay bar; live receiver graphs with an optional recorder (since replaced by the Skywatch server).
 - Per-service switches for airline logos, aircraft photos, route lookup and airport detail.
 - Output escaping and URL checks for aircraft-derived strings; distance column hidden unless the receiver position is shown.

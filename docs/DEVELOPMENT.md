@@ -573,9 +573,9 @@ Cost (headless, software GL): camera-move refresh of 54 aircraft = 0.50 ms JS; s
 - Lift consistency was checked numerically only (elevation 256 m found at 53.36N 1.82W, lift for 3000 ft drops from 63 px flat to 46 px over that terrain); stems, shadows and ribbons were not inspected visually.
 
 ### Part H: recent movements
-- The server (`server/src/movements.ts`, `MovementTracker`) polls aircraft.json every 10 s (`MOVE_INTERVAL`) and writes `globe_history/skywatch/movements.json` (rolling 24 h, at most 500). Entry: `t, callsign, reg, type, airport, dir (landing|takeoff), rwy`. No receiver coordinates, no hex, no distance. `SW_MOVES=0` turns it off. It needs the airport list mounted at `/opt/skywatch/airports.json` (`SW_AIRPORTS`).
+- The server (`server/src/movements.ts`, `MovementTracker`) polls aircraft.json every 10 s (`MOVE_INTERVAL`) and writes `globe_history/skywatch/movements.json` (rolling 24 h, at most 500). Entry: `t, callsign, reg, type, airport, dir (landing|takeoff), rwy`. No receiver coordinates, no hex, no distance. `MOVEMENTS=0` turns it off. It reads the airport list from the served `html/airport-db/airports.json`.
 - Rules: landing = seen airborne and descending within 3 nm of an airport, then reported on the ground there; or gone quiet for 90 s while below 800 ft above the field, slow, descending and lined up with a runway. Take-off = reported on the ground at an airport then airborne, still near it and climbing/level above 100 ft at 80 kt or more; or first heard low (below 1500 ft AGL), fast and climbing near an airport. Go-arounds that stay tracked, overflights (including low fast level passes), and taxi-then-silence produce nothing; the same aircraft, airport and direction is not repeated within 20 minutes. Runway is the one whose heading is within 30 degrees of the track.
-- Limits: it only sees what the receiver hears (low aircraft near an airport behind terrain are missed), and a go-around that drops out of coverage low, slow and descending could be mis-counted as a landing. The card says "Inferred from receiver data". Tests: `python3 tools/test/test_recorder_movements.py`.
+- Limits: it only sees what the receiver hears (low aircraft near an airport behind terrain are missed), and a go-around that drops out of coverage low, slow and descending could be mis-counted as a landing. The card says "Inferred from receiver data". Tests: `server/test/movements.test.ts`.
 
 ### Part G: rain radar
 - Terms read on 2026-11-09 (see THIRD_PARTY.md): free for personal, educational and small community use with attribution. Built because that fits a personal site; the overlay is off by default and nothing is requested while off.
@@ -638,7 +638,23 @@ Merged in Phase 40: `.apCard`/`.apTile` are `.ibCard`/`.ibTile`, `.apBtn` and `.
 
 ## Running every check: `tools/run-checks.sh`
 
-`tools/run-checks.sh` deploys the tree locally, verifies the served files are the tree's files (md5 against `cachebust.list`), then runs: syntax check (node:22-slim), the unit tests in `tools/test/`, the hotkeys test (`#view_list`, `#north_up` from the opposite state), neutral-greys, audit-colours (desktop and phone), console-flow, layout-collision (six phone sizes plus 1440x900), phone-sheet, controls-regression (replay and every primary control, seven viewports), route-fixture (desktop and phone, recorded adsb.im responses), one-component-set and component-signature, label-sprite, airport-pins, airport-proxy, models3d (desktop and phone), models3d-height, models3d-budget and models3d-zoom-soak. It exits non-zero on any failure and prints a summary; logs go to `.private/checks`. `--only REGEX` runs a subset for iteration; a push needs the full run. Browser checks use headless Chromium with SwiftShader (software GL), so frame times are relative only; `tools/cdp-snippets/models3d-profile.js` is the (non-gating) profiling harness.
+```
+tools/run-checks.sh                 # everything (long: run it in a terminal, not under a short timeout)
+tools/run-checks.sh --only REGEX    # a subset, by check name
+tools/run-checks.sh --device-only   # ONLY the checks that need a real GPU (models3d-budget)
+SITE_URL=http://127.0.0.1:8098 tools/run-checks.sh --only icon-colour   # against the fake feed instead of your receiver
+```
+
+What it does, in order: deploys the tree into the local container with `scripts/deploy-local.sh` (this step redeploys into your running container; to avoid that, serve a copy with `tools/fake-feed.py` and use `--only` with a regex that does not match `deploy`, so `deploy+exact-tree` is then simply not run) and verifies the served files are the tree's files (md5 against `cachebust.list`); then
+- **syntax**: `node --check` over `html/`, `tools/cdp-snippets/`, `tools/models/` (node:22-slim container);
+- **unit tests** in `tools/test/*.test.js` (flight status, palette rank, quality calc, static mode, models, and others);
+- **server-tests**: `docker build --target test` of `server/Dockerfile` (compiles the TypeScript and runs the 45 `node:test` tests: Python-parity fixtures, proxy allow list, static serving, rate limits, movements, integration). It parses the `# pass` / `# fail` lines and fails on any failure or on zero tests;
+- **browser checks** (headless Chromium, software GL, via `tools/cdp-run.js` and `tools/cdp-snippets/*.js`): hotkeys, neutral-greys, audit-colours, console-flow, layout-collision, phone-sheet, intra-panel overlap/clip, controls-regression, route fixtures, one-component-set, label-sprite, airport-pins/proxy/click, perf-counters, perf-overlay, models3d, models3d-height, models3d-zoom-soak, models-gltf, contrails-sky;
+- **live-smoke**: the real `aircraft.json` against the page's counter and the map's aircraft source; fails with "SOURCE EMPTY" if the feed is empty;
+- **icon-colour**: the bitmap behind every 2D aircraft icon under every combination of 2D and 3D colour settings, plus drawn pixels;
+- **models3d-budget**: the GPU frame-time budget. Software GL cannot finish it, so a normal run records **NOT RUN** (never PASS); `--device-only` runs only this check and needs a machine with a real GPU.
+
+It exits non-zero on any failure and prints a summary; logs are in `.private/checks` (wiped each run). `tools/cdp-snippets/models3d-profile.js` is a non-gating profiling harness. Browser checks use SwiftShader, so frame times are relative only. A push needs the full run.
 
 ## Layout-collision test (phone and desktop)
 
@@ -678,6 +694,10 @@ grep -v '^\s*//' tools/cdp-snippets/layout-collision.js > /tmp/lc.js   # the har
 - **2D icon colour:** `icon-colour` reads the bitmap MapLibre holds for every aircraft icon (and the drawn pixels) under every combination of the 2D "Aircraft colour" and the 3D-only settings, and asserts that 3D settings never change a 2D icon. A grey icon in 2D is the stale-position rule (no position for more than 15 s draws `#8f8f8f`).
 - **Live smoke:** `live-smoke` loads the page against the real `aircraft.json` and asserts the aircraft counter and the map's aircraft source are above 0 and match the JSON, and that the data is fresh. A feed with no aircraft FAILS it with "SOURCE EMPTY" (that is the receiver, not the page).
 - **Fake feed for testing without a receiver:** `python3 tools/fake-feed.py [port=8098] [count=30]` serves `html/` plus synthetic moving aircraft; point any check at it with `SITE_URL=http://127.0.0.1:8098 tools/run-checks.sh --only <name>`.
+
+## The Skywatch server (`server/`)
+
+Optional Node.js + TypeScript server (Node built-ins only; `tsc` is the only dev dependency). It replaces the old Python recorder. Layout: `src/main.ts` (start-up), `config.ts` (env + `skywatch-config.json`), `http.ts` (routing), `static.ts`, `proxy.ts` (GET-only allow list; the upstream is fixed by `READSB_URL`), `ratelimit.ts`, `recorder.ts` + `history.ts` / `weather.ts` / `movements.ts` / `alerts.ts` (one module each), `util.ts` (atomic writes, Python-compatible rounding/JSON). Tests are in `server/test/` (fixtures in `server/test/fixtures/` were generated by running the old Python recorder). Run them with `docker build -f server/Dockerfile --target test .` (this is also the `server-tests` check). Build and run: `docker compose -f docker-compose.example.yml up -d --build`. No default feeds or endpoints point at any particular server, and with `PUBLIC_DEMO=1` alerts stay off.
 
 ## Known issues / roadmap
 
